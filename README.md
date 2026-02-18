@@ -1,7 +1,7 @@
-# AI Dev Pack — Vexel Health Platform (Monorepo) — LIMS-first Modular SaaS
+# AI Dev Pack — Vexel Health Platform — LIMS-first Modular SaaS
 Date: 2026-02-18
 
-This folder contains the **full AI developer pack** (governance + architecture + docs) for building the new monorepo platform.
+This folder contains the **full AI developer pack** (governance + architecture + docs) for building the new platform.
 
 ## What’s included
 - Platform-Constitution.md (binding rules)

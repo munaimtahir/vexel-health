@@ -4,7 +4,7 @@ Date: 2026-02-18
 This is the canonical checklist.
 
 ## Phase 0 — Skeleton
-- [x] Create monorepo structure (apps/*, packages/*)
+- [x] Create repository structure (apps/*, packages/*)
 - [x] Docker compose: postgres, redis, api, web, worker, pdf
 - [x] Auth + tenancy scaffolding
 - [x] Feature flag scaffolding + /me/features

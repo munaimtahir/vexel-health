@@ -1,7 +1,7 @@
 # CI-CD.md
 Date: 2026-02-18
 
-## Monorepo build strategy
+## Workspace build strategy
 Use path-based builds to deploy only what changed:
 - apps/web
 - apps/api

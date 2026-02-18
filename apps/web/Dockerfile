@@ -4,7 +4,7 @@ RUN corepack enable
 
 WORKDIR /app
 
-# Copy monorepo config
+# Copy workspace config
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 
 # Copy source code

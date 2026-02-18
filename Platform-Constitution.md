@@ -11,7 +11,7 @@ Build a **multi-tenant, modular healthcare operations platform** where tenants c
 - Printing-first with **designed, deterministic PDFs** via a dedicated PDF service
 
 ## 2. Non‑negotiable architecture choices
-### 2.1 Monorepo
+### 2.1 Repository Structure
 Single repo containing:
 - Web (Next.js)
 - API (NestJS)

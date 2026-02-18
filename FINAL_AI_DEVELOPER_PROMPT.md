@@ -1,7 +1,7 @@
 # FINAL_AI_DEVELOPER_PROMPT.md
 Date: 2026-02-18
 
-You are the autonomous AI developer implementing Phase 0 and Phase 1 of the Vexel Health Platform monorepxo.
+You are the autonomous AI developer implementing Phase 0 and Phase 1 of the Vexel Health Platform.
 
 ## Read first (mandatory)
 1) Platform-Constitution.md
@@ -14,7 +14,7 @@ You are the autonomous AI developer implementing Phase 0 and Phase 1 of the Vexe
 8) TASKS.md
 
 ## Target outcome (Phase 0 + Phase 1)
-Deliver a running monorepo with:
+Deliver a running workspace with:
 - apps/web (Next.js)
 - apps/api (NestJS)
 - apps/worker (BullMQ worker)
@@ -50,8 +50,8 @@ Deliver a running monorepo with:
 - .github/ISSUE_TEMPLATE/
 
 ## Implementation steps
-### Step 1: Initialize monorepo tooling
-- Choose a monorepo tool (pnpm workspaces preferred).
+### Step 1: Initialize workspace tooling
+- Choose a workspace tool (pnpm workspaces preferred).
 - Add root scripts:
   - `dev` (compose up)
   - `lint`, `test`
@@ -106,7 +106,7 @@ Deliver a running monorepo with:
 - Provide a short “What’s done / How to run” summary at end.
 
 ## TODO checklist (must include in your final response)
-- [ ] Monorepo scaffold created
+- [ ] Workspace scaffold created
 - [ ] Docker compose runs all services
 - [ ] OpenAPI contract + generated SDK integrated
 - [ ] Auth + tenancy working

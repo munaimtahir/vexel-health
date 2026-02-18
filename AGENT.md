@@ -2,7 +2,7 @@
 Date: 2026-02-18
 
 ## Purpose
-You are an AI developer agent working inside this monorepo to build the Vexel Health Platform (LIMS-first modular SaaS).
+You are an AI developer agent working inside this repository to build the Vexel Health Platform (LIMS-first modular SaaS).
 
 ## Operating rules
 1. Read and follow **Platform-Constitution.md** before coding.
