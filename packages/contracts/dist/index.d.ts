@@ -1,14 +1,7 @@
-import type { paths } from './schema';
-export declare const client: {
-    GET: import("openapi-fetch").ClientMethod<paths, "get", `${string}/${string}`>;
-    PUT: import("openapi-fetch").ClientMethod<paths, "put", `${string}/${string}`>;
-    POST: import("openapi-fetch").ClientMethod<paths, "post", `${string}/${string}`>;
-    DELETE: import("openapi-fetch").ClientMethod<paths, "delete", `${string}/${string}`>;
-    OPTIONS: import("openapi-fetch").ClientMethod<paths, "options", `${string}/${string}`>;
-    HEAD: import("openapi-fetch").ClientMethod<paths, "head", `${string}/${string}`>;
-    PATCH: import("openapi-fetch").ClientMethod<paths, "patch", `${string}/${string}`>;
-    TRACE: import("openapi-fetch").ClientMethod<paths, "trace", `${string}/${string}`>;
-    use(...middleware: import("openapi-fetch").Middleware[]): void;
-    eject(...middleware: import("openapi-fetch").Middleware[]): void;
-};
-export type { paths };
+import { type Client, type ClientOptions } from 'openapi-fetch';
+import type { $defs, components, operations, paths, webhooks } from './schema';
+export type { $defs, components, operations, paths, webhooks };
+export declare const createVexelClient: (options?: ClientOptions) => Client<paths>;
+export type VexelClient = ReturnType<typeof createVexelClient>;
+export declare const client: Client<paths, `${string}/${string}`>;
+//# sourceMappingURL=index.d.ts.map

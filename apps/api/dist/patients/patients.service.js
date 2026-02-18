@@ -21,15 +21,51 @@ let PatientsService = class PatientsService {
         this.cls = cls;
     }
     get tenantId() {
-        return this.cls.get('TENANT_ID');
+        const tenantId = this.cls.get('TENANT_ID');
+        if (typeof tenantId !== 'string' || tenantId.length === 0) {
+            throw new common_1.UnauthorizedException('Tenant context missing');
+        }
+        return tenantId;
     }
     async create(dto) {
-        return this.prisma.patient.create({
-            data: {
-                ...dto,
+        const tenantId = this.tenantId;
+        return this.prisma.$transaction(async (tx) => {
+            const sequence = await tx.patientSequence.upsert({
+                where: { tenantId },
+                create: {
+                    tenantId,
+                    lastValue: 1,
+                },
+                update: {
+                    lastValue: {
+                        increment: 1,
+                    },
+                },
+            });
+            const regNo = `REG-${String(sequence.lastValue).padStart(8, '0')}`;
+            return tx.patient.create({
+                data: {
+                    tenantId,
+                    regNo,
+                    name: dto.name,
+                    dob: dto.dob ? new Date(dto.dob) : undefined,
+                    gender: dto.gender,
+                    phone: dto.phone,
+                },
+            });
+        });
+    }
+    async findById(id) {
+        const patient = await this.prisma.patient.findFirst({
+            where: {
+                id,
                 tenantId: this.tenantId,
             },
         });
+        if (!patient) {
+            throw new common_1.NotFoundException('Patient not found');
+        }
+        return patient;
     }
     async findAll(page, query) {
         const take = 20;
@@ -38,10 +74,20 @@ let PatientsService = class PatientsService {
             tenantId: this.tenantId,
         };
         if (query) {
-            where.name = {
-                contains: query,
-                mode: 'insensitive',
-            };
+            where.OR = [
+                {
+                    name: {
+                        contains: query,
+                        mode: 'insensitive',
+                    },
+                },
+                {
+                    regNo: {
+                        contains: query,
+                        mode: 'insensitive',
+                    },
+                },
+            ];
         }
         const [data, total] = await Promise.all([
             this.prisma.patient.findMany({

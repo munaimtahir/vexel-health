@@ -23,8 +23,13 @@ let TenantContextMiddleware = TenantContextMiddleware_1 = class TenantContextMid
         this.cls = cls;
     }
     async use(req, res, next) {
-        const hostHeader = req.headers.host || '';
-        const [hostname] = hostHeader.split(':');
+        if (req.path === '/health') {
+            next();
+            return;
+        }
+        const hostHeader = typeof req.headers.host === 'string' ? req.headers.host : '';
+        const hostValue = (hostHeader || req.hostname || '').trim().toLowerCase();
+        const [hostname] = hostValue.split(':');
         let tenantId = null;
         if (hostname) {
             const tenantDomain = await this.prisma.tenantDomain.findUnique({
@@ -36,14 +41,30 @@ let TenantContextMiddleware = TenantContextMiddleware_1 = class TenantContextMid
             }
         }
         if (!tenantId) {
-            const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
-            const isDevHeaderEnabled = process.env.TENANCY_DEV_HEADER === '1';
+            const isLocalhost = hostname === 'localhost' ||
+                hostname === '127.0.0.1' ||
+                hostname.endsWith('.localhost');
+            const isDevHeaderEnabled = process.env.TENANCY_DEV_HEADER_ENABLED === '1';
             if (isLocalhost && isDevHeaderEnabled) {
                 const headerValue = req.headers['x-tenant-id'];
-                if (typeof headerValue === 'string' && headerValue) {
-                    tenantId = headerValue;
-                    this.logger.warn(`Using Dev-Only Header Tenant ID: ${tenantId}`);
+                const headerTenantId = Array.isArray(headerValue)
+                    ? headerValue[0]
+                    : headerValue;
+                if (typeof headerTenantId === 'string' &&
+                    headerTenantId.trim().length > 0) {
+                    tenantId = headerTenantId.trim();
+                    this.logger.warn(`Using x-tenant-id development fallback for localhost host=${hostname}`);
                 }
+            }
+        }
+        if (!tenantId) {
+            const headerValue = req.headers['x-tenant-id'];
+            const headerTenantId = Array.isArray(headerValue)
+                ? headerValue[0]
+                : headerValue;
+            if (typeof headerTenantId === 'string' &&
+                headerTenantId.trim().length > 0) {
+                this.logger.warn(`Ignoring x-tenant-id header for non-localhost or disabled fallback host=${hostname}`);
             }
         }
         if (!tenantId) {

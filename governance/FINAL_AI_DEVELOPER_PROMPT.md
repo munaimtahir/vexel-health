@@ -4,14 +4,14 @@ Date: 2026-02-18
 You are the autonomous AI developer implementing Phase 0 and Phase 1 of the Vexel Health Platform.
 
 ## Read first (mandatory)
-1) Platform-Constitution.md
-2) Architecture.md
-3) DataModel.md
-4) DocumentEngine.md
-5) Workflow.md
-6) FeatureFlags.md
-7) Tests.md
-8) TASKS.md
+1) governance/Platform-Constitution.md
+2) governance/Architecture.md
+3) governance/DataModel.md
+4) governance/DocumentEngine.md
+5) governance/Workflow.md
+6) governance/FeatureFlags.md
+7) governance/Tests.md
+8) governance/TASKS.md
 
 ## Target outcome (Phase 0 + Phase 1)
 Deliver a running workspace with:
@@ -51,7 +51,7 @@ Deliver a running workspace with:
 
 ## Implementation steps
 ### Step 1: Initialize workspace tooling
-- Choose a workspace tool (pnpm workspaces preferred).
+- Use npm workspaces as the repository standard.
 - Add root scripts:
   - `dev` (compose up)
   - `lint`, `test`
@@ -70,7 +70,7 @@ Deliver a running workspace with:
 ### Step 3: API scaffolding
 - NestJS app with modules:
   - tenancy, auth, rbac (minimal), feature_flags, audit, patients, documents
-- Standard error format (see API-Interfaces.md)
+- Standard error format (see governance/API-Interfaces.md)
 - Health endpoint: `/health`
 
 ### Step 4: Contracts
@@ -102,7 +102,7 @@ Deliver a running workspace with:
   - PDF service health test
 
 ## Output requirements
-- Update TASKS.md by checking completed boxes.
+- Update governance/TASKS.md by checking completed boxes.
 - Provide a short “What’s done / How to run” summary at end.
 
 ## TODO checklist (must include in your final response)

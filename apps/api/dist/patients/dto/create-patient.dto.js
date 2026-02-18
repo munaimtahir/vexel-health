@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CreatePatientDto = void 0;
 const class_validator_1 = require("class-validator");
+const allowedGenders = ['male', 'female', 'other'];
 class CreatePatientDto {
     name;
     dob;
@@ -25,12 +26,13 @@ __decorate([
 ], CreatePatientDto.prototype, "name", void 0);
 __decorate([
     (0, class_validator_1.IsDateString)(),
+    (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], CreatePatientDto.prototype, "dob", void 0);
 __decorate([
-    (0, class_validator_1.IsEnum)(['male', 'female', 'other']),
+    (0, class_validator_1.IsIn)(allowedGenders),
     (0, class_validator_1.IsOptional)(),
-    __metadata("design:type", String)
+    __metadata("design:type", Object)
 ], CreatePatientDto.prototype, "gender", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),

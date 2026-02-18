@@ -22,6 +22,9 @@ let AuthService = class AuthService {
     }
     async login(email, pass) {
         const tenantId = this.cls.get('TENANT_ID');
+        if (!tenantId) {
+            throw new common_1.UnauthorizedException('Tenant context missing');
+        }
         const user = await this.prisma.user.findUnique({
             where: {
                 tenantId_email: {
@@ -33,17 +36,24 @@ let AuthService = class AuthService {
         if (!user || user.passwordHash !== pass) {
             throw new common_1.UnauthorizedException('Invalid credentials');
         }
-        const { passwordHash, ...result } = user;
         const accessToken = `mock.${tenantId}.${user.id}`;
         return {
             accessToken,
-            user: result,
+            user: {
+                id: user.id,
+                tenantId: user.tenantId,
+                email: user.email,
+                name: user.name,
+                status: user.status,
+                createdAt: user.createdAt,
+            },
         };
     }
 };
 exports.AuthService = AuthService;
 exports.AuthService = AuthService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [prisma_service_1.PrismaService, nestjs_cls_1.ClsService])
+    __metadata("design:paramtypes", [prisma_service_1.PrismaService,
+        nestjs_cls_1.ClsService])
 ], AuthService);
 //# sourceMappingURL=auth.service.js.map

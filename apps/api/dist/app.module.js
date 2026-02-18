@@ -17,6 +17,7 @@ const patients_module_1 = require("./patients/patients.module");
 const documents_module_1 = require("./documents/documents.module");
 const me_module_1 = require("./me/me.module");
 const nestjs_cls_1 = require("nestjs-cls");
+const encounters_module_1 = require("./encounters/encounters.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -31,6 +32,7 @@ exports.AppModule = AppModule = __decorate([
             tenancy_module_1.TenancyModule,
             auth_module_1.AuthModule,
             patients_module_1.PatientsModule,
+            encounters_module_1.EncountersModule,
             documents_module_1.DocumentsModule,
             me_module_1.MeModule,
         ],

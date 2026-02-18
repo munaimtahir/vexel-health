@@ -1,18 +1,27 @@
-import { IsString, IsNotEmpty, IsDateString, IsEnum, IsOptional } from 'class-validator';
+import {
+  IsDateString,
+  IsIn,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+} from 'class-validator';
+
+const allowedGenders = ['male', 'female', 'other'] as const;
 
 export class CreatePatientDto {
-    @IsString()
-    @IsNotEmpty()
-    name: string;
+  @IsString()
+  @IsNotEmpty()
+  name: string;
 
-    @IsDateString()
-    dob?: string;
+  @IsDateString()
+  @IsOptional()
+  dob?: string;
 
-    @IsEnum(['male', 'female', 'other'])
-    @IsOptional()
-    gender?: string;
+  @IsIn(allowedGenders)
+  @IsOptional()
+  gender?: (typeof allowedGenders)[number];
 
-    @IsString()
-    @IsOptional()
-    phone?: string;
+  @IsString()
+  @IsOptional()
+  phone?: string;
 }

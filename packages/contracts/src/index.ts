@@ -1,5 +1,11 @@
-import createClient from 'openapi-fetch';
-import type { paths } from './schema';
+import createOpenApiClient, { type Client, type ClientOptions } from 'openapi-fetch';
+import type { $defs, components, operations, paths, webhooks } from './schema';
 
-export const client = createClient<paths>({ baseUrl: 'http://localhost:3000' });
-export type { paths };
+export type { $defs, components, operations, paths, webhooks };
+
+export const createVexelClient = (options?: ClientOptions): Client<paths> =>
+    createOpenApiClient<paths>(options);
+
+export type VexelClient = ReturnType<typeof createVexelClient>;
+
+export const client = createVexelClient({ baseUrl: 'http://localhost:3000' });

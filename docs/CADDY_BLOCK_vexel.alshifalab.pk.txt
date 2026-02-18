@@ -1,0 +1,43 @@
+# Site block for vexel.alshifalab.pk
+# Context: Existing Caddyfile already contains a VEXEL block; this is the normalized block to apply.
+
+vexel.alshifalab.pk {
+	encode gzip zstd
+	import std_headers
+	import std_log vexel
+
+	handle_path /api/* {
+		reverse_proxy 127.0.0.1:3000 {
+			import std_proxy
+		}
+	}
+
+	handle_path /pdf/* {
+		reverse_proxy 127.0.0.1:5000 {
+			import std_proxy
+		}
+	}
+
+	handle {
+		reverse_proxy 127.0.0.1:3001 {
+			import std_proxy
+		}
+	}
+}
+
+# Commands (requires sudo/root)
+# 1) Backup
+sudo cp /home/munaim/srv/proxy/caddy/Caddyfile /home/munaim/srv/proxy/caddy/Caddyfile.bak.$(date -u +%Y%m%dT%H%M%SZ)
+
+# 2) Edit and insert/update block above in:
+# /home/munaim/srv/proxy/caddy/Caddyfile
+
+# 3) Validate
+sudo caddy validate --config /home/munaim/srv/proxy/caddy/Caddyfile
+
+# 4) Reload
+sudo caddy reload --config /home/munaim/srv/proxy/caddy/Caddyfile
+
+# Session note:
+# Validation/reload from this user failed due permission denied opening Caddy log target:
+# /home/munaim/srv/proxy/caddy/logs/error.log

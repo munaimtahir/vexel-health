@@ -28,6 +28,9 @@ let PatientsController = class PatientsController {
     findAll(page = 1, query = '') {
         return this.service.findAll(Number(page) || 1, query);
     }
+    findById(id) {
+        return this.service.findById(id);
+    }
 };
 exports.PatientsController = PatientsController;
 __decorate([
@@ -42,9 +45,16 @@ __decorate([
     __param(0, (0, common_1.Query)('page')),
     __param(1, (0, common_1.Query)('query')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Number, String]),
+    __metadata("design:paramtypes", [Number, Object]),
     __metadata("design:returntype", void 0)
 ], PatientsController.prototype, "findAll", null);
+__decorate([
+    (0, common_1.Get)(':id'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], PatientsController.prototype, "findById", null);
 exports.PatientsController = PatientsController = __decorate([
     (0, common_1.Controller)('patients'),
     (0, common_1.UseGuards)(tenant_guard_1.TenantGuard),

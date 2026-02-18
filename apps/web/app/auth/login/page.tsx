@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
 import { client } from '@/lib/api';
 import { useState, useEffect } from 'react';
+import { parseApiError, type FieldErrors } from '@/lib/api-errors';
 
 type FormData = {
     email: string;
@@ -15,11 +16,12 @@ export default function LoginPage() {
     const { register, handleSubmit, formState: { errors } } = useForm<FormData>();
     const router = useRouter();
     const [error, setError] = useState('');
+    const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
     const [showDevTenant, setShowDevTenant] = useState(false);
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
-            const isDevHeader = process.env.NEXT_PUBLIC_TENANCY_DEV_HEADER === '1';
+            const isDevHeader = process.env.NEXT_PUBLIC_TENANCY_DEV_HEADER_ENABLED === '1';
             const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname.endsWith('.localhost');
             if (isDevHeader && isLocalhost) {
                 setShowDevTenant(true);
@@ -29,6 +31,7 @@ export default function LoginPage() {
 
     const onSubmit = async (data: FormData) => {
         setError('');
+        setFieldErrors({});
 
         if (showDevTenant && data.tenantId) {
             localStorage.setItem('vexel_tenant_id', data.tenantId);
@@ -42,9 +45,9 @@ export default function LoginPage() {
         });
 
         if (apiError) {
-            // Try to extract message safely
-            const msg = (apiError as any)?.message || 'Login failed';
-            setError(msg);
+            const parsed = parseApiError(apiError, 'Login failed');
+            setError(parsed.message);
+            setFieldErrors(parsed.fieldErrors);
             return;
         }
 
@@ -65,7 +68,7 @@ export default function LoginPage() {
                 {error && <div className="text-red-500 mb-4">{error}</div>}
 
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                    {showDevTenant && (
+                        {showDevTenant && (
                         <div>
                             <label className="block text-sm font-medium text-gray-700">Tenant ID (UUID) <span className="text-xs text-gray-500">(Dev Only)</span></label>
                             <input
@@ -73,6 +76,9 @@ export default function LoginPage() {
                                 className="mt-1 block w-full border border-gray-300 rounded p-2"
                                 placeholder="Enter Tenant ID"
                             />
+                            {fieldErrors.tenantId?.map((message) => (
+                                <span key={message} className="text-red-500 text-sm block">{message}</span>
+                            ))}
                         </div>
                     )}
 
@@ -84,6 +90,9 @@ export default function LoginPage() {
                             placeholder="user@example.com"
                         />
                         {errors.email && <span className="text-red-500 text-sm">Required</span>}
+                        {fieldErrors.email?.map((message) => (
+                            <span key={message} className="text-red-500 text-sm block">{message}</span>
+                        ))}
                     </div>
 
                     <div>
@@ -94,6 +103,9 @@ export default function LoginPage() {
                             className="mt-1 block w-full border border-gray-300 rounded p-2"
                         />
                         {errors.pass && <span className="text-red-500 text-sm">Required</span>}
+                        {(fieldErrors.password ?? fieldErrors.pass)?.map((message) => (
+                            <span key={message} className="text-red-500 text-sm block">{message}</span>
+                        ))}
                     </div>
 
                     <button

@@ -18,9 +18,9 @@ let MeController = class MeController {
     }
     getFeatures() {
         return {
-            'lims': true,
-            'billing': false,
-            'documents': true
+            lims: true,
+            billing: false,
+            documents: true,
         };
     }
 };

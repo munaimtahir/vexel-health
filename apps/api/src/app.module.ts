@@ -8,6 +8,7 @@ import { PatientsModule } from './patients/patients.module';
 import { DocumentsModule } from './documents/documents.module';
 import { MeModule } from './me/me.module';
 import { ClsModule } from 'nestjs-cls';
+import { EncountersModule } from './encounters/encounters.module';
 
 @Module({
   imports: [
@@ -19,10 +20,11 @@ import { ClsModule } from 'nestjs-cls';
     TenancyModule,
     AuthModule,
     PatientsModule,
+    EncountersModule,
     DocumentsModule,
     MeModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule { }
+export class AppModule {}

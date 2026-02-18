@@ -8,19 +8,21 @@ datasource db {
 }
 
 model Tenant {
-  id        String          @id @default(uuid())
-  name      String
-  status    String
-  createdAt DateTime        @default(now())
-  domains   TenantDomain[]
-  features  TenantFeature[]
-  users     User[]
-  patients  Patient[]
-  encounters Encounter[]
-  documents Document[]
-  auditEvents AuditEvent[]
-  invoices Invoice[]
-  payments Payment[]
+  id                 String              @id @default(uuid())
+  name               String
+  status             String
+  createdAt          DateTime            @default(now())
+  domains            TenantDomain[]
+  features           TenantFeature[]
+  users              User[]
+  patients           Patient[]
+  encounters         Encounter[]
+  patientSequences   PatientSequence[]
+  encounterSequences EncounterSequence[]
+  documents          Document[]
+  auditEvents        AuditEvent[]
+  invoices           Invoice[]
+  payments           Payment[]
 }
 
 model TenantDomain {
@@ -33,26 +35,26 @@ model TenantDomain {
   @@index([tenantId])
 }
 
-model TenantFeature { 
-  id          String  @id @default(uuid())
-  tenantId    String
-  tenant      Tenant  @relation(fields: [tenantId], references: [id])
-  key         String
-  enabled     Boolean @default(false)
-  configJson  String? 
+model TenantFeature {
+  id         String  @id @default(uuid())
+  tenantId   String
+  tenant     Tenant  @relation(fields: [tenantId], references: [id])
+  key        String
+  enabled    Boolean @default(false)
+  configJson String?
 
-  @@index([tenantId])
   @@unique([tenantId, key])
+  @@index([tenantId])
 }
 
 model User {
-  id           String @id @default(uuid())
+  id           String   @id @default(uuid())
   tenantId     String
-  tenant       Tenant @relation(fields: [tenantId], references: [id])
+  tenant       Tenant   @relation(fields: [tenantId], references: [id])
   email        String
   passwordHash String
   name         String?
-  status       String @default("active")
+  status       String   @default("active")
   createdAt    DateTime @default(now())
 
   roleMappings UserRole[]
@@ -62,27 +64,27 @@ model User {
 }
 
 model Role {
-  id          String @id @default(uuid())
+  id          String           @id @default(uuid())
   tenantId    String
   name        String
   permissions RolePermission[]
   users       UserRole[]
-  
+
   @@unique([tenantId, name])
 }
 
 model UserRole {
   userId String
   roleId String
-  user   User @relation(fields: [userId], references: [id])
-  role   Role @relation(fields: [roleId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
+  role   Role   @relation(fields: [roleId], references: [id])
 
   @@id([userId, roleId])
 }
 
 model Permission {
-  id          String   @id @default(uuid())
-  key         String   @unique
+  id          String           @id @default(uuid())
+  key         String           @unique
   description String?
   roles       RolePermission[]
 }
@@ -97,68 +99,93 @@ model RolePermission {
 }
 
 model AuditEvent {
-  id             String   @id @default(uuid())
-  tenantId       String
-  tenant         Tenant   @relation(fields: [tenantId], references: [id])
-  actorUserId    String?
-  eventType      String
-  entityType     String
-  entityId       String
-  payloadJson    String?
-  createdAt      DateTime @default(now())
-  correlationId  String?
+  id            String   @id @default(uuid())
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id])
+  actorUserId   String?
+  eventType     String
+  entityType    String
+  entityId      String
+  payloadJson   String?
+  createdAt     DateTime @default(now())
+  correlationId String?
 
   @@index([tenantId, createdAt])
 }
 
 model Patient {
-  id        String   @id @default(uuid())
+  id        String    @id @default(uuid())
   tenantId  String
-  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  tenant    Tenant    @relation(fields: [tenantId], references: [id])
+  regNo     String
   mrn       String?
   name      String
   dob       DateTime?
   gender    String?
   phone     String?
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
 
   encounters Encounter[]
   invoices   Invoice[]
 
-  @@index([tenantId])
+  @@unique([tenantId, regNo])
   @@unique([tenantId, mrn])
+  @@index([tenantId])
 }
 
 model Encounter {
-  id        String   @id @default(uuid())
+  id        String    @id @default(uuid())
+  tenantId  String
+  tenant    Tenant    @relation(fields: [tenantId], references: [id])
+  patientId String
+  patient   Patient   @relation(fields: [patientId], references: [id])
+  encounterCode String
+  type      String
+  status    String    @default("CREATED")
+  startedAt DateTime  @default(now())
+  endedAt   DateTime?
+  createdAt DateTime  @default(now())
+
+  invoices  Invoice[]
+  documents Document[]
+
+  @@unique([tenantId, encounterCode])
+  @@index([tenantId, patientId, createdAt])
+}
+
+model PatientSequence {
+  tenantId  String   @id
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  lastValue Int      @default(0)
+  updatedAt DateTime @updatedAt
+}
+
+model EncounterSequence {
   tenantId  String
   tenant    Tenant   @relation(fields: [tenantId], references: [id])
-  patientId String
-  patient   Patient  @relation(fields: [patientId], references: [id])
   type      String
-  startedAt DateTime @default(now())
-  endedAt   DateTime?
-  
-  invoices  Invoice[]
+  year      Int
+  lastValue Int      @default(0)
+  updatedAt DateTime @updatedAt
 
-  @@index([tenantId, patientId])
+  @@id([tenantId, type, year])
 }
 
 model Invoice {
-  id          String   @id @default(uuid())
+  id          String     @id @default(uuid())
   tenantId    String
-  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  tenant      Tenant     @relation(fields: [tenantId], references: [id])
   patientId   String
-  patient     Patient  @relation(fields: [patientId], references: [id])
+  patient     Patient    @relation(fields: [patientId], references: [id])
   encounterId String?
   encounter   Encounter? @relation(fields: [encounterId], references: [id])
   status      String
   totalAmount Decimal
   currency    String
-  createdAt   DateTime @default(now())
+  createdAt   DateTime   @default(now())
 
-  items       InvoiceItem[]
-  payments    Payment[]
+  items    InvoiceItem[]
+  payments Payment[]
 
   @@index([tenantId])
 }
@@ -176,23 +203,25 @@ model InvoiceItem {
 }
 
 model Payment {
-  id        String   @id @default(uuid())
-  tenantId  String
-  tenant    Tenant   @relation(fields: [tenantId], references: [id])
-  invoiceId String
-  invoice   Invoice  @relation(fields: [invoiceId], references: [id])
-  method    String
-  amount    Decimal
+  id         String   @id @default(uuid())
+  tenantId   String
+  tenant     Tenant   @relation(fields: [tenantId], references: [id])
+  invoiceId  String
+  invoice    Invoice  @relation(fields: [invoiceId], references: [id])
+  method     String
+  amount     Decimal
   receivedAt DateTime @default(now())
-  reference String?
+  reference  String?
 
   @@index([tenantId])
 }
 
 model Document {
-  id              String   @id @default(uuid())
+  id              String     @id @default(uuid())
   tenantId        String
-  tenant          Tenant   @relation(fields: [tenantId], references: [id])
+  tenant          Tenant     @relation(fields: [tenantId], references: [id])
+  encounterId     String?
+  encounter       Encounter? @relation(fields: [encounterId], references: [id])
   documentType    String
   templateVersion String
   payloadVersion  String
@@ -200,8 +229,9 @@ model Document {
   filePath        String
   pdfHash         String?
   status          String
-  createdAt       DateTime @default(now())
+  createdAt       DateTime   @default(now())
   publishedAt     DateTime?
 
   @@index([tenantId])
+  @@index([tenantId, encounterId])
 }

@@ -6,6 +6,13 @@ export declare class AuthService {
     constructor(prisma: PrismaService, cls: ClsService);
     login(email: string, pass: string): Promise<{
         accessToken: string;
-        user: any;
+        user: {
+            id: string;
+            tenantId: string;
+            email: string;
+            name: string | null;
+            status: string;
+            createdAt: Date;
+        };
     }>;
 }

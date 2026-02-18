@@ -18,6 +18,7 @@ let TenantGuard = class TenantGuard {
         this.cls = cls;
     }
     canActivate(context) {
+        void context;
         const tenantId = this.cls.get('TENANT_ID');
         if (!tenantId) {
             throw new common_1.UnauthorizedException('Tenant Context Missing');

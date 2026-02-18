@@ -4,10 +4,10 @@ info:
   version: 1.0.0
   description: |
     Official API contract for Vexel Health Platform.
-    
-    Production tenancy is resolved by request Host (TenantDomain mapping). 
+
+    Production tenancy is resolved by request Host (TenantDomain mapping).
     Clients do NOT choose tenant via header in production.
-    The `x-tenant-id` header is allowed only in DEV and ignored in production.
+    The `x-tenant-id` header is allowed only in local DEV when `TENANCY_DEV_HEADER_ENABLED=1`.
 servers:
   - url: http://localhost:3000
     description: Local development server
@@ -58,6 +58,8 @@ paths:
                     type: string
                   user:
                     $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/AuthError'
   /me:
     get:
       summary: Get current user profile
@@ -73,6 +75,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/AuthError'
   /me/features:
     get:
       summary: Get feature flags for current user scope
@@ -90,6 +94,8 @@ paths:
                 type: object
                 additionalProperties:
                   type: boolean
+        '401':
+          $ref: '#/components/responses/AuthError'
   /patients:
     post:
       summary: Register a new patient
@@ -111,6 +117,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Patient'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
     get:
       summary: Search patients
       operationId: listPatients
@@ -133,14 +143,192 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Patient'
-                  total:
-                    type: integer
+                $ref: '#/components/schemas/ListPatientsResponse'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+  /patients/{id}:
+    get:
+      summary: Get patient by id
+      operationId: getPatientById
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+        - $ref: '#/components/parameters/IdPathParam'
+      responses:
+        '200':
+          description: Patient resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Patient'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+  /encounters:
+    post:
+      summary: Create encounter
+      operationId: createEncounter
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEncounterDto'
+      responses:
+        '201':
+          description: Encounter created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Encounter'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '409':
+          $ref: '#/components/responses/DomainError'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+    get:
+      summary: Search encounters
+      operationId: listEncounters
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: patientId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: type
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of encounters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListEncountersResponse'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+  /encounters/{id}:
+    get:
+      summary: Get encounter by id
+      operationId: getEncounterById
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+        - $ref: '#/components/parameters/IdPathParam'
+      responses:
+        '200':
+          description: Encounter resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Encounter'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+  /encounters/{id}:start-prep:
+    post:
+      summary: Start encounter preparation
+      operationId: startEncounterPrep
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+        - $ref: '#/components/parameters/IdPathParam'
+      responses:
+        '200':
+          description: Encounter transition result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Encounter'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/DomainError'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+  /encounters/{id}:start-main:
+    post:
+      summary: Start encounter main workflow
+      operationId: startEncounterMain
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+        - $ref: '#/components/parameters/IdPathParam'
+      responses:
+        '200':
+          description: Encounter transition result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Encounter'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/DomainError'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+  /encounters/{id}:finalize:
+    post:
+      summary: Finalize encounter
+      operationId: finalizeEncounter
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+        - $ref: '#/components/parameters/IdPathParam'
+      responses:
+        '200':
+          description: Encounter transition result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Encounter'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/DomainError'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+  /encounters/{id}:document:
+    post:
+      summary: Generate/publish encounter document
+      operationId: documentEncounter
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+        - $ref: '#/components/parameters/IdPathParam'
+      responses:
+        '501':
+          description: Deferred implementation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotImplementedEnvelope'
 components:
   securitySchemes:
     bearerAuth:
@@ -156,6 +344,43 @@ components:
       schema:
         type: string
         format: uuid
+    IdPathParam:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+  responses:
+    ValidationError:
+      description: Structured validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ValidationErrorEnvelope'
+    DomainError:
+      description: Structured domain rule error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/DomainErrorEnvelope'
+    AuthError:
+      description: Authentication or authorization error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/AuthErrorEnvelope'
+    NotFoundError:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/NotFoundErrorEnvelope'
+    UnexpectedError:
+      description: Unexpected server-side failure
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/UnexpectedErrorEnvelope'
   schemas:
     User:
       type: object
@@ -172,8 +397,6 @@ components:
       type: object
       required:
         - name
-        - dob
-        - gender
       properties:
         name:
           type: string
@@ -189,11 +412,184 @@ components:
       allOf:
         - $ref: '#/components/schemas/CreatePatientDto'
         - type: object
+          required:
+            - id
+            - regNo
+            - createdAt
           properties:
             id:
               type: string
-            mrn:
+            regNo:
+              type: string
+              example: REG-00000001
+            tenantId:
               type: string
             createdAt:
               type: string
               format: date-time
+    ListPatientsResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Patient'
+        total:
+          type: integer
+    CreateEncounterDto:
+      type: object
+      required:
+        - patientId
+        - type
+      properties:
+        patientId:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [LAB, RAD, OPD, BB, IPD]
+        startedAt:
+          type: string
+          format: date-time
+    Encounter:
+      allOf:
+        - $ref: '#/components/schemas/CreateEncounterDto'
+        - type: object
+          required:
+            - id
+            - tenantId
+            - encounterCode
+            - status
+            - createdAt
+            - startedAt
+          properties:
+            id:
+              type: string
+            tenantId:
+              type: string
+            encounterCode:
+              type: string
+              example: OPD-2026-000001
+            status:
+              type: string
+              enum: [CREATED, PREP, IN_PROGRESS, FINALIZED, DOCUMENTED]
+            endedAt:
+              type: string
+              format: date-time
+            createdAt:
+              type: string
+              format: date-time
+    ListEncountersResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Encounter'
+        total:
+          type: integer
+    ValidationErrorEnvelope:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            type:
+              type: string
+              enum: [validation_error]
+            fields:
+              type: object
+              additionalProperties:
+                type: array
+                items:
+                  type: string
+          required:
+            - type
+            - fields
+      required:
+        - error
+    DomainErrorEnvelope:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            type:
+              type: string
+              enum: [domain_error]
+            code:
+              type: string
+            message:
+              type: string
+          required:
+            - type
+            - code
+            - message
+      required:
+        - error
+    AuthErrorEnvelope:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            type:
+              type: string
+              enum: [auth_error]
+            message:
+              type: string
+          required:
+            - type
+            - message
+      required:
+        - error
+    NotFoundErrorEnvelope:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            type:
+              type: string
+              enum: [not_found]
+            message:
+              type: string
+          required:
+            - type
+            - message
+      required:
+        - error
+    UnexpectedErrorEnvelope:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            type:
+              type: string
+              enum: [unexpected_error]
+            message:
+              type: string
+            correlationId:
+              type: string
+          required:
+            - type
+            - message
+      required:
+        - error
+    NotImplementedEnvelope:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            type:
+              type: string
+              enum: [not_implemented]
+            message:
+              type: string
+          required:
+            - type
+            - message
+      required:
+        - error

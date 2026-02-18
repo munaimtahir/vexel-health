@@ -3,6 +3,6 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { TenancyModule } from '../tenancy/tenancy.module';
 
 @Module({
-    imports: [PrismaModule, TenancyModule],
+  imports: [PrismaModule, TenancyModule],
 })
-export class DocumentsModule { }
+export class DocumentsModule {}
