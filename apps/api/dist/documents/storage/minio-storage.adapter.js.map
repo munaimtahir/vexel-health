@@ -1,1 +1,0 @@
-{"version":3,"file":"minio-storage.adapter.js","sourceRoot":"","sources":["../../../src/documents/storage/minio-storage.adapter.ts"],"names":[],"mappings":";;;AAcA,MAAa,mBAAmB;IAC9B,KAAK,CAAC,MAAM,CAAC,MAAmB;QAC9B,MAAM,IAAI,KAAK,CAAC,sCAAsC,CAAC,CAAC;IAC1D,CAAC;IAED,KAAK,CAAC,MAAM,CAAC,MAAmB;QAC9B,MAAM,IAAI,KAAK,CAAC,sCAAsC,CAAC,CAAC;IAC1D,CAAC;CACF;AARD,kDAQC"}
