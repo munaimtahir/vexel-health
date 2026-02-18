@@ -209,6 +209,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/documents/{documentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get document metadata by id */
+        get: operations["getDocumentById"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/documents/{documentId}/file": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Download rendered PDF bytes */
+        get: operations["getDocumentFile"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -263,6 +297,28 @@ export interface components {
             data?: components["schemas"]["Encounter"][];
             total?: number;
         };
+        /** @enum {string} */
+        DocumentType: "ENCOUNTER_SUMMARY";
+        /** @enum {string} */
+        DocumentStatus: "QUEUED" | "RENDERED" | "FAILED";
+        DocumentResponse: {
+            id: string;
+            type: components["schemas"]["DocumentType"];
+            status: components["schemas"]["DocumentStatus"];
+            encounterId: string;
+            payloadHash: string;
+            pdfHash?: string | null;
+            /** @example 1 */
+            payloadVersion: number;
+            /** @example 1 */
+            templateVersion: number;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            renderedAt?: string | null;
+            errorCode?: string | null;
+            errorMessage?: string | null;
+        };
         ValidationErrorEnvelope: {
             error: {
                 /** @enum {string} */
@@ -300,13 +356,6 @@ export interface components {
                 type: "unexpected_error";
                 message: string;
                 correlationId?: string;
-            };
-        };
-        NotImplementedEnvelope: {
-            error: {
-                /** @enum {string} */
-                type: "not_implemented";
-                message: string;
             };
         };
     };
@@ -361,6 +410,7 @@ export interface components {
         /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
         TenantIdHeader: string;
         IdPathParam: string;
+        DocumentIdPathParam: string;
     };
     requestBodies: never;
     headers: never;
@@ -740,15 +790,73 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Deferred implementation */
-            501: {
+            /** @description Document queued or already rendered */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["NotImplementedEnvelope"];
+                    "application/json": components["schemas"]["DocumentResponse"];
                 };
             };
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["DomainError"];
+            500: components["responses"]["UnexpectedError"];
+        };
+    };
+    getDocumentById: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
+                "x-tenant-id"?: components["parameters"]["TenantIdHeader"];
+            };
+            path: {
+                documentId: components["parameters"]["DocumentIdPathParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Document metadata */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentResponse"];
+                };
+            };
+            404: components["responses"]["NotFoundError"];
+            500: components["responses"]["UnexpectedError"];
+        };
+    };
+    getDocumentFile: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
+                "x-tenant-id"?: components["parameters"]["TenantIdHeader"];
+            };
+            path: {
+                documentId: components["parameters"]["DocumentIdPathParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description PDF file bytes */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/pdf": string;
+                };
+            };
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["DomainError"];
+            500: components["responses"]["UnexpectedError"];
         };
     };
 }

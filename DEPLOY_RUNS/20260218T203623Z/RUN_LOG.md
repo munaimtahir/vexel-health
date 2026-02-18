@@ -1,0 +1,4013 @@
+# RUN_LOG
+Timestamp: 20260218T203623Z
+Mode: Single-agent execution (Phase 3A)
+
+## Step 0 baseline
+- npm install: PASS
+- npm run contracts:generate: PASS
+- npm run build --workspace=@vexel/contracts: PASS
+- npm run build --workspace=api: PASS
+- npm run build --workspace=web: PASS
+- npm run test:e2e --workspace=api -- --runInBand: PASS
+
+## Step 1: Contracts update
+- Updated `packages/contracts/openapi.yaml`:
+  - `POST /encounters/{id}:document` now returns `DocumentResponse`
+  - Added `GET /documents/{id}`
+  - Added `GET /documents/{id}/file` (binary PDF)
+  - Added document schemas (`DocumentType`, `DocumentStatus`, `DocumentResponse`)
+- First contracts regenerate attempt failed (`openapi-typescript: not found`), fixed by running `npm install`.
+- `npm run contracts:generate`: PASS
+- `npm run build --workspace=@vexel/contracts`: PASS
+
+## Phase 3A implementation progress
+- Reworked API documents module, encounter :document command, worker processor, deterministic PDF service, and compose volume/env wiring.
+- Added e2e suite for document pipeline idempotency/determinism/tenant isolation.
+$ npm install
+
+> vexel-health-platform@1.0.0 postinstall
+> npx prisma generate --schema apps/api/prisma/schema.prisma
+
+Prisma schema loaded from apps/api/prisma/schema.prisma
+
+✔ Generated Prisma Client (v6.19.2) to ./node_modules/@prisma/client in 225ms
+
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+
+Tip: Want to turn off tips and other hints? https://pris.ly/tip-4-nohints
+
+
+up to date, audited 1112 packages in 8s
+
+249 packages are looking for funding
+  run `npm fund` for details
+
+20 moderate severity vulnerabilities
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+To address all issues possible (including breaking changes), run:
+  npm audit fix --force
+
+Some issues need review, and may require choosing
+a different dependency.
+
+Run `npm audit` for details.
+$ npm run contracts:generate
+
+> vexel-health-platform@1.0.0 contracts:generate
+> npm run generate --workspace=@vexel/contracts
+
+
+> @vexel/contracts@1.0.0 generate
+> openapi-typescript openapi.yaml -o src/schema.ts
+
+✨ openapi-typescript 7.13.0
+🚀 openapi.yaml → src/schema.ts [71.6ms]
+$ npm run build --workspace=@vexel/contracts
+
+> @vexel/contracts@1.0.0 build
+> npm run generate && tsc
+
+
+> @vexel/contracts@1.0.0 generate
+> openapi-typescript openapi.yaml -o src/schema.ts
+
+✨ openapi-typescript 7.13.0
+🚀 openapi.yaml → src/schema.ts [69.8ms]
+$ npm run build --workspace=api
+
+> api@0.0.1 build
+> nest build
+
+$ npm run build --workspace=web
+
+> web@0.1.0 build
+> next build
+
+▲ Next.js 16.1.6 (Turbopack)
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 4.4s
+  Running TypeScript ...
+  Collecting page data using 3 workers ...
+  Generating static pages using 3 workers (0/8) ...
+  Generating static pages using 3 workers (2/8) 
+  Generating static pages using 3 workers (4/8) 
+  Generating static pages using 3 workers (6/8) 
+✓ Generating static pages using 3 workers (8/8) in 260.1ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ○ /auth/login
+├ ƒ /encounters/[encounterId]
+├ ○ /encounters/new
+├ ○ /patients
+└ ○ /patients/register
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+$ npm run build --workspace=@vexel/worker
+
+> @vexel/worker@1.0.0 build
+> tsc
+
+$ npm run test:e2e --workspace=api -- --runInBand
+
+> api@0.0.1 test:e2e
+> jest --config ./test/jest-e2e.json --runInBand
+
+FAIL test/document-pipeline.e2e-spec.ts
+  ● Console
+
+    console.error
+      Error: connect ECONNREFUSED 127.0.0.1:6379
+          at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }
+
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+  ● Document pipeline (e2e) › generates deterministic encounter PDF and keeps :document idempotent
+
+    expected 201 "Created", got 400 "Bad Request"
+
+      713 |         type: 'LAB',
+      714 |       })
+    > 715 |       .expect(201);
+          |        ^
+      716 |
+      717 |     createdEncounterId = encounterResponse.body.id;
+      718 |     expect(encounterResponse.body.encounterCode).toBe('LAB-2026-000001');
+
+      at Object.<anonymous> (document-pipeline.e2e-spec.ts:715:8)
+      ----
+      at Test._assertStatus (../../../node_modules/supertest/lib/test.js:309:14)
+      at ../../../node_modules/supertest/lib/test.js:365:13
+      at Test._assertFunction (../../../node_modules/supertest/lib/test.js:342:13)
+      at Test.assert (../../../node_modules/supertest/lib/test.js:195:23)
+      at localAssert (../../../node_modules/supertest/lib/test.js:138:14)
+      at Server.<anonymous> (../../../node_modules/supertest/lib/test.js:152:11)
+
+  ● Document pipeline (e2e) › blocks cross-tenant document reads
+
+    expect(received).toBeDefined()
+
+    Received: undefined
+
+      788 |
+      789 |   it('blocks cross-tenant document reads', async () => {
+    > 790 |     expect(createdDocumentId).toBeDefined();
+          |                               ^
+      791 |
+      792 |     await request(app.getHttpServer())
+      793 |       .get(`/documents/${createdDocumentId}`)
+
+      at Object.<anonymous> (document-pipeline.e2e-spec.ts:790:31)
+
+PASS test/health.e2e-spec.ts
+  ● Console
+
+    console.error
+      Error: connect ECONNREFUSED 127.0.0.1:6379
+          at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+          at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }
+
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+PASS test/app.e2e-spec.ts
+  ● Console
+
+    console.error
+      Error: connect ECONNREFUSED 127.0.0.1:6379
+          at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+          at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }
+
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+PASS test/tenant-isolation.e2e-spec.ts
+  ● Console
+
+    console.error
+      Error: connect ECONNREFUSED 127.0.0.1:6379
+          at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+          at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }
+
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+Test Suites: 1 failed, 3 passed, 4 total
+Tests:       2 failed, 3 passed, 5 total
+Snapshots:   0 total
+Time:        2.777 s, estimated 4 s
+Ran all test suites.
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+Jest did not exit one second after the test run has completed.
+
+'This usually means that there are asynchronous operations that weren't stopped in your tests. Consider running Jest with `--detectOpenHandles` to troubleshoot this issue.
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+$ npm run test:e2e --workspace=api -- --runInBand
+
+> api@0.0.1 test:e2e
+> jest --config ./test/jest-e2e.json --runInBand
+
+FAIL test/document-pipeline.e2e-spec.ts
+  ● Document pipeline (e2e) › generates deterministic encounter PDF and keeps :document idempotent
+
+    expected 201 "Created", got 400 "Bad Request"
+
+      716 |         type: 'LAB',
+      717 |       })
+    > 718 |       .expect(201);
+          |        ^
+      719 |
+      720 |     createdEncounterId = encounterResponse.body.id;
+      721 |     expect(encounterResponse.body.encounterCode).toBe('LAB-2026-000001');
+
+      at Object.<anonymous> (document-pipeline.e2e-spec.ts:718:8)
+      ----
+      at Test._assertStatus (../../../node_modules/supertest/lib/test.js:309:14)
+      at ../../../node_modules/supertest/lib/test.js:365:13
+      at Test._assertFunction (../../../node_modules/supertest/lib/test.js:342:13)
+      at Test.assert (../../../node_modules/supertest/lib/test.js:195:23)
+      at localAssert (../../../node_modules/supertest/lib/test.js:138:14)
+      at Server.<anonymous> (../../../node_modules/supertest/lib/test.js:152:11)
+
+  ● Document pipeline (e2e) › blocks cross-tenant document reads
+
+    expect(received).toBeDefined()
+
+    Received: undefined
+
+      791 |
+      792 |   it('blocks cross-tenant document reads', async () => {
+    > 793 |     expect(createdDocumentId).toBeDefined();
+          |                               ^
+      794 |
+      795 |     await request(app.getHttpServer())
+      796 |       .get(`/documents/${createdDocumentId}`)
+
+      at Object.<anonymous> (document-pipeline.e2e-spec.ts:793:31)
+
+PASS test/tenant-isolation.e2e-spec.ts
+PASS test/health.e2e-spec.ts
+PASS test/app.e2e-spec.ts
+
+Test Suites: 1 failed, 3 passed, 4 total
+Tests:       2 failed, 3 passed, 5 total
+Snapshots:   0 total
+Time:        2.509 s, estimated 3 s
+Ran all test suites.
+npm error Lifecycle script `test:e2e` failed with error:
+npm error code 1
+npm error path /home/munaim/srv/apps/vexel-health/apps/api
+npm error workspace api@0.0.1
+npm error location /home/munaim/srv/apps/vexel-health/apps/api
+npm error command failed
+npm error command sh -c jest --config ./test/jest-e2e.json --runInBand
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+$ npm run test:e2e --workspace=api -- --runInBand
+
+> api@0.0.1 test:e2e
+> jest --config ./test/jest-e2e.json --runInBand
+
+PASS test/document-pipeline.e2e-spec.ts
+PASS test/tenant-isolation.e2e-spec.ts
+PASS test/health.e2e-spec.ts
+PASS test/app.e2e-spec.ts
+
+Test Suites: 4 passed, 4 total
+Tests:       5 passed, 5 total
+Snapshots:   0 total
+Time:        2.505 s, estimated 3 s
+Ran all test suites.
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+$ docker compose up -d --build
+ Image vexel-health-api Building 
+ Image vexel-health-web Building 
+ Image vexel-health-worker Building 
+ Image vexel-health-pdf Building 
+#1 [internal] load local bake definitions
+#1 reading from stdin 1.87kB done
+#1 DONE 0.0s
+
+#2 [web internal] load build definition from Dockerfile
+#2 DONE 0.0s
+
+#3 [api internal] load build definition from Dockerfile
+#3 DONE 0.0s
+
+#2 [web internal] load build definition from Dockerfile
+#2 transferring dockerfile: 266B done
+#2 DONE 0.0s
+
+#4 [pdf internal] load build definition from Dockerfile
+#4 transferring dockerfile: 589B done
+#4 DONE 0.0s
+
+#3 [api internal] load build definition from Dockerfile
+#3 transferring dockerfile: 326B done
+#3 DONE 0.1s
+
+#5 [worker internal] load build definition from Dockerfile
+#5 transferring dockerfile: 224B done
+#5 DONE 0.1s
+
+#6 [pdf internal] load metadata for mcr.microsoft.com/dotnet/aspnet:8.0
+#6 DONE 0.1s
+
+#7 [worker internal] load metadata for docker.io/library/node:20-alpine
+#7 ...
+
+#8 [pdf internal] load metadata for mcr.microsoft.com/dotnet/sdk:8.0
+#8 DONE 0.1s
+
+#9 [pdf internal] load .dockerignore
+#9 transferring context: 2B done
+#9 DONE 0.0s
+
+#10 [pdf build 1/6] FROM mcr.microsoft.com/dotnet/sdk:8.0@sha256:58359d0b8fe8237be1d63ac335ca378e2857f976c7f92791f7c84b3c117037f5
+#10 resolve mcr.microsoft.com/dotnet/sdk:8.0@sha256:58359d0b8fe8237be1d63ac335ca378e2857f976c7f92791f7c84b3c117037f5 0.0s done
+#10 CACHED
+
+#11 [pdf final 1/4] FROM mcr.microsoft.com/dotnet/aspnet:8.0@sha256:0d6e2e245f180ef785f51aab639c8d5d29afc3b43b95c0ee6dfaf5b84895cd6a
+#11 resolve mcr.microsoft.com/dotnet/aspnet:8.0@sha256:0d6e2e245f180ef785f51aab639c8d5d29afc3b43b95c0ee6dfaf5b84895cd6a 0.0s done
+#11 CACHED
+
+#12 [pdf internal] load build context
+#12 transferring context: 5.69kB done
+#12 DONE 0.0s
+
+#13 [pdf build 2/6] WORKDIR /src
+#13 DONE 0.1s
+
+#14 [pdf final 2/4] WORKDIR /app
+#14 DONE 0.1s
+
+#15 [pdf build 3/6] COPY [PdfService.csproj, ./]
+#15 DONE 0.0s
+
+#7 [web internal] load metadata for docker.io/library/node:20-alpine
+#7 DONE 0.3s
+
+#16 [api internal] load .dockerignore
+#16 transferring context: 223B done
+#16 DONE 0.0s
+
+#17 [web 1/4] FROM docker.io/library/node:20-alpine@sha256:09e2b3d9726018aecf269bd35325f46bf75046a643a66d28360ec71132750ec8
+#17 resolve docker.io/library/node:20-alpine@sha256:09e2b3d9726018aecf269bd35325f46bf75046a643a66d28360ec71132750ec8 0.0s done
+#17 DONE 0.0s
+
+#18 [web internal] load build context
+#18 transferring context: 987.47kB 0.1s done
+#18 DONE 0.1s
+
+#19 [web 2/4] WORKDIR /app
+#19 CACHED
+
+#20 [web 3/4] COPY . .
+#20 DONE 0.1s
+
+#21 [api 4/4] RUN npm ci
+#21 ...
+
+#22 [pdf build 4/6] RUN dotnet restore "PdfService.csproj"
+#22 1.565   Determining projects to restore...
+#22 4.392   Restored /src/PdfService.csproj (in 2.26 sec).
+#22 DONE 4.9s
+
+#23 [pdf build 5/6] COPY . .
+#23 DONE 0.1s
+
+#24 [pdf build 6/6] RUN dotnet publish "PdfService.csproj" -c Release -o /app/publish
+#24 1.457   Determining projects to restore...
+#24 2.160   All projects are up-to-date for restore.
+#24 7.595   PdfService -> /src/bin/Release/net8.0/PdfService.dll
+#24 7.788   PdfService -> /app/publish/
+#24 ...
+
+#21 [api 4/4] RUN npm ci
+#21 7.511 npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+#21 12.13 npm warn deprecated glob@7.2.3: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+#21 12.25 npm warn deprecated glob@7.2.3: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+#21 12.41 npm warn deprecated glob@7.2.3: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+#21 12.53 npm warn deprecated glob@7.2.3: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+#21 13.47 npm warn deprecated glob@7.2.3: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+#21 ...
+
+#24 [pdf build 6/6] RUN dotnet publish "PdfService.csproj" -c Release -o /app/publish
+#24 DONE 9.7s
+
+#21 [api 4/4] RUN npm ci
+#21 ...
+
+#25 [pdf final 3/4] COPY --from=build /app/publish .
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+#25 DONE 0.7s
+
+#21 [api 4/4] RUN npm ci
+#21 15.11 npm warn deprecated glob@10.5.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+#21 15.11 npm warn deprecated glob@10.5.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+#21 15.35 npm warn deprecated glob@10.5.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+#21 15.37 npm warn deprecated glob@10.5.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+#21 ...
+
+#26 [pdf final 4/4] RUN apt-get update && apt-get install -y libfontconfig1
+#26 0.327 Get:1 http://deb.debian.org/debian bookworm InRelease [151 kB]
+#26 0.364 Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+#26 0.377 Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+#26 0.465 Get:4 http://deb.debian.org/debian bookworm/main amd64 Packages [8792 kB]
+#26 0.616 Get:5 http://deb.debian.org/debian bookworm-updates/main amd64 Packages [6924 B]
+#26 0.630 Get:6 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [297 kB]
+#26 1.780 Fetched 9350 kB in 1s (6345 kB/s)
+#26 1.780 Reading package lists...
+#26 2.441 Reading package lists...
+#26 3.170 Building dependency tree...
+#26 3.337 Reading state information...
+#26 3.547 The following additional packages will be installed:
+#26 3.548   fontconfig-config fonts-dejavu-core libbrotli1 libexpat1 libfreetype6
+#26 3.549   libpng16-16
+#26 3.605 The following NEW packages will be installed:
+#26 3.606   fontconfig-config fonts-dejavu-core libbrotli1 libexpat1 libfontconfig1
+#26 3.607   libfreetype6 libpng16-16
+#26 3.659 0 upgraded, 7 newly installed, 0 to remove and 1 not upgraded.
+#26 3.659 Need to get 2817 kB of archives.
+#26 3.659 After this operation, 6697 kB of additional disk space will be used.
+#26 3.659 Get:1 http://deb.debian.org/debian bookworm/main amd64 fonts-dejavu-core all 2.37-6 [1068 kB]
+#26 3.755 Get:2 http://deb.debian.org/debian bookworm/main amd64 fontconfig-config amd64 2.14.1-4 [315 kB]
+#26 3.763 Get:3 http://deb.debian.org/debian bookworm/main amd64 libbrotli1 amd64 1.0.9-2+b6 [275 kB]
+#26 3.767 Get:4 http://deb.debian.org/debian bookworm/main amd64 libexpat1 amd64 2.5.0-1+deb12u2 [99.9 kB]
+#26 3.769 Get:5 http://deb.debian.org/debian-security bookworm-security/main amd64 libpng16-16 amd64 1.6.39-2+deb12u3 [276 kB]
+#26 3.780 Get:6 http://deb.debian.org/debian bookworm/main amd64 libfreetype6 amd64 2.12.1+dfsg-5+deb12u4 [398 kB]
+#26 3.782 Get:7 http://deb.debian.org/debian bookworm/main amd64 libfontconfig1 amd64 2.14.1-4 [386 kB]
+#26 4.005 debconf: delaying package configuration, since apt-utils is not installed
+#26 4.041 Fetched 2817 kB in 0s (16.0 MB/s)
+#26 4.067 Selecting previously unselected package fonts-dejavu-core.
+#26 4.067 (Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 6601 files and directories currently installed.)
+#26 4.116 Preparing to unpack .../0-fonts-dejavu-core_2.37-6_all.deb ...
+#26 4.120 Unpacking fonts-dejavu-core (2.37-6) ...
+#26 4.253 Selecting previously unselected package fontconfig-config.
+#26 4.256 Preparing to unpack .../1-fontconfig-config_2.14.1-4_amd64.deb ...
+#26 4.400 Unpacking fontconfig-config (2.14.1-4) ...
+#26 4.455 Selecting previously unselected package libbrotli1:amd64.
+#26 4.457 Preparing to unpack .../2-libbrotli1_1.0.9-2+b6_amd64.deb ...
+#26 4.467 Unpacking libbrotli1:amd64 (1.0.9-2+b6) ...
+#26 4.537 Selecting previously unselected package libexpat1:amd64.
+#26 4.539 Preparing to unpack .../3-libexpat1_2.5.0-1+deb12u2_amd64.deb ...
+#26 4.543 Unpacking libexpat1:amd64 (2.5.0-1+deb12u2) ...
+#26 4.586 Selecting previously unselected package libpng16-16:amd64.
+#26 4.588 Preparing to unpack .../4-libpng16-16_1.6.39-2+deb12u3_amd64.deb ...
+#26 4.592 Unpacking libpng16-16:amd64 (1.6.39-2+deb12u3) ...
+#26 4.671 Selecting previously unselected package libfreetype6:amd64.
+#26 4.672 Preparing to unpack .../5-libfreetype6_2.12.1+dfsg-5+deb12u4_amd64.deb ...
+#26 4.677 Unpacking libfreetype6:amd64 (2.12.1+dfsg-5+deb12u4) ...
+#26 4.755 Selecting previously unselected package libfontconfig1:amd64.
+#26 4.757 Preparing to unpack .../6-libfontconfig1_2.14.1-4_amd64.deb ...
+#26 4.762 Unpacking libfontconfig1:amd64 (2.14.1-4) ...
+#26 4.827 Setting up libexpat1:amd64 (2.5.0-1+deb12u2) ...
+#26 4.841 Setting up libbrotli1:amd64 (1.0.9-2+b6) ...
+#26 4.855 Setting up libpng16-16:amd64 (1.6.39-2+deb12u3) ...
+#26 4.871 Setting up fonts-dejavu-core (2.37-6) ...
+#26 4.933 Setting up fontconfig-config (2.14.1-4) ...
+#26 5.094 debconf: unable to initialize frontend: Dialog
+#26 5.094 debconf: (TERM is not set, so the dialog frontend is not usable.)
+#26 5.094 debconf: falling back to frontend: Readline
+#26 5.095 debconf: unable to initialize frontend: Readline
+#26 5.095 debconf: (Can't locate Term/ReadLine.pm in @INC (you may need to install the Term::ReadLine module) (@INC contains: /etc/perl /usr/local/lib/x86_64-linux-gnu/perl/5.36.0 /usr/local/share/perl/5.36.0 /usr/lib/x86_64-linux-gnu/perl5/5.36 /usr/share/perl5 /usr/lib/x86_64-linux-gnu/perl-base /usr/lib/x86_64-linux-gnu/perl/5.36 /usr/share/perl/5.36 /usr/local/lib/site_perl) at /usr/share/perl5/Debconf/FrontEnd/Readline.pm line 7.)
+#26 5.096 debconf: falling back to frontend: Teletype
+#26 5.252 Setting up libfreetype6:amd64 (2.12.1+dfsg-5+deb12u4) ...
+#26 5.260 Setting up libfontconfig1:amd64 (2.14.1-4) ...
+#26 5.269 Processing triggers for libc-bin (2.36-9+deb12u13) ...
+#26 DONE 7.7s
+
+#21 [api 4/4] RUN npm ci
+#21 ...
+
+#27 [pdf] exporting to image
+#27 exporting layers
+#27 exporting layers 2.8s done
+#27 exporting manifest sha256:dc252c9820a261f107f2b168d9cd44afe8b6b50964aa8802e7ebba329adafce6 0.0s done
+#27 exporting config sha256:f65e11c2342622d65b9dccd6370e0bc811f708b61deca811718d77b79cbd85bc 0.0s done
+#27 exporting attestation manifest sha256:ce18c3a1d4c88d4b67a3f9e91bd0f233720a18333322357cd595fdd6c647179c 0.0s done
+#27 exporting manifest list sha256:0806c63fe1d0dbd971acc7bddaa27965d037bd6854c53849190def9110a8aa23 0.0s done
+#27 naming to docker.io/library/vexel-health-pdf:latest done
+#27 unpacking to docker.io/library/vexel-health-pdf:latest
+#27 unpacking to docker.io/library/vexel-health-pdf:latest 0.7s done
+#27 DONE 3.7s
+
+#28 [pdf] resolving provenance for metadata file
+#28 DONE 0.0s
+
+#21 [api 4/4] RUN npm ci
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+#21 55.34 
+#21 55.34 > vexel-health-platform@1.0.0 postinstall
+#21 55.34 > npx prisma generate --schema apps/api/prisma/schema.prisma
+#21 55.34 
+#21 57.61 Prisma schema loaded from apps/api/prisma/schema.prisma
+#21 58.35 
+#21 58.35 ✔ Generated Prisma Client (v6.19.2) to ./node_modules/@prisma/client in 340ms
+#21 58.35 
+#21 58.35 Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+#21 58.35 
+#21 58.35 Tip: Interested in query caching in just a few lines of code? Try Accelerate today! https://pris.ly/tip-3-accelerate
+#21 58.35 
+#21 58.42 
+#21 58.42 added 1106 packages, and audited 1112 packages in 58s
+#21 58.42 
+#21 58.42 249 packages are looking for funding
+#21 58.42   run `npm fund` for details
+#21 58.63 
+#21 58.63 20 moderate severity vulnerabilities
+#21 58.63 
+#21 58.63 To address issues that do not require attention, run:
+#21 58.63   npm audit fix
+#21 58.63 
+#21 58.63 To address all issues possible (including breaking changes), run:
+#21 58.63   npm audit fix --force
+#21 58.63 
+#21 58.63 Some issues need review, and may require choosing
+#21 58.63 a different dependency.
+#21 58.63 
+#21 58.63 Run `npm audit` for details.
+#21 58.64 npm notice
+#21 58.64 npm notice New major version of npm available! 10.8.2 -> 11.10.0
+#21 58.64 npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.10.0
+#21 58.64 npm notice To update run: npm install -g npm@11.10.0
+#21 58.64 npm notice
+#21 DONE 59.8s
+
+#29 [worker] exporting to image
+#29 exporting layers
+#29 ...
+
+#30 [api 5/7] RUN npx prisma generate --schema apps/api/prisma/schema.prisma
+#30 3.398 Prisma schema loaded from apps/api/prisma/schema.prisma
+#30 4.867 ┌─────────────────────────────────────────────────────────┐
+#30 4.867 │  Update available 6.19.2 -> 7.4.0                       │
+#30 4.867 │                                                         │
+#30 4.867 │  This is a major update - please follow the guide at    │
+#30 4.867 │  https://pris.ly/d/major-version-upgrade                │
+#30 4.867 │                                                         │
+#30 4.867 │  Run the following to update                            │
+#30 4.867 │    npm i --save-dev prisma@latest                       │
+#30 4.867 │    npm i @prisma/client@latest                          │
+#30 4.867 └─────────────────────────────────────────────────────────┘
+#30 4.868 
+#30 4.868 ✔ Generated Prisma Client (v6.19.2) to ./node_modules/@prisma/client in 797ms
+#30 4.868 
+#30 4.868 Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+#30 4.868 
+#30 4.868 Tip: Want to turn off tips and other hints? https://pris.ly/tip-4-nohints
+#30 4.868 
+#30 DONE 5.1s
+
+#31 [web 5/6] RUN npm run build --workspace=web
+#31 0.908 
+#31 0.908 > web@0.1.0 build
+#31 0.908 > next build
+#31 0.908 
+#31 2.464 Attention: Next.js now collects completely anonymous telemetry regarding usage.
+#31 2.465 This information is used to shape Next.js' roadmap and prioritize features.
+#31 2.465 You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+#31 2.465 https://nextjs.org/telemetry
+#31 2.466 
+#31 2.484 ▲ Next.js 16.1.6 (Turbopack)
+#31 2.485 
+#31 2.632   Creating an optimized production build ...
+#31 13.23 ✓ Compiled successfully in 9.6s
+#31 13.27   Running TypeScript ...
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+#31 ...
+
+#32 [api 6/7] RUN npm run build --workspace=api
+#32 0.709 
+#32 0.709 > api@0.0.1 build
+#32 0.709 > nest build
+#32 0.709 
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+#32 DONE 12.0s
+
+#31 [web 5/6] RUN npm run build --workspace=web
+#31 ...
+
+#33 [api 7/7] WORKDIR /app/apps/api
+#33 DONE 0.1s
+
+#34 [api] exporting to image
+#34 exporting layers
+#34 ...
+
+#31 [web 5/6] RUN npm run build --workspace=web
+#31 19.98   Collecting page data using 3 workers ...
+#31 20.76   Generating static pages using 3 workers (0/8) ...
+#31 21.14   Generating static pages using 3 workers (2/8) 
+#31 21.14   Generating static pages using 3 workers (4/8) 
+#31 21.14   Generating static pages using 3 workers (6/8) 
+#31 21.14 ✓ Generating static pages using 3 workers (8/8) in 380.1ms
+#31 21.14   Finalizing page optimization ...
+#31 21.16 
+#31 21.16 Route (app)
+#31 21.16 ┌ ○ /
+#31 21.16 ├ ○ /_not-found
+#31 21.16 ├ ○ /auth/login
+#31 21.16 ├ ƒ /encounters/[encounterId]
+#31 21.16 ├ ○ /encounters/new
+#31 21.16 ├ ○ /patients
+#31 21.16 └ ○ /patients/register
+#31 21.16 
+#31 21.16 
+#31 21.16 ○  (Static)   prerendered as static content
+#31 21.16 ƒ  (Dynamic)  server-rendered on demand
+#31 21.16 
+#31 DONE 21.4s
+
+#35 [web 6/6] WORKDIR /app/apps/web
+#35 DONE 0.1s
+
+#36 [web] exporting to image
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+#36 ...
+
+#29 [worker] exporting to image
+#29 exporting layers 75.9s done
+#29 exporting manifest sha256:950a60e64864172c493ab4a61759b62a3ffa5be7d8ec0b36596a9698c34fd109 0.0s done
+#29 exporting config sha256:d7bcf18555bcb5d8299a65e479f069c2f2346346a66d91a89a594b9da8530c42 0.0s done
+#29 exporting attestation manifest sha256:8ca5ede847eb25ef01eee94d6616a7fcad617f8dcb45c9e356096696e2e5e8d1 0.0s done
+#29 exporting manifest list sha256:3ca116cf73f4fd6fbd2e9ecdb2fa76d3ed29e0c4acd4aa60791f188cdf20243b
+#29 exporting manifest list sha256:3ca116cf73f4fd6fbd2e9ecdb2fa76d3ed29e0c4acd4aa60791f188cdf20243b 0.0s done
+#29 naming to docker.io/library/vexel-health-worker:latest 0.0s done
+#29 unpacking to docker.io/library/vexel-health-worker:latest
+#29 ...
+
+#34 [api] exporting to image
+#34 exporting layers 58.8s done
+#34 exporting manifest sha256:56671b81cf3d284a6985e9b9d09c52864dc3f51f90f5c7071e47cc17c5079066 0.0s done
+#34 exporting config sha256:2a6f04707492589f0fa910e4f37427c82c9616371762f9fbfc328776cd8e1e6c 0.0s done
+#34 exporting attestation manifest sha256:3ab862c8ccb8ea480fdbe4f909b823c3070d949debb3e4813f024d1decaa7c78 0.1s done
+#34 exporting manifest list sha256:7e98208729d94440e7e25035ac47cae7f320bdfcc308618fca96784d654fa8cc 0.0s done
+#34 naming to docker.io/library/vexel-health-api:latest done
+#34 unpacking to docker.io/library/vexel-health-api:latest
+#34 ...
+
+#36 [web] exporting to image
+#36 exporting layers 54.5s done
+#36 exporting manifest sha256:d8d517a9c11048a0ddf6f0598111d0e2a466ad5ffe28e535fc523b6ba51dc001 0.0s done
+#36 exporting config sha256:efb05a8b32cd66662dc5ced3f1ac2e07fda793202ce43b1cc888e67385ff59aa 0.0s done
+#36 exporting attestation manifest sha256:9968856581464304d620c6bec5a240847764b58dd38aa5d586a6a3831c4fd662 0.1s done
+#36 exporting manifest list sha256:755a16ed1b2c7c8a4641f9157ae15d0d1073db311013cb608e79704611109c70 0.0s done
+#36 naming to docker.io/library/vexel-health-web:latest done
+#36 unpacking to docker.io/library/vexel-health-web:latest
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+#36 ...
+
+#29 [worker] exporting to image
+#29 unpacking to docker.io/library/vexel-health-worker:latest 29.7s done
+#29 DONE 106.0s
+
+#34 [api] exporting to image
+#34 ...
+
+#36 [web] exporting to image
+#36 unpacking to docker.io/library/vexel-health-web:latest 30.0s done
+#36 DONE 84.9s
+
+#34 [api] exporting to image
+#34 unpacking to docker.io/library/vexel-health-api:latest 30.4s done
+#34 DONE 89.3s
+
+#37 [worker] resolving provenance for metadata file
+#37 ...
+
+#38 [web] resolving provenance for metadata file
+#38 DONE 0.3s
+
+#37 [worker] resolving provenance for metadata file
+#37 DONE 0.6s
+
+#39 [api] resolving provenance for metadata file
+#39 DONE 0.0s
+ Image vexel-health-web Built 
+ Image vexel-health-worker Built 
+ Image vexel-health-pdf Built 
+ Image vexel-health-api Built 
+ Volume vexel-health_documents_data Creating 
+ Volume vexel-health_documents_data Created 
+ Container vexel-health-pdf-1 Recreate 
+ Container vexel-health-postgres-1 Running 
+ Container vexel-health-redis-1 Running 
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+ Container vexel-health-pdf-1 Recreated 
+ Container vexel-health-worker-1 Recreate 
+ Container vexel-health-api-1 Recreate 
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+ Container vexel-health-worker-1 Recreated 
+ Container vexel-health-api-1 Recreated 
+ Container vexel-health-web-1 Recreate 
+ Container vexel-health-web-1 Recreated 
+ Container vexel-health-pdf-1 Starting 
+ Container vexel-health-pdf-1 Started 
+ Container vexel-health-api-1 Starting 
+ Container vexel-health-worker-1 Starting 
+ Container vexel-health-api-1 Started 
+ Container vexel-health-web-1 Starting 
+ Container vexel-health-worker-1 Started 
+ Container vexel-health-web-1 Started 
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+$ docker compose ps
+NAME                      IMAGE                 COMMAND                  SERVICE    CREATED             STATUS             PORTS
+vexel-health-api-1        vexel-health-api      "docker-entrypoint.s…"   api        23 seconds ago      Up 8 seconds       127.0.0.1:3000->3000/tcp
+vexel-health-pdf-1        vexel-health-pdf      "dotnet PdfService.d…"   pdf        50 seconds ago      Up 9 seconds       127.0.0.1:5000->8080/tcp
+vexel-health-postgres-1   postgres:15-alpine    "docker-entrypoint.s…"   postgres   About an hour ago   Up About an hour   5432/tcp
+vexel-health-redis-1      redis:7-alpine        "docker-entrypoint.s…"   redis      About an hour ago   Up About an hour   6379/tcp
+vexel-health-web-1        vexel-health-web      "docker-entrypoint.s…"   web        11 seconds ago      Up 8 seconds       127.0.0.1:3001->3000/tcp
+vexel-health-worker-1     vexel-health-worker   "docker-entrypoint.s…"   worker     23 seconds ago      Up 8 seconds       
+$ docker compose exec -T api npx prisma db push --schema prisma/schema.prisma
+Prisma schema loaded from prisma/schema.prisma
+Datasource "db": PostgreSQL database "vexel", schema "public" at "postgres:5432"
+
+⚠️  There might be data loss when applying the changes:
+
+  • A unique constraint covering the columns `[tenantId,encounterId,documentType,templateVersion,payloadHash]` on the table `Document` will be added. If there are existing duplicate values, this will fail.
+
+
+Error: Use the --accept-data-loss flag to ignore the data loss warnings like prisma db push --accept-data-loss
+$ docker compose exec -T api npx prisma db push --schema prisma/schema.prisma --accept-data-loss
+Prisma schema loaded from prisma/schema.prisma
+Datasource "db": PostgreSQL database "vexel", schema "public" at "postgres:5432"
+
+⚠️  There might be data loss when applying the changes:
+
+  • A unique constraint covering the columns `[tenantId,encounterId,documentType,templateVersion,payloadHash]` on the table `Document` will be added. If there are existing duplicate values, this will fail.
+
+
+
+🚀  Your database is now in sync with your Prisma schema. Done in 146ms
+
+Running generate... (Use --skip-generate to skip the generators)
+[2K[1A[2K[GRunning generate... - Prisma Client
+[2K[1A[2K[G✔ Generated Prisma Client (v6.19.2) to ./../../node_modules/@prisma/client in 3
+22ms
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+$ docker compose exec -T postgres psql -U user -d vexel < seed.sql
+INSERT 0 2
+INSERT 0 2
+INSERT 0 1
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+$ curl health/login/patient/encounter/document smoke
+API_HEALTH={"status":"ok","service":"api"}
+PDF_HEALTH={"status":"ok"}
+LOGIN_JSON={"accessToken":"mock.11111111-1111-4111-8111-111111111111.cccccccc-cccc-4ccc-8ccc-ccccccccccc1","user":{"id":"cccccccc-cccc-4ccc-8ccc-ccccccccccc1","tenantId":"11111111-1111-4111-8111-111111111111","email":"demo@vexel.dev","name":"Demo User","status":"active","createdAt":"2026-02-18T21:00:30.522Z"}}
+PATIENT_JSON={"id":"56c88469-d1b9-43ed-9b93-f6284b8fe8b3","tenantId":"11111111-1111-4111-8111-111111111111","regNo":"REG-00000001","mrn":null,"name":"Smoke Patient","dob":null,"gender":"male","phone":null,"createdAt":"2026-02-18T21:00:55.545Z"}
+ENCOUNTER_JSON={"id":"38da8e71-c81e-49c9-9af8-5d1fb7515df7","tenantId":"11111111-1111-4111-8111-111111111111","patientId":"56c88469-d1b9-43ed-9b93-f6284b8fe8b3","encounterCode":"LAB-2026-000001","type":"LAB","status":"CREATED","startedAt":"2026-02-18T21:00:55.576Z","endedAt":null,"createdAt":"2026-02-18T21:00:55.584Z"}
+START_PREP={"id":"38da8e71-c81e-49c9-9af8-5d1fb7515df7","tenantId":"11111111-1111-4111-8111-111111111111","patientId":"56c88469-d1b9-43ed-9b93-f6284b8fe8b3","encounterCode":"LAB-2026-000001","type":"LAB","status":"PREP","startedAt":"2026-02-18T21:00:55.576Z","endedAt":null,"createdAt":"2026-02-18T21:00:55.584Z"}
+START_MAIN={"id":"38da8e71-c81e-49c9-9af8-5d1fb7515df7","tenantId":"11111111-1111-4111-8111-111111111111","patientId":"56c88469-d1b9-43ed-9b93-f6284b8fe8b3","encounterCode":"LAB-2026-000001","type":"LAB","status":"IN_PROGRESS","startedAt":"2026-02-18T21:00:55.576Z","endedAt":null,"createdAt":"2026-02-18T21:00:55.584Z"}
+FINALIZE={"id":"38da8e71-c81e-49c9-9af8-5d1fb7515df7","tenantId":"11111111-1111-4111-8111-111111111111","patientId":"56c88469-d1b9-43ed-9b93-f6284b8fe8b3","encounterCode":"LAB-2026-000001","type":"LAB","status":"FINALIZED","startedAt":"2026-02-18T21:00:55.576Z","endedAt":"2026-02-18T21:00:55.646Z","createdAt":"2026-02-18T21:00:55.584Z"}
+DOCUMENT_CMD={"error":{"type":"unexpected_error","message":"An unexpected error occurred.","correlationId":"68e6e6f5-99d0-44af-8e76-923606372715"}}
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+DOC_STATUS_JSON={"error":{"type":"not_found","message":"Resource not found"}}
+DOC_FILE_HEADERS=HTTP/1.1 404 Not Found;X-Powered-By: Express;Access-Control-Allow-Origin: *;x-correlation-id: 5737ca46-946b-40e5-b398-0e0c20b26a72;Content-Type: application/json; charset=utf-8;Content-Length: 61;ETag: W/"3d-DJTLAjMl6CSobyGFROYmLa7Up1I";Date: Wed, 18 Feb 2026 21:01:16 GMT;Connection: keep-alive;Keep-Alive: timeout=5;;
+DOC_FILE_BYTES=61
+DOC_FILE_SHA256=8edb8ff0e6a4300b3b30ef249963bcf17e6c0743bb2ad6acaa4c63a4211d2c92
+TENANT_B_DOC_HTTP=404
+TENANT_B_DOC_BODY={"error":{"type":"not_found","message":"Resource not found"}}
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+$ npm run build --workspace=api
+
+> api@0.0.1 build
+> nest build
+
+$ npm run test:e2e --workspace=api -- --runInBand
+
+> api@0.0.1 test:e2e
+> jest --config ./test/jest-e2e.json --runInBand
+
+PASS test/document-pipeline.e2e-spec.ts
+PASS test/tenant-isolation.e2e-spec.ts
+PASS test/health.e2e-spec.ts
+PASS test/app.e2e-spec.ts
+
+Test Suites: 4 passed, 4 total
+Tests:       5 passed, 5 total
+Snapshots:   0 total
+Time:        2.553 s, estimated 3 s
+Ran all test suites.
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+$ docker compose up -d --build api
+ Image vexel-health-api Building 
+ Image vexel-health-pdf Building 
+#1 [internal] load local bake definitions
+#1 reading from stdin 976B done
+#1 DONE 0.0s
+
+#2 [pdf internal] load build definition from Dockerfile
+#2 transferring dockerfile: 589B done
+#2 DONE 0.0s
+
+#3 [api internal] load build definition from Dockerfile
+#3 transferring dockerfile: 326B done
+#3 DONE 0.0s
+
+#4 [pdf internal] load metadata for mcr.microsoft.com/dotnet/aspnet:8.0
+#4 DONE 0.1s
+
+#5 [api internal] load metadata for docker.io/library/node:20-alpine
+#5 ...
+
+#6 [pdf internal] load metadata for mcr.microsoft.com/dotnet/sdk:8.0
+#6 DONE 0.1s
+
+#7 [pdf internal] load .dockerignore
+#7 transferring context: 2B done
+#7 DONE 0.0s
+
+#8 [pdf final 1/4] FROM mcr.microsoft.com/dotnet/aspnet:8.0@sha256:0d6e2e245f180ef785f51aab639c8d5d29afc3b43b95c0ee6dfaf5b84895cd6a
+#8 resolve mcr.microsoft.com/dotnet/aspnet:8.0@sha256:0d6e2e245f180ef785f51aab639c8d5d29afc3b43b95c0ee6dfaf5b84895cd6a 0.0s done
+#8 DONE 0.0s
+
+#9 [pdf build 1/6] FROM mcr.microsoft.com/dotnet/sdk:8.0@sha256:58359d0b8fe8237be1d63ac335ca378e2857f976c7f92791f7c84b3c117037f5
+#9 resolve mcr.microsoft.com/dotnet/sdk:8.0@sha256:58359d0b8fe8237be1d63ac335ca378e2857f976c7f92791f7c84b3c117037f5 0.0s done
+#9 DONE 0.0s
+
+#10 [pdf internal] load build context
+#10 transferring context: 318B done
+#10 DONE 0.0s
+
+#11 [pdf build 4/6] RUN dotnet restore "PdfService.csproj"
+#11 CACHED
+
+#12 [pdf build 5/6] COPY . .
+#12 CACHED
+
+#13 [pdf final 3/4] COPY --from=build /app/publish .
+#13 CACHED
+
+#14 [pdf final 2/4] WORKDIR /app
+#14 CACHED
+
+#15 [pdf build 3/6] COPY [PdfService.csproj, ./]
+#15 CACHED
+
+#16 [pdf build 6/6] RUN dotnet publish "PdfService.csproj" -c Release -o /app/publish
+#16 CACHED
+
+#17 [pdf build 2/6] WORKDIR /src
+#17 CACHED
+
+#18 [pdf final 4/4] RUN apt-get update && apt-get install -y libfontconfig1
+#18 CACHED
+
+#5 [api internal] load metadata for docker.io/library/node:20-alpine
+#5 DONE 0.3s
+
+#19 [api internal] load .dockerignore
+#19 transferring context: 223B done
+#19 DONE 0.0s
+
+#20 [api internal] load build context
+#20 DONE 0.0s
+
+#21 [pdf] exporting to image
+#21 exporting layers done
+#21 exporting manifest sha256:dc252c9820a261f107f2b168d9cd44afe8b6b50964aa8802e7ebba329adafce6 done
+#21 exporting config sha256:f65e11c2342622d65b9dccd6370e0bc811f708b61deca811718d77b79cbd85bc done
+#21 exporting attestation manifest sha256:75b7bde5f52cf568b4f8eec60d344bf6578538725b3017954e8b922808641832 0.0s done
+#21 exporting manifest list sha256:25b25ad76b9bb96e583af7c51a106bcaedaa83b2503b7e1c3e7808f3f6a445a8 0.0s done
+#21 naming to docker.io/library/vexel-health-pdf:latest done
+#21 unpacking to docker.io/library/vexel-health-pdf:latest 0.0s done
+#21 DONE 0.1s
+
+#22 [api 1/7] FROM docker.io/library/node:20-alpine@sha256:09e2b3d9726018aecf269bd35325f46bf75046a643a66d28360ec71132750ec8
+#22 resolve docker.io/library/node:20-alpine@sha256:09e2b3d9726018aecf269bd35325f46bf75046a643a66d28360ec71132750ec8
+#22 resolve docker.io/library/node:20-alpine@sha256:09e2b3d9726018aecf269bd35325f46bf75046a643a66d28360ec71132750ec8 0.0s done
+#22 DONE 0.0s
+
+#20 [api internal] load build context
+#20 transferring context: 27.98kB 0.0s done
+#20 DONE 0.0s
+
+#23 [api 2/7] WORKDIR /app
+#23 CACHED
+
+#24 [pdf] resolving provenance for metadata file
+#24 DONE 0.0s
+
+#25 [api 3/7] COPY . .
+#25 DONE 0.1s
+
+#26 [api 4/7] RUN npm ci
+#26 6.035 npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+#26 9.738 npm warn deprecated glob@7.2.3: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+#26 9.818 npm warn deprecated glob@7.2.3: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+#26 10.00 npm warn deprecated glob@7.2.3: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+#26 10.22 npm warn deprecated glob@7.2.3: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+#26 10.87 npm warn deprecated glob@7.2.3: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+#26 12.01 npm warn deprecated glob@10.5.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+#26 12.01 npm warn deprecated glob@10.5.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+#26 12.32 npm warn deprecated glob@10.5.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+#26 12.36 npm warn deprecated glob@10.5.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+#26 52.33 
+#26 52.33 > vexel-health-platform@1.0.0 postinstall
+#26 52.33 > npx prisma generate --schema apps/api/prisma/schema.prisma
+#26 52.33 
+#26 54.30 Prisma schema loaded from apps/api/prisma/schema.prisma
+#26 54.92 
+#26 54.92 ✔ Generated Prisma Client (v6.19.2) to ./node_modules/@prisma/client in 248ms
+#26 54.92 
+#26 54.92 Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+#26 54.92 
+#26 54.92 Tip: Want to turn off tips and other hints? https://pris.ly/tip-4-nohints
+#26 54.92 
+#26 54.96 
+#26 54.96 added 1106 packages, and audited 1112 packages in 55s
+#26 54.96 
+#26 54.96 249 packages are looking for funding
+#26 54.96   run `npm fund` for details
+#26 55.16 
+#26 55.16 20 moderate severity vulnerabilities
+#26 55.16 
+#26 55.16 To address issues that do not require attention, run:
+#26 55.16   npm audit fix
+#26 55.16 
+#26 55.16 To address all issues possible (including breaking changes), run:
+#26 55.16   npm audit fix --force
+#26 55.16 
+#26 55.16 Some issues need review, and may require choosing
+#26 55.16 a different dependency.
+#26 55.16 
+#26 55.16 Run `npm audit` for details.
+#26 55.17 npm notice
+#26 55.17 npm notice New major version of npm available! 10.8.2 -> 11.10.0
+#26 55.17 npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.10.0
+#26 55.17 npm notice To update run: npm install -g npm@11.10.0
+#26 55.17 npm notice
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+#26 DONE 59.9s
+
+#27 [api 5/7] RUN npx prisma generate --schema apps/api/prisma/schema.prisma
+#27 2.391 Prisma schema loaded from apps/api/prisma/schema.prisma
+#27 3.036 ┌─────────────────────────────────────────────────────────┐
+#27 3.036 │  Update available 6.19.2 -> 7.4.0                       │
+#27 3.036 │                                                         │
+#27 3.036 │  This is a major update - please follow the guide at    │
+#27 3.036 │  https://pris.ly/d/major-version-upgrade                │
+#27 3.036 │                                                         │
+#27 3.036 │  Run the following to update                            │
+#27 3.036 │    npm i --save-dev prisma@latest                       │
+#27 3.036 │    npm i @prisma/client@latest                          │
+#27 3.036 └─────────────────────────────────────────────────────────┘
+#27 3.036 
+#27 3.036 ✔ Generated Prisma Client (v6.19.2) to ./node_modules/@prisma/client in 309ms
+#27 3.036 
+#27 3.036 Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+#27 3.036 
+#27 3.036 Tip: Need your database queries to be 1000x faster? Accelerate offers you that and more: https://pris.ly/tip-2-accelerate
+#27 3.036 
+#27 DONE 3.2s
+
+#28 [api 6/7] RUN npm run build --workspace=api
+#28 0.409 
+#28 0.409 > api@0.0.1 build
+#28 0.409 > nest build
+#28 0.409 
+#28 DONE 5.9s
+
+#29 [api 7/7] WORKDIR /app/apps/api
+#29 DONE 0.1s
+
+#30 [api] exporting to image
+#30 exporting layers
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+#30 exporting layers 57.9s done
+#30 exporting manifest sha256:63758502db0d7c9a1d6c9d0087c100ae08042e2c5ecc2a55573a527a63aac386 0.0s done
+#30 exporting config sha256:8e05f40d61c7836a16a140b3e24bce704b93e836c0b1512b6abebbb5ddc24162 0.0s done
+#30 exporting attestation manifest sha256:2929618882c73929f9926136e89b83b50ec11f8f9190e920a708017b33b05e66 0.0s done
+#30 exporting manifest list sha256:17105d23be4bba5f724b2835a66de44d6343a9ae02e888bf0fed8f78b24a833b done
+#30 naming to docker.io/library/vexel-health-api:latest done
+#30 unpacking to docker.io/library/vexel-health-api:latest
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+#30 unpacking to docker.io/library/vexel-health-api:latest 15.3s done
+#30 DONE 73.4s
+
+#31 [api] resolving provenance for metadata file
+#31 DONE 0.0s
+ Image vexel-health-pdf Built 
+ Image vexel-health-api Built 
+ Container vexel-health-postgres-1 Running 
+ Container vexel-health-pdf-1 Recreate 
+ Container vexel-health-redis-1 Running 
+ Container vexel-health-pdf-1 Recreated 
+ Container vexel-health-api-1 Recreate 
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+ Container vexel-health-api-1 Recreated 
+ Container vexel-health-pdf-1 Starting 
+ Container vexel-health-pdf-1 Started 
+ Container vexel-health-api-1 Starting 
+ Container vexel-health-api-1 Started 
+$ reset tenant-a phase data
+DELETE 1
+DELETE 1
+DELETE 1
+DELETE 1
+DELETE 1
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+$ rerun smoke flow with document render
+API_HEALTH={"status":"ok","service":"api"}
+PDF_HEALTH={"status":"ok"}
+LOGIN_JSON={"accessToken":"mock.11111111-1111-4111-8111-111111111111.cccccccc-cccc-4ccc-8ccc-ccccccccccc1","user":{"id":"cccccccc-cccc-4ccc-8ccc-ccccccccccc1","tenantId":"11111111-1111-4111-8111-111111111111","email":"demo@vexel.dev","name":"Demo User","status":"active","createdAt":"2026-02-18T21:00:30.522Z"}}
+PATIENT_JSON={"id":"ba742b76-6542-41cb-8c98-8a7ae5f15b73","tenantId":"11111111-1111-4111-8111-111111111111","regNo":"REG-00000001","mrn":null,"name":"Smoke Patient","dob":null,"gender":"male","phone":null,"createdAt":"2026-02-18T21:05:03.531Z"}
+ENCOUNTER_JSON={"id":"6d752b3d-9069-4400-8064-ea4a4ee49398","tenantId":"11111111-1111-4111-8111-111111111111","patientId":"ba742b76-6542-41cb-8c98-8a7ae5f15b73","encounterCode":"LAB-2026-000001","type":"LAB","status":"CREATED","startedAt":"2026-02-18T21:05:03.558Z","endedAt":null,"createdAt":"2026-02-18T21:05:03.566Z"}
+START_PREP={"id":"6d752b3d-9069-4400-8064-ea4a4ee49398","tenantId":"11111111-1111-4111-8111-111111111111","patientId":"ba742b76-6542-41cb-8c98-8a7ae5f15b73","encounterCode":"LAB-2026-000001","type":"LAB","status":"PREP","startedAt":"2026-02-18T21:05:03.558Z","endedAt":null,"createdAt":"2026-02-18T21:05:03.566Z"}
+START_MAIN={"id":"6d752b3d-9069-4400-8064-ea4a4ee49398","tenantId":"11111111-1111-4111-8111-111111111111","patientId":"ba742b76-6542-41cb-8c98-8a7ae5f15b73","encounterCode":"LAB-2026-000001","type":"LAB","status":"IN_PROGRESS","startedAt":"2026-02-18T21:05:03.558Z","endedAt":null,"createdAt":"2026-02-18T21:05:03.566Z"}
+FINALIZE={"id":"6d752b3d-9069-4400-8064-ea4a4ee49398","tenantId":"11111111-1111-4111-8111-111111111111","patientId":"ba742b76-6542-41cb-8c98-8a7ae5f15b73","encounterCode":"LAB-2026-000001","type":"LAB","status":"FINALIZED","startedAt":"2026-02-18T21:05:03.558Z","endedAt":"2026-02-18T21:05:03.621Z","createdAt":"2026-02-18T21:05:03.566Z"}
+DOCUMENT_CMD={"id":"5539107c-84c5-4313-83c5-baf5abaa5705","type":"ENCOUNTER_SUMMARY","status":"QUEUED","encounterId":"6d752b3d-9069-4400-8064-ea4a4ee49398","payloadHash":"1b9513368491f7faa964dd30d8b9de1754d14fd8d603f6ceb5a0ed199d7cc56d","pdfHash":null,"payloadVersion":1,"templateVersion":1,"createdAt":"2026-02-18T21:05:03.645Z","renderedAt":null,"errorCode":null,"errorMessage":null}
+DOC_STATUS_JSON={"id":"5539107c-84c5-4313-83c5-baf5abaa5705","type":"ENCOUNTER_SUMMARY","status":"RENDERED","encounterId":"6d752b3d-9069-4400-8064-ea4a4ee49398","payloadHash":"1b9513368491f7faa964dd30d8b9de1754d14fd8d603f6ceb5a0ed199d7cc56d","pdfHash":"d4de4f862e0b24343806e4ecdff75a02273bfeb6d08789cc311e50cd79b43865","payloadVersion":1,"templateVersion":1,"createdAt":"2026-02-18T21:05:03.645Z","renderedAt":"2026-02-18T21:05:03.821Z","errorCode":null,"errorMessage":null}
+DOC_FILE_HEADERS=HTTP/1.1 200 OK;X-Powered-By: Express;Access-Control-Allow-Origin: *;Content-Type: application/pdf;Content-Disposition: inline; filename="5539107c-84c5-4313-83c5-baf5abaa5705.pdf";Content-Length: 871;Date: Wed, 18 Feb 2026 21:05:04 GMT;Connection: keep-alive;Keep-Alive: timeout=5;;
+DOC_FILE_BYTES=871
+DOC_FILE_SHA256=d4de4f862e0b24343806e4ecdff75a02273bfeb6d08789cc311e50cd79b43865
+TENANT_B_DOC_HTTP=404
+TENANT_B_DOC_BODY={"error":{"type":"not_found","message":"Resource not found"}}
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+$ verify live idempotency second :document call
+SECOND_DOCUMENT_CMD={"id":"5539107c-84c5-4313-83c5-baf5abaa5705","type":"ENCOUNTER_SUMMARY","status":"RENDERED","encounterId":"6d752b3d-9069-4400-8064-ea4a4ee49398","payloadHash":"1b9513368491f7faa964dd30d8b9de1754d14fd8d603f6ceb5a0ed199d7cc56d","pdfHash":"d4de4f862e0b24343806e4ecdff75a02273bfeb6d08789cc311e50cd79b43865","payloadVersion":1,"templateVersion":1,"createdAt":"2026-02-18T21:05:03.645Z","renderedAt":"2026-02-18T21:05:03.821Z","errorCode":null,"errorMessage":null}
+IDEMPOTENCY_CHECK=PASS
+$ docker compose logs --tail=80 worker
+worker-1  | 
+worker-1  | > @vexel/worker@1.0.0 start
+worker-1  | > ts-node src/index.ts
+worker-1  | 
+worker-1  | [worker] started queue=document-render-queue redis=redis://redis:6379
+worker-1  | [worker] completed job=11111111-1111-4111-8111-111111111111__5539107c-84c5-4313-83c5-baf5abaa5705
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+$ npm run build --workspace=@vexel/worker
+
+> @vexel/worker@1.0.0 build
+> tsc
+
+$ docker compose ps
+NAME                      IMAGE                 COMMAND                  SERVICE    CREATED              STATUS              PORTS
+vexel-health-api-1        vexel-health-api      "docker-entrypoint.s…"   api        About a minute ago   Up About a minute   127.0.0.1:3000->3000/tcp
+vexel-health-pdf-1        vexel-health-pdf      "dotnet PdfService.d…"   pdf        About a minute ago   Up About a minute   127.0.0.1:5000->8080/tcp
+vexel-health-postgres-1   postgres:15-alpine    "docker-entrypoint.s…"   postgres   About an hour ago    Up About an hour    5432/tcp
+vexel-health-redis-1      redis:7-alpine        "docker-entrypoint.s…"   redis      About an hour ago    Up About an hour    6379/tcp
+vexel-health-web-1        vexel-health-web      "docker-entrypoint.s…"   web        5 minutes ago        Up 5 minutes        127.0.0.1:3001->3000/tcp
+vexel-health-worker-1     vexel-health-worker   "docker-entrypoint.s…"   worker     5 minutes ago        Up 5 minutes        
+$ curl -sS http://127.0.0.1:3000/health && curl -sS http://127.0.0.1:5000/health
+{"status":"ok","service":"api"}
+{"status":"ok"}
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+## Green Gates Summary
+- `npm install`: PASS
+- `npm run contracts:generate`: PASS
+- `npm run build --workspace=@vexel/contracts`: PASS
+- `npm run build --workspace=api`: PASS
+- `npm run build --workspace=web`: PASS
+- `npm run build --workspace=@vexel/worker`: PASS
+- `npm run test:e2e --workspace=api -- --runInBand`: PASS
+- `docker compose up -d --build`: PASS
+- API health (`/health`): PASS
+- PDF health (`/health`): PASS
+- Live smoke: create patient, create encounter, finalize, `:document`, rendered document metadata, PDF download, tenant isolation: PASS
+- Live idempotency check (`:document` repeated): PASS (same `documentId` + `pdfHash`)
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+## Session End
+Phase 3A execution complete and green on current workspace state.
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+
+
+  ●  Cannot log after tests are done. Did you forget to wait for something async in your test?
+    Attempted to log "Error: connect ECONNREFUSED 127.0.0.1:6379
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
+        at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }".
+
+      at TCPConnectWrap.callbackTrampoline (../node:internal/async_hooks:130:17) {
+        errno: -111,
+        code: 'ECONNREFUSED',
+        syscall: 'connect',
+        address: '127.0.0.1',
+        port: 6379
+      }".
+      at console.error (../node_modules/@jest/console/build/BufferedConsole.js:127:10)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue-base.ts:137:17)
+      at Queue.emit (../../../node_modules/bullmq/src/classes/queue.ts:192:18)
+      at RedisConnection.<anonymous> (../../../node_modules/bullmq/src/classes/queue-base.ts:76:56)
+      at EventEmitter.RedisConnection.handleClientError (../../../node_modules/bullmq/src/classes/redis-connection.ts:123:12)
+      at EventEmitter.silentEmit (../../../node_modules/bullmq/node_modules/ioredis/built/Redis.js:529:30)
+      at Socket.<anonymous> (../../../node_modules/bullmq/node_modules/ioredis/built/redis/event_handler.js:221:14)
+

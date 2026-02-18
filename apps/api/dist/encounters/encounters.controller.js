@@ -15,12 +15,15 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.EncountersController = void 0;
 const common_1 = require("@nestjs/common");
 const tenant_guard_1 = require("../common/guards/tenant.guard");
+const documents_service_1 = require("../documents/documents.service");
 const create_encounter_dto_1 = require("./dto/create-encounter.dto");
 const encounters_service_1 = require("./encounters.service");
 let EncountersController = class EncountersController {
     service;
-    constructor(service) {
+    documentsService;
+    constructor(service, documentsService) {
         this.service = service;
+        this.documentsService = documentsService;
     }
     create(dto) {
         return this.service.create(dto);
@@ -41,7 +44,7 @@ let EncountersController = class EncountersController {
         return this.service.finalize(id);
     }
     createDocument(id) {
-        throw new common_1.NotImplementedException(`Encounter document command is deferred for encounter ${id}`);
+        return this.documentsService.queueEncounterDocument(id);
     }
 };
 exports.EncountersController = EncountersController;
@@ -71,6 +74,7 @@ __decorate([
 ], EncountersController.prototype, "findById", null);
 __decorate([
     (0, common_1.Post)(':id\\:start-prep'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -78,6 +82,7 @@ __decorate([
 ], EncountersController.prototype, "startPrep", null);
 __decorate([
     (0, common_1.Post)(':id\\:start-main'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -85,6 +90,7 @@ __decorate([
 ], EncountersController.prototype, "startMain", null);
 __decorate([
     (0, common_1.Post)(':id\\:finalize'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -92,7 +98,7 @@ __decorate([
 ], EncountersController.prototype, "finalize", null);
 __decorate([
     (0, common_1.Post)(':id\\:document'),
-    (0, common_1.HttpCode)(common_1.HttpStatus.NOT_IMPLEMENTED),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -101,6 +107,7 @@ __decorate([
 exports.EncountersController = EncountersController = __decorate([
     (0, common_1.Controller)('encounters'),
     (0, common_1.UseGuards)(tenant_guard_1.TenantGuard),
-    __metadata("design:paramtypes", [encounters_service_1.EncountersService])
+    __metadata("design:paramtypes", [encounters_service_1.EncountersService,
+        documents_service_1.DocumentsService])
 ], EncountersController);
 //# sourceMappingURL=encounters.controller.js.map

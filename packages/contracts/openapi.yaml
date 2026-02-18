@@ -323,12 +323,61 @@ paths:
         - $ref: '#/components/parameters/TenantIdHeader'
         - $ref: '#/components/parameters/IdPathParam'
       responses:
-        '501':
-          description: Deferred implementation
+        '200':
+          description: Document queued or already rendered
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/NotImplementedEnvelope'
+                $ref: '#/components/schemas/DocumentResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/DomainError'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+  /documents/{documentId}:
+    get:
+      summary: Get document metadata by id
+      operationId: getDocumentById
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+        - $ref: '#/components/parameters/DocumentIdPathParam'
+      responses:
+        '200':
+          description: Document metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+  /documents/{documentId}/file:
+    get:
+      summary: Download rendered PDF bytes
+      operationId: getDocumentFile
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+        - $ref: '#/components/parameters/DocumentIdPathParam'
+      responses:
+        '200':
+          description: PDF file bytes
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/DomainError'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
 components:
   securitySchemes:
     bearerAuth:
@@ -346,6 +395,12 @@ components:
         format: uuid
     IdPathParam:
       name: id
+      in: path
+      required: true
+      schema:
+        type: string
+    DocumentIdPathParam:
+      name: documentId
       in: path
       required: true
       schema:
@@ -488,6 +543,56 @@ components:
             $ref: '#/components/schemas/Encounter'
         total:
           type: integer
+    DocumentType:
+      type: string
+      enum: [ENCOUNTER_SUMMARY]
+    DocumentStatus:
+      type: string
+      enum: [QUEUED, RENDERED, FAILED]
+    DocumentResponse:
+      type: object
+      required:
+        - id
+        - type
+        - status
+        - encounterId
+        - payloadHash
+        - payloadVersion
+        - templateVersion
+        - createdAt
+      properties:
+        id:
+          type: string
+        type:
+          $ref: '#/components/schemas/DocumentType'
+        status:
+          $ref: '#/components/schemas/DocumentStatus'
+        encounterId:
+          type: string
+        payloadHash:
+          type: string
+        pdfHash:
+          type: string
+          nullable: true
+        payloadVersion:
+          type: integer
+          example: 1
+        templateVersion:
+          type: integer
+          example: 1
+        createdAt:
+          type: string
+          format: date-time
+        renderedAt:
+          type: string
+          format: date-time
+          nullable: true
+        errorCode:
+          type: string
+          nullable: true
+        errorMessage:
+          type: string
+          nullable: true
     ValidationErrorEnvelope:
       type: object
       properties:
@@ -571,22 +676,6 @@ components:
             message:
               type: string
             correlationId:
-              type: string
-          required:
-            - type
-            - message
-      required:
-        - error
-    NotImplementedEnvelope:
-      type: object
-      properties:
-        error:
-          type: object
-          properties:
-            type:
-              type: string
-              enum: [not_implemented]
-            message:
               type: string
           required:
             - type

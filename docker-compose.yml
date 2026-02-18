@@ -22,7 +22,10 @@ services:
       DATABASE_URL: postgresql://user:password@postgres:5432/vexel
       REDIS_URL: redis://redis:6379
       PDF_SERVICE_URL: http://pdf:8080
+      DOCUMENTS_LOCAL_DIR: /data/documents
       TENANCY_DEV_HEADER_ENABLED: "1"
+    volumes:
+      - documents_data:/data/documents
     depends_on:
       - postgres
       - redis
@@ -45,10 +48,15 @@ services:
       context: .
       dockerfile: apps/worker/Dockerfile
     environment:
+      DATABASE_URL: postgresql://user:password@postgres:5432/vexel
       REDIS_URL: redis://redis:6379
       PDF_SERVICE_URL: http://pdf:8080
+      DOCUMENTS_LOCAL_DIR: /data/documents
+    volumes:
+      - documents_data:/data/documents
     restart: unless-stopped
     depends_on:
+      - postgres
       - redis
       - pdf
 
@@ -64,3 +72,4 @@ services:
 
 volumes:
   postgres_data:
+  documents_data:

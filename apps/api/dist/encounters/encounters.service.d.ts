@@ -11,10 +11,10 @@ export declare class EncountersService {
         status: string;
         createdAt: Date;
         tenantId: string;
-        patientId: string;
         type: string;
-        startedAt: Date;
+        patientId: string;
         encounterCode: string;
+        startedAt: Date;
         endedAt: Date | null;
     }>;
     findAll(page: number, query?: {
@@ -27,10 +27,10 @@ export declare class EncountersService {
             status: string;
             createdAt: Date;
             tenantId: string;
-            patientId: string;
             type: string;
-            startedAt: Date;
+            patientId: string;
             encounterCode: string;
+            startedAt: Date;
             endedAt: Date | null;
         }[];
         total: number;
@@ -40,10 +40,10 @@ export declare class EncountersService {
         status: string;
         createdAt: Date;
         tenantId: string;
-        patientId: string;
         type: string;
-        startedAt: Date;
+        patientId: string;
         encounterCode: string;
+        startedAt: Date;
         endedAt: Date | null;
     }>;
     startPrep(id: string): Promise<{
@@ -51,10 +51,10 @@ export declare class EncountersService {
         status: string;
         createdAt: Date;
         tenantId: string;
-        patientId: string;
         type: string;
-        startedAt: Date;
+        patientId: string;
         encounterCode: string;
+        startedAt: Date;
         endedAt: Date | null;
     }>;
     startMain(id: string): Promise<{
@@ -62,10 +62,10 @@ export declare class EncountersService {
         status: string;
         createdAt: Date;
         tenantId: string;
-        patientId: string;
         type: string;
-        startedAt: Date;
+        patientId: string;
         encounterCode: string;
+        startedAt: Date;
         endedAt: Date | null;
     }>;
     finalize(id: string): Promise<{
@@ -73,10 +73,10 @@ export declare class EncountersService {
         status: string;
         createdAt: Date;
         tenantId: string;
-        patientId: string;
         type: string;
-        startedAt: Date;
+        patientId: string;
         encounterCode: string;
+        startedAt: Date;
         endedAt: Date | null;
     }>;
     private transitionState;

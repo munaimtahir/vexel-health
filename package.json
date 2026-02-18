@@ -6,7 +6,8 @@
     "dev": "docker compose up",
     "lint": "npm run lint --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
-    "contracts:generate": "npm run generate --workspace=@vexel/contracts"
+    "contracts:generate": "npm run generate --workspace=@vexel/contracts",
+    "postinstall": "npx prisma generate --schema apps/api/prisma/schema.prisma"
   },
   "devDependencies": {
     "typescript": "^5.7.3",

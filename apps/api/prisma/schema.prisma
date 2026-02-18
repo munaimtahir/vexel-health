@@ -217,21 +217,41 @@ model Payment {
 }
 
 model Document {
-  id              String     @id @default(uuid())
+  id              String         @id @default(uuid())
   tenantId        String
-  tenant          Tenant     @relation(fields: [tenantId], references: [id])
-  encounterId     String?
-  encounter       Encounter? @relation(fields: [encounterId], references: [id])
-  documentType    String
-  templateVersion String
-  payloadVersion  String
+  tenant          Tenant         @relation(fields: [tenantId], references: [id])
+  encounterId     String
+  encounter       Encounter      @relation(fields: [encounterId], references: [id])
+  documentType    DocumentType
+  status          DocumentStatus @default(QUEUED)
+  payloadVersion  Int            @default(1)
+  templateVersion Int            @default(1)
+  payloadJson     Json
   payloadHash     String
-  filePath        String
+  storageBackend  StorageBackend @default(LOCAL)
+  storageKey      String?
   pdfHash         String?
-  status          String
-  createdAt       DateTime   @default(now())
-  publishedAt     DateTime?
+  errorCode       String?
+  errorMessage    String?
+  createdAt       DateTime       @default(now())
+  renderedAt      DateTime?
 
   @@index([tenantId])
   @@index([tenantId, encounterId])
+  @@unique([tenantId, encounterId, documentType, templateVersion, payloadHash])
+}
+
+enum DocumentType {
+  ENCOUNTER_SUMMARY
+}
+
+enum DocumentStatus {
+  QUEUED
+  RENDERED
+  FAILED
+}
+
+enum StorageBackend {
+  LOCAL
+  S3
 }
