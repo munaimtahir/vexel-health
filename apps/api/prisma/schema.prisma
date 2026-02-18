@@ -17,6 +17,11 @@ model Tenant {
   users              User[]
   patients           Patient[]
   encounters         Encounter[]
+  labEncounterPreps  LabEncounterPrep[]
+  radEncounterPreps  RadEncounterPrep[]
+  opdEncounterPreps  OpdEncounterPrep[]
+  bbEncounterPreps   BbEncounterPrep[]
+  ipdEncounterPreps  IpdEncounterPrep[]
   patientSequences   PatientSequence[]
   encounterSequences EncounterSequence[]
   documents          Document[]
@@ -134,23 +139,121 @@ model Patient {
 }
 
 model Encounter {
-  id        String    @id @default(uuid())
-  tenantId  String
-  tenant    Tenant    @relation(fields: [tenantId], references: [id])
-  patientId String
-  patient   Patient   @relation(fields: [patientId], references: [id])
+  id            String   @id @default(uuid())
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id])
+  patientId     String
+  patient       Patient  @relation(fields: [patientId], references: [id])
   encounterCode String
-  type      String
-  status    String    @default("CREATED")
-  startedAt DateTime  @default(now())
-  endedAt   DateTime?
-  createdAt DateTime  @default(now())
+  type          String
+  status        String   @default("CREATED")
+  startedAt     DateTime @default(now())
+  endedAt       DateTime?
+  createdAt     DateTime @default(now())
 
-  invoices  Invoice[]
+  invoices Invoice[]
   documents Document[]
+  labPrep   LabEncounterPrep?
+  radPrep   RadEncounterPrep?
+  opdPrep   OpdEncounterPrep?
+  bbPrep    BbEncounterPrep?
+  ipdPrep   IpdEncounterPrep?
 
   @@unique([tenantId, encounterCode])
   @@index([tenantId, patientId, createdAt])
+}
+
+model LabEncounterPrep {
+  id            String    @id @default(uuid())
+  tenantId      String
+  tenant        Tenant    @relation(fields: [tenantId], references: [id])
+  encounterId   String    @unique
+  encounter     Encounter @relation(fields: [encounterId], references: [id])
+  specimenType  String?
+  collectedAt   DateTime?
+  collectorName String?
+  receivedAt    DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([tenantId])
+  @@unique([tenantId, encounterId])
+}
+
+model RadEncounterPrep {
+  id                  String    @id @default(uuid())
+  tenantId            String
+  tenant              Tenant    @relation(fields: [tenantId], references: [id])
+  encounterId         String    @unique
+  encounter           Encounter @relation(fields: [encounterId], references: [id])
+  fastingRequired     Boolean?
+  fastingConfirmed    Boolean?
+  contrastPlanned     Boolean?
+  creatinineChecked   Boolean?
+  pregnancyScreenDone Boolean?
+  notes               String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  @@index([tenantId])
+  @@unique([tenantId, encounterId])
+}
+
+model OpdEncounterPrep {
+  id              String    @id @default(uuid())
+  tenantId        String
+  tenant          Tenant    @relation(fields: [tenantId], references: [id])
+  encounterId     String    @unique
+  encounter       Encounter @relation(fields: [encounterId], references: [id])
+  systolicBp      Int?
+  diastolicBp     Int?
+  pulse           Int?
+  temperatureC    Float?
+  respiratoryRate Int?
+  weightKg        Float?
+  spo2            Int?
+  triageNotes     String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([tenantId])
+  @@unique([tenantId, encounterId])
+}
+
+model BbEncounterPrep {
+  id                String    @id @default(uuid())
+  tenantId          String
+  tenant            Tenant    @relation(fields: [tenantId], references: [id])
+  encounterId       String    @unique
+  encounter         Encounter @relation(fields: [encounterId], references: [id])
+  sampleReceivedAt  DateTime?
+  aboGroup          String?
+  rhType            String?
+  componentRequested String?
+  unitsRequested    Int?
+  urgency           BbUrgency?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([tenantId])
+  @@unique([tenantId, encounterId])
+}
+
+model IpdEncounterPrep {
+  id             String    @id @default(uuid())
+  tenantId       String
+  tenant         Tenant    @relation(fields: [tenantId], references: [id])
+  encounterId    String    @unique
+  encounter      Encounter @relation(fields: [encounterId], references: [id])
+  admissionReason String?
+  ward           String?
+  bed            String?
+  admittingNotes String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([tenantId])
+  @@unique([tenantId, encounterId])
 }
 
 model PatientSequence {
@@ -254,4 +357,9 @@ enum DocumentStatus {
 enum StorageBackend {
   LOCAL
   S3
+}
+
+enum BbUrgency {
+  ROUTINE
+  URGENT
 }

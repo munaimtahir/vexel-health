@@ -247,6 +247,26 @@ paths:
           $ref: '#/components/responses/NotFoundError'
         '500':
           $ref: '#/components/responses/UnexpectedError'
+  /encounters/{id}/prep:
+    get:
+      summary: Get encounter prep data
+      operationId: getEncounterPrep
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+        - $ref: '#/components/parameters/IdPathParam'
+      responses:
+        '200':
+          description: Encounter prep data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EncounterPrepResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
   /encounters/{id}:start-prep:
     post:
       summary: Start encounter preparation
@@ -263,6 +283,41 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Encounter'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/DomainError'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+  /encounters/{id}:save-prep:
+    post:
+      summary: Save encounter prep data by encounter type
+      operationId: saveEncounterPrep
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+        - $ref: '#/components/parameters/IdPathParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/LabPrepSaveRequest'
+                - $ref: '#/components/schemas/RadPrepSaveRequest'
+                - $ref: '#/components/schemas/OpdPrepSaveRequest'
+                - $ref: '#/components/schemas/BbPrepSaveRequest'
+                - $ref: '#/components/schemas/IpdPrepSaveRequest'
+      responses:
+        '200':
+          description: Encounter prep upserted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EncounterPrepResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
         '404':
           $ref: '#/components/responses/NotFoundError'
         '409':
@@ -543,6 +598,158 @@ components:
             $ref: '#/components/schemas/Encounter'
         total:
           type: integer
+    LabPrepSaveRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        specimenType:
+          type: string
+          nullable: true
+        collectedAt:
+          type: string
+          format: date-time
+          nullable: true
+        collectorName:
+          type: string
+          nullable: true
+        receivedAt:
+          type: string
+          format: date-time
+          nullable: true
+    RadPrepSaveRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        fastingRequired:
+          type: boolean
+          nullable: true
+        fastingConfirmed:
+          type: boolean
+          nullable: true
+        contrastPlanned:
+          type: boolean
+          nullable: true
+        creatinineChecked:
+          type: boolean
+          nullable: true
+        pregnancyScreenDone:
+          type: boolean
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+    OpdPrepSaveRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        systolicBp:
+          type: integer
+          nullable: true
+        diastolicBp:
+          type: integer
+          nullable: true
+        pulse:
+          type: integer
+          nullable: true
+        temperatureC:
+          type: number
+          nullable: true
+        respiratoryRate:
+          type: integer
+          nullable: true
+        weightKg:
+          type: number
+          nullable: true
+        spo2:
+          type: integer
+          nullable: true
+        triageNotes:
+          type: string
+          nullable: true
+    BbUrgency:
+      type: string
+      enum: [ROUTINE, URGENT]
+    BbPrepSaveRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        sampleReceivedAt:
+          type: string
+          format: date-time
+          nullable: true
+        aboGroup:
+          type: string
+          nullable: true
+        rhType:
+          type: string
+          nullable: true
+        componentRequested:
+          type: string
+          nullable: true
+        unitsRequested:
+          type: integer
+          nullable: true
+        urgency:
+          allOf:
+            - $ref: '#/components/schemas/BbUrgency'
+          nullable: true
+    IpdPrepSaveRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        admissionReason:
+          type: string
+          nullable: true
+        ward:
+          type: string
+          nullable: true
+        bed:
+          type: string
+          nullable: true
+        admittingNotes:
+          type: string
+          nullable: true
+    EncounterPrepResponse:
+      type: object
+      required:
+        - encounterId
+        - type
+        - updatedAt
+        - labPrep
+        - radPrep
+        - opdPrep
+        - bbPrep
+        - ipdPrep
+      properties:
+        encounterId:
+          type: string
+        type:
+          type: string
+          enum: [LAB, RAD, OPD, BB, IPD]
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true
+        labPrep:
+          allOf:
+            - $ref: '#/components/schemas/LabPrepSaveRequest'
+          nullable: true
+        radPrep:
+          allOf:
+            - $ref: '#/components/schemas/RadPrepSaveRequest'
+          nullable: true
+        opdPrep:
+          allOf:
+            - $ref: '#/components/schemas/OpdPrepSaveRequest'
+          nullable: true
+        bbPrep:
+          allOf:
+            - $ref: '#/components/schemas/BbPrepSaveRequest'
+          nullable: true
+        ipdPrep:
+          allOf:
+            - $ref: '#/components/schemas/IpdPrepSaveRequest'
+          nullable: true
     DocumentType:
       type: string
       enum: [ENCOUNTER_SUMMARY]

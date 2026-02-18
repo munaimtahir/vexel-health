@@ -64,10 +64,23 @@ type DocumentRecord = {
   renderedAt: Date | null;
 };
 
+type LabPrepRecord = {
+  id: string;
+  tenantId: string;
+  encounterId: string;
+  specimenType: string | null;
+  collectedAt: Date | null;
+  collectorName: string | null;
+  receivedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
 type MemoryState = {
   patients: PatientRecord[];
   encounters: EncounterRecord[];
   documents: DocumentRecord[];
+  labPreps: LabPrepRecord[];
   patientCounters: Map<string, number>;
   encounterCounters: Map<string, number>;
   tenantDomains: Map<string, string>;
@@ -577,6 +590,83 @@ function createPrismaMock(state: MemoryState) {
         },
       ),
     },
+    labEncounterPrep: {
+      upsert: jest.fn(
+        async ({
+          where,
+          create,
+          update,
+        }: {
+          where: { tenantId_encounterId: { tenantId: string; encounterId: string } };
+          create: {
+            tenantId: string;
+            encounterId: string;
+            specimenType?: string | null;
+            collectedAt?: Date | null;
+            collectorName?: string | null;
+            receivedAt?: Date | null;
+          };
+          update: {
+            specimenType?: string | null;
+            collectedAt?: Date | null;
+            collectorName?: string | null;
+            receivedAt?: Date | null;
+          };
+        }) => {
+          const existing = state.labPreps.find(
+            (item) =>
+              item.tenantId === where.tenantId_encounterId.tenantId &&
+              item.encounterId === where.tenantId_encounterId.encounterId,
+          );
+
+          if (existing) {
+            if (update.specimenType !== undefined) {
+              existing.specimenType = update.specimenType;
+            }
+            if (update.collectedAt !== undefined) {
+              existing.collectedAt = update.collectedAt;
+            }
+            if (update.collectorName !== undefined) {
+              existing.collectorName = update.collectorName;
+            }
+            if (update.receivedAt !== undefined) {
+              existing.receivedAt = update.receivedAt;
+            }
+            existing.updatedAt = new Date();
+            return existing;
+          }
+
+          const record: LabPrepRecord = {
+            id: makeId(3000 + state.labPreps.length + 1),
+            tenantId: create.tenantId,
+            encounterId: create.encounterId,
+            specimenType: create.specimenType ?? null,
+            collectedAt: create.collectedAt ?? null,
+            collectorName: create.collectorName ?? null,
+            receivedAt: create.receivedAt ?? null,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          };
+          state.labPreps.push(record);
+          return record;
+        },
+      ),
+      findFirst: jest.fn(
+        async ({
+          where,
+        }: {
+          where: { tenantId: string; encounterId: string };
+        }) => {
+          return (
+            state.labPreps.find(
+              (item) =>
+                item.tenantId === where.tenantId &&
+                item.encounterId === where.encounterId,
+            ) ?? null
+          );
+        },
+      ),
+    },
     $transaction: jest.fn(async (operation: (tx: Record<string, unknown>) => Promise<unknown>) =>
       operation(prismaMock),
     ),
@@ -611,6 +701,7 @@ describe('Document pipeline (e2e)', () => {
     patients: [],
     encounters: [],
     documents: [],
+    labPreps: [],
     patientCounters: new Map<string, number>(),
     encounterCounters: new Map<string, number>(),
     tenantDomains: new Map<string, string>([
@@ -723,6 +814,14 @@ describe('Document pipeline (e2e)', () => {
     await request(app.getHttpServer())
       .post(`/encounters/${createdEncounterId}:start-prep`)
       .set('Host', 'tenant-a.test')
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .post(`/encounters/${createdEncounterId}:save-prep`)
+      .set('Host', 'tenant-a.test')
+      .send({
+        specimenType: 'Blood',
+      })
       .expect(200);
 
     await request(app.getHttpServer())

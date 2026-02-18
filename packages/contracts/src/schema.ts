@@ -142,6 +142,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/encounters/{id}/prep": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get encounter prep data */
+        get: operations["getEncounterPrep"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/encounters/{id}:start-prep": {
         parameters: {
             query?: never;
@@ -153,6 +170,23 @@ export interface paths {
         put?: never;
         /** Start encounter preparation */
         post: operations["startEncounterPrep"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/encounters/{id}:save-prep": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Save encounter prep data by encounter type */
+        post: operations["saveEncounterPrep"];
         delete?: never;
         options?: never;
         head?: never;
@@ -297,6 +331,61 @@ export interface components {
         ListEncountersResponse: {
             data?: components["schemas"]["Encounter"][];
             total?: number;
+        };
+        LabPrepSaveRequest: {
+            specimenType?: string | null;
+            /** Format: date-time */
+            collectedAt?: string | null;
+            collectorName?: string | null;
+            /** Format: date-time */
+            receivedAt?: string | null;
+        };
+        RadPrepSaveRequest: {
+            fastingRequired?: boolean | null;
+            fastingConfirmed?: boolean | null;
+            contrastPlanned?: boolean | null;
+            creatinineChecked?: boolean | null;
+            pregnancyScreenDone?: boolean | null;
+            notes?: string | null;
+        };
+        OpdPrepSaveRequest: {
+            systolicBp?: number | null;
+            diastolicBp?: number | null;
+            pulse?: number | null;
+            temperatureC?: number | null;
+            respiratoryRate?: number | null;
+            weightKg?: number | null;
+            spo2?: number | null;
+            triageNotes?: string | null;
+        };
+        /** @enum {string} */
+        BbUrgency: "ROUTINE" | "URGENT";
+        BbPrepSaveRequest: {
+            /** Format: date-time */
+            sampleReceivedAt?: string | null;
+            aboGroup?: string | null;
+            rhType?: string | null;
+            componentRequested?: string | null;
+            unitsRequested?: number | null;
+            urgency?: components["schemas"]["BbUrgency"] | null;
+        };
+        IpdPrepSaveRequest: {
+            admissionReason?: string | null;
+            ward?: string | null;
+            bed?: string | null;
+            admittingNotes?: string | null;
+        };
+        EncounterPrepResponse: {
+            encounterId: string;
+            /** @enum {string} */
+            type: "LAB" | "RAD" | "OPD" | "BB" | "IPD";
+            /** Format: date-time */
+            updatedAt: string | null;
+            labPrep: components["schemas"]["LabPrepSaveRequest"] | null;
+            radPrep: components["schemas"]["RadPrepSaveRequest"] | null;
+            opdPrep: components["schemas"]["OpdPrepSaveRequest"] | null;
+            bbPrep: components["schemas"]["BbPrepSaveRequest"] | null;
+            ipdPrep: components["schemas"]["IpdPrepSaveRequest"] | null;
         };
         /** @enum {string} */
         DocumentType: "ENCOUNTER_SUMMARY";
@@ -693,6 +782,33 @@ export interface operations {
             500: components["responses"]["UnexpectedError"];
         };
     };
+    getEncounterPrep: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
+                "x-tenant-id"?: components["parameters"]["TenantIdHeader"];
+            };
+            path: {
+                id: components["parameters"]["IdPathParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Encounter prep data */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EncounterPrepResponse"];
+                };
+            };
+            404: components["responses"]["NotFoundError"];
+            500: components["responses"]["UnexpectedError"];
+        };
+    };
     startEncounterPrep: {
         parameters: {
             query?: never;
@@ -716,6 +832,39 @@ export interface operations {
                     "application/json": components["schemas"]["Encounter"];
                 };
             };
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["DomainError"];
+            500: components["responses"]["UnexpectedError"];
+        };
+    };
+    saveEncounterPrep: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
+                "x-tenant-id"?: components["parameters"]["TenantIdHeader"];
+            };
+            path: {
+                id: components["parameters"]["IdPathParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LabPrepSaveRequest"] | components["schemas"]["RadPrepSaveRequest"] | components["schemas"]["OpdPrepSaveRequest"] | components["schemas"]["BbPrepSaveRequest"] | components["schemas"]["IpdPrepSaveRequest"];
+            };
+        };
+        responses: {
+            /** @description Encounter prep upserted */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EncounterPrepResponse"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
             404: components["responses"]["NotFoundError"];
             409: components["responses"]["DomainError"];
             500: components["responses"]["UnexpectedError"];

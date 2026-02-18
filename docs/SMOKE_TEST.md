@@ -49,13 +49,19 @@ Observed:
 - `encounterCode=LAB-2026-000001`
 - `status=CREATED`
 
-## Command transitions
+## Command transitions (Phase 3B prep flow)
 ```bash
 curl -sS -X POST "http://127.0.0.1:3000/encounters/<ENCOUNTER_ID>:start-prep" -H 'Host: tenant-a.test'
+curl -sS -X POST "http://127.0.0.1:3000/encounters/<ENCOUNTER_ID>:save-prep" \
+  -H 'Host: tenant-a.test' \
+  -H 'Content-Type: application/json' \
+  -d '{"specimenType":"Blood"}'
+curl -sS "http://127.0.0.1:3000/encounters/<ENCOUNTER_ID>/prep" -H 'Host: tenant-a.test'
 curl -sS -X POST "http://127.0.0.1:3000/encounters/<ENCOUNTER_ID>:start-main" -H 'Host: tenant-a.test'
 curl -sS -X POST "http://127.0.0.1:3000/encounters/<ENCOUNTER_ID>:finalize" -H 'Host: tenant-a.test'
 ```
 Observed:
+- LAB prep saved (`specimenType=Blood`)
 - `PREP -> IN_PROGRESS -> FINALIZED`
 
 ## Generate document
