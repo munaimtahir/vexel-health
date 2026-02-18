@@ -23,9 +23,31 @@ export class PatientsService {
         });
     }
 
-    async findAll() {
-        return this.prisma.patient.findMany({
-            where: { tenantId: this.tenantId },
-        });
+    async findAll(page: number, query?: string) {
+        const take = 20;
+        const skip = (page - 1) * take;
+
+        const where: any = {
+            tenantId: this.tenantId,
+        };
+
+        if (query) {
+            where.name = {
+                contains: query,
+                mode: 'insensitive',
+            };
+        }
+
+        const [data, total] = await Promise.all([
+            this.prisma.patient.findMany({
+                where,
+                skip,
+                take,
+                orderBy: { createdAt: 'desc' },
+            }),
+            this.prisma.patient.count({ where }),
+        ]);
+
+        return { data, total };
     }
 }

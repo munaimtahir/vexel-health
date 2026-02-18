@@ -6,15 +6,16 @@ export class TenantGuard implements CanActivate {
     constructor(private readonly cls: ClsService) { }
 
     canActivate(context: ExecutionContext): boolean {
-        const request = context.switchToHttp().getRequest();
-        // Simplistic extraction: Header > User > Query
-        const tenantId = request.headers['x-tenant-id'] || request.user?.tenantId || request.query?.tenantId;
+        // Tenant is now resolved by middleware and put into CLS.
+        // This guard only ensures the middleware ran successfully and context is set.
+        const tenantId = this.cls.get('TENANT_ID');
 
         if (!tenantId) {
-            throw new UnauthorizedException('Tenant Context Required (x-tenant-id header)');
+            // This case should theoretically be caught by middleware throwing,
+            // but as a guard it ensures no leakage if middleware is bypassed/misconfigured.
+            throw new UnauthorizedException('Tenant Context Missing');
         }
 
-        this.cls.set('TENANT_ID', tenantId);
         return true;
     }
 }

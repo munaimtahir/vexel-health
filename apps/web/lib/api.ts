@@ -11,7 +11,7 @@ client.use({
             }
 
             const tenant = localStorage.getItem('vexel_tenant_id');
-            if (tenant) {
+            if (process.env.NEXT_PUBLIC_TENANCY_DEV_HEADER === '1' && tenant) {
                 request.headers.set('x-tenant-id', tenant);
             }
         }
