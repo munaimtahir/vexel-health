@@ -149,7 +149,7 @@ export default function RegisterPatientPage() {
         if (e.key === '-') {
             if (digits.length >= 4) {
                 e.preventDefault();
-                const next = formatPhoneDisplay(digits);
+                const next = digits.length === 4 ? `${digits}-` : formatPhoneDisplay(digits);
                 setMobileInput(next);
                 requestAnimationFrame(() => {
                     mobileInputRef.current?.setSelectionRange(5, 5);
@@ -336,15 +336,22 @@ export default function RegisterPatientPage() {
                                     Mobile number
                                 </label>
                                 <input
+                                    ref={mobileInputRef}
                                     id={MOBILE_INPUT_ID}
                                     type="tel"
+                                    inputMode="numeric"
+                                    maxLength={12}
                                     value={mobileInput}
-                                    onChange={(e) => setMobileInput(e.target.value)}
+                                    onChange={handleMobileChange}
                                     onKeyDown={handleMobileKeyDown}
-                                    placeholder="Enter mobile number and press Enter to search"
-                                    className="mt-1 block w-full border border-gray-300 rounded p-2"
+                                    placeholder="03xx-1234567"
+                                    className="mt-1 block w-full border border-gray-300 rounded p-2 font-mono tracking-wider"
                                     autoComplete="tel"
+                                    aria-describedby="mobile-format-hint"
                                 />
+                                <p id="mobile-format-hint" className="mt-1 text-xs text-gray-500">
+                                    Format: 03xx-1234567. Dash appears after 4 digits. Press Enter to search.
+                                </p>
                                 {searching && <p className="mt-1 text-sm text-gray-500">Searching…</p>}
                                 {popoverOpen && searchResults && searchResults.length > 0 && (
                                     <div

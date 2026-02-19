@@ -17,18 +17,18 @@ export default function RootLayout({
 }>) {
     return (
         <html lang="en">
-            <body>
-                <nav className="border-b bg-gray-50 px-4 py-2 flex gap-4 text-sm">
-                    <Link href="/patients" className="text-blue-600 hover:underline">
+            <body className="min-h-screen bg-[var(--bg)] text-[var(--text)]">
+                <nav className="border-b border-[var(--border)] bg-[var(--surface)] px-4 py-2.5 flex items-center gap-6 text-sm shadow-sm">
+                    <Link href="/patients" className="font-medium text-[var(--text)] hover:text-[var(--accent)] transition">
                         Patients
                     </Link>
-                    <Link href="/operator/worklist" className="text-blue-600 hover:underline">
+                    <Link href="/operator/worklist" className="font-medium text-[var(--text)] hover:text-[var(--accent)] transition">
                         Operator
                     </Link>
-                    <Link href="/verification" className="text-blue-600 hover:underline">
+                    <Link href="/verification" className="font-medium text-[var(--text)] hover:text-[var(--accent)] transition">
                         Verification
                     </Link>
-                    <Link href="/admin" className="text-blue-600 hover:underline">
+                    <Link href="/admin" className="font-medium text-[var(--text)] hover:text-[var(--accent)] transition">
                         Admin
                     </Link>
                 </nav>

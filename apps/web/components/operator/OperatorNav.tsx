@@ -16,8 +16,10 @@ export function OperatorNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="flex w-48 flex-col border-r border-gray-200 bg-gray-50 p-3">
-      <div className="mb-4 text-sm font-semibold text-gray-700">Operator</div>
+    <nav className="flex w-52 flex-col border-r border-[var(--border)] bg-[var(--surface)] p-4 shadow-sm">
+      <div className="mb-3 text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
+        Menu
+      </div>
       <ul className="space-y-1">
         {navItems.map(({ label, href }) => {
           const isActive =
@@ -26,10 +28,10 @@ export function OperatorNav() {
             <li key={href}>
               <Link
                 href={href}
-                className={`block rounded px-3 py-2 text-sm ${
+                className={`block rounded-xl px-3 py-2.5 text-sm font-medium transition ${
                   isActive
-                    ? 'bg-blue-100 font-medium text-blue-800'
-                    : 'text-gray-700 hover:bg-gray-200'
+                    ? 'bg-[var(--accent)] text-[var(--accent-foreground)]'
+                    : 'text-[var(--text)] hover:bg-[var(--bg)]'
                 }`}
               >
                 {label}

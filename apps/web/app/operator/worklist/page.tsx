@@ -47,8 +47,8 @@ export default function OperatorWorklistPage() {
   if (isLoading) {
     return (
       <div>
-        <h1 className="text-2xl font-bold mb-4">Worklist</h1>
-        <p className="text-gray-500">Loading…</p>
+        <h2 className="text-xl font-bold mb-2 text-[var(--text)]">Worklist</h2>
+        <p className="text-[var(--muted)]">Loading…</p>
       </div>
     );
   }
@@ -56,7 +56,7 @@ export default function OperatorWorklistPage() {
   if (error) {
     return (
       <div>
-        <h1 className="text-2xl font-bold mb-4">Worklist</h1>
+        <h2 className="text-xl font-bold mb-2 text-[var(--text)]">Worklist</h2>
         <p className="text-red-600">{error instanceof Error ? error.message : 'Error loading worklist'}</p>
       </div>
     );
@@ -64,8 +64,8 @@ export default function OperatorWorklistPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-4">Worklist</h1>
-      <p className="text-gray-600 mb-4">Lab encounters with current status from backend.</p>
+      <h2 className="text-xl font-bold mb-2 text-[var(--text)]">Worklist</h2>
+      <p className="text-sm text-[var(--muted)] mb-4">Lab encounters with current status from backend.</p>
       <form
         className="mb-4 flex gap-2"
         onSubmit={(e) => {
@@ -77,9 +77,9 @@ export default function OperatorWorklistPage() {
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
           placeholder="Search by name or Reg # (TODO: wire to API if supported)"
-          className="max-w-md rounded border border-gray-300 px-3 py-2 text-sm"
+          className="max-w-md rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--text)] placeholder:text-[var(--muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
         />
-        <button type="submit" className="rounded bg-gray-900 px-4 py-2 text-sm text-white hover:bg-gray-700">
+        <button type="submit" className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)] hover:opacity-90 transition">
           Search
         </button>
       </form>

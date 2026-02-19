@@ -125,5 +125,5 @@ To make Report Design and Receipt Design persistent and tenant-scoped:
 - [ ] **RBAC enforcement verified?**  
   Confirm that only users with Admin (or equivalent) role can access `/admin/business/report-design` and `/admin/business/receipt-design`. If the admin layout currently only checks auth, add or document role check.
 
-- [ ] **Feature flag wrapping required?**  
-  If report design or receipt design should be gated by a feature flag, wrap these routes or sections with `FeatureGate` (or equivalent) once backend provides the flag.
+- [x] **Feature flag wrapping**  
+  Implemented: `lims.report_design` and `lims.receipt_design` (see `governance/FeatureFlags.md`). `FeatureGate` resolves flags from GET `/me/features`. Report Design and Receipt Design pages are wrapped with `FeatureGate`; when disabled, a fallback NoticeBanner is shown. AdminNav hides the Report Design and Receipt Design links when the respective flag is disabled. Backend must enforce these flags for any future design API endpoints.

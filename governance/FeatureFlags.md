@@ -19,6 +19,8 @@ Use dot-separated keys.
 - `lims.sample_workflow`
 - `lims.result_verification`
 - `lims.auto_print_on_publish`
+- `lims.report_design` — Admin UI: Report Design page and nav link (layout metadata for PDF report engine)
+- `lims.receipt_design` — Admin UI: Receipt Design page and nav link (layout metadata for receipt printing)
 
 ## Governance rules
 - Backend is authoritative: every protected action checks `FeatureService.can(tenant, key)`.

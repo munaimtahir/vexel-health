@@ -25,52 +25,52 @@ export function WorklistTable({
   emptyMessage = 'No items.',
 }: WorklistTableProps) {
   return (
-    <div className="overflow-hidden rounded border border-gray-200 bg-white shadow">
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50">
+    <div className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-sm">
+      <table className="min-w-full divide-y divide-[var(--border)]">
+        <thead className="bg-[var(--bg)]">
           <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-[var(--muted)]">
               Reg #
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-[var(--muted)]">
               Patient
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-[var(--muted)]">
               Visit / Encounter
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-[var(--muted)]">
               Status
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-[var(--muted)]">
               Updated
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-[var(--muted)]">
               Actions
             </th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-200 bg-white">
+        <tbody className="divide-y divide-[var(--border)] bg-[var(--surface)]">
           {rows.map((row) => (
-            <tr key={row.encounterId} className="hover:bg-gray-50">
-              <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">
+            <tr key={row.encounterId} className="hover:bg-[var(--bg)]/60 transition">
+              <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-[var(--text)]">
                 {row.regNo || '—'}
               </td>
-              <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-700">
+              <td className="whitespace-nowrap px-6 py-4 text-sm text-[var(--text)]">
                 {row.patientName || '—'}
               </td>
-              <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-700">
+              <td className="whitespace-nowrap px-6 py-4 text-sm text-[var(--text)]">
                 {row.encounterCode || '—'}
               </td>
               <td className="whitespace-nowrap px-6 py-4">
                 <StatusPill status={row.status} />
               </td>
-              <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
+              <td className="whitespace-nowrap px-6 py-4 text-sm text-[var(--muted)]">
                 {row.updated}
               </td>
               <td className="whitespace-nowrap px-6 py-4 text-sm">
                 <Link
                   href={detailHref(row.encounterId)}
-                  className="text-blue-600 hover:underline"
+                  className="font-medium text-[var(--accent)] hover:underline"
                 >
                   Open
                 </Link>
@@ -81,7 +81,7 @@ export function WorklistTable({
             <tr>
               <td
                 colSpan={6}
-                className="px-6 py-8 text-center text-sm text-gray-500"
+                className="px-6 py-8 text-center text-sm text-[var(--muted)]"
               >
                 {emptyMessage}
               </td>

@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from 'react';
 import { AdminCard } from '@/components/admin/AdminCard';
+import { FeatureGate } from '@/components/admin/FeatureGate';
 import { NoticeBanner } from '@/components/admin/NoticeBanner';
 import { PageHeader } from '@/components/admin/PageHeader';
 import { SectionTitle } from '@/components/admin/SectionTitle';
@@ -93,13 +94,22 @@ export default function ReportDesignPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Report Design"
-        subtitle="Configure layout metadata for the PDF report engine. Rendering is performed by the deterministic PDF service."
-      />
+    <FeatureGate
+      featureKey="lims.report_design"
+      fallback={
+        <NoticeBanner title="Feature not enabled" tone="info">
+          Report Design is not enabled for your tenant. Contact your administrator to enable the{' '}
+          <code className="rounded bg-[var(--bg)] px-1">lims.report_design</code> feature flag.
+        </NoticeBanner>
+      }
+    >
+      <div className="space-y-6">
+        <PageHeader
+          title="Report Design"
+          subtitle="Configure layout metadata for the PDF report engine. Rendering is performed by the deterministic PDF service."
+        />
 
-      <NoticeBanner title="Requires backend contract endpoint: GET/PUT tenant report design" tone="warning">
+        <NoticeBanner title="Requires backend contract endpoint: GET/PUT tenant report design" tone="warning">
         Current OpenAPI contract does not expose getTenantReportDesign / updateTenantReportDesign. This form is
         local-state scaffold only. Persistence requires backend contract alignment.
       </NoticeBanner>
@@ -238,5 +248,6 @@ export default function ReportDesignPage() {
         </div>
       </form>
     </div>
+    </FeatureGate>
   );
 }

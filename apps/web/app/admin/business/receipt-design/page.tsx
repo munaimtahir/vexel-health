@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from 'react';
 import { AdminCard } from '@/components/admin/AdminCard';
+import { FeatureGate } from '@/components/admin/FeatureGate';
 import { NoticeBanner } from '@/components/admin/NoticeBanner';
 import { PageHeader } from '@/components/admin/PageHeader';
 import { SectionTitle } from '@/components/admin/SectionTitle';
@@ -70,13 +71,22 @@ export default function ReceiptDesignPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Receipt Design"
-        subtitle="Configure layout metadata for receipt printing. Rendering is handled by the PDF service."
-      />
+    <FeatureGate
+      featureKey="lims.receipt_design"
+      fallback={
+        <NoticeBanner title="Feature not enabled" tone="info">
+          Receipt Design is not enabled for your tenant. Contact your administrator to enable the{' '}
+          <code className="rounded bg-[var(--bg)] px-1">lims.receipt_design</code> feature flag.
+        </NoticeBanner>
+      }
+    >
+      <div className="space-y-6">
+        <PageHeader
+          title="Receipt Design"
+          subtitle="Configure layout metadata for receipt printing. Rendering is handled by the PDF service."
+        />
 
-      <NoticeBanner title="Backend contract endpoint required" tone="warning">
+        <NoticeBanner title="Backend contract endpoint required" tone="warning">
         Current OpenAPI contract does not expose getTenantReceiptDesign / updateTenantReceiptDesign. This form is
         local-state scaffold only. Persistence requires backend contract alignment.
       </NoticeBanner>
@@ -216,5 +226,6 @@ export default function ReceiptDesignPage() {
         </div>
       </form>
     </div>
+    </FeatureGate>
   );
 }

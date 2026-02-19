@@ -21,6 +21,8 @@ export const adminRoutes = {
 export type AdminNavItem = {
   label: string;
   href: string;
+  /** When set, nav link is shown only when this feature flag is enabled (GET /me/features). */
+  featureKey?: string;
 };
 
 export type AdminNavSection = {
