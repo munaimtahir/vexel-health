@@ -1,0 +1,17 @@
+{
+  "version": 2,
+  "dgSpecHash": "6KNiQkaVsQSGgdGKpTJxAxYAl4KgqglmCGzPX4EGzjp3r3Rw7LY8DmeZbVwW7TIPv/VBxrVWQ3XsVQt0MA90ow==",
+  "success": true,
+  "projectFilePath": "/home/munaim/srv/apps/vexel-health/apps/pdf/PdfService.csproj",
+  "expectedPackageFiles": [
+    "/home/munaim/.nuget/packages/harfbuzzsharp/7.3.0/harfbuzzsharp.7.3.0.nupkg.sha512",
+    "/home/munaim/.nuget/packages/harfbuzzsharp.nativeassets.macos/7.3.0/harfbuzzsharp.nativeassets.macos.7.3.0.nupkg.sha512",
+    "/home/munaim/.nuget/packages/harfbuzzsharp.nativeassets.win32/7.3.0/harfbuzzsharp.nativeassets.win32.7.3.0.nupkg.sha512",
+    "/home/munaim/.nuget/packages/questpdf/2023.12.0/questpdf.2023.12.0.nupkg.sha512",
+    "/home/munaim/.nuget/packages/skiasharp/2.88.6/skiasharp.2.88.6.nupkg.sha512",
+    "/home/munaim/.nuget/packages/skiasharp.harfbuzz/2.88.6/skiasharp.harfbuzz.2.88.6.nupkg.sha512",
+    "/home/munaim/.nuget/packages/skiasharp.nativeassets.macos/2.88.6/skiasharp.nativeassets.macos.2.88.6.nupkg.sha512",
+    "/home/munaim/.nuget/packages/skiasharp.nativeassets.win32/2.88.6/skiasharp.nativeassets.win32.2.88.6.nupkg.sha512"
+  ],
+  "logs": []
+}

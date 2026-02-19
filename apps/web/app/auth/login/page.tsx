@@ -86,6 +86,8 @@ export default function LoginPage() {
                         <label className="block text-sm font-medium text-gray-700">Email</label>
                         <input
                             {...register('email', { required: true })}
+                            type="email"
+                            autoComplete="email"
                             className="mt-1 block w-full border border-gray-300 rounded p-2"
                             placeholder="user@example.com"
                         />
@@ -99,6 +101,7 @@ export default function LoginPage() {
                         <label className="block text-sm font-medium text-gray-700">Password</label>
                         <input
                             type="password"
+                            autoComplete="current-password"
                             {...register('pass', { required: true })}
                             className="mt-1 block w-full border border-gray-300 rounded p-2"
                         />

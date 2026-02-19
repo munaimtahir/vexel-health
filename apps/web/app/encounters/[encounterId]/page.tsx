@@ -22,6 +22,11 @@ type SaveMainRequest =
   paths['/encounters/{id}:save-main']['post']['requestBody']['content']['application/json'];
 type DocumentResponse =
   paths['/encounters/{id}:document']['post']['responses'][200]['content']['application/json'];
+type DocumentCommandRequest =
+  NonNullable<
+    paths['/encounters/{id}:document']['post']['requestBody']
+  >['content']['application/json'];
+type RequestedDocumentType = DocumentResponse['type'];
 
 type PrepFormState = {
   specimenType: string;
@@ -402,6 +407,29 @@ function mainSummaryRows(main: EncounterMainResponse): Array<[string, string]> {
   return [['Main Data', 'Not saved yet']];
 }
 
+function documentTypeOptions(encounterType: Encounter['type']): RequestedDocumentType[] {
+  const options: RequestedDocumentType[] = ['ENCOUNTER_SUMMARY_V1'];
+
+  if (encounterType === 'LAB') {
+    options.push('LAB_REPORT_V1');
+  } else if (encounterType === 'RAD') {
+    options.push('RAD_REPORT_V1');
+  } else if (encounterType === 'OPD') {
+    options.push('OPD_SUMMARY_V1');
+  } else if (encounterType === 'BB') {
+    options.push('BB_ISSUE_SLIP_V1');
+  } else if (encounterType === 'IPD') {
+    options.push('IPD_SUMMARY_V1');
+  }
+
+  return options;
+}
+
+function defaultDocumentType(encounterType: Encounter['type']): RequestedDocumentType {
+  const options = documentTypeOptions(encounterType);
+  return options[options.length - 1];
+}
+
 export default function EncounterDetailPage() {
   const params = useParams<{ encounterId: string }>();
   const encounterId = typeof params.encounterId === 'string' ? params.encounterId : '';
@@ -418,6 +446,8 @@ export default function EncounterDetailPage() {
   const [prepForm, setPrepForm] = useState<PrepFormState>(defaultPrepFormState);
   const [mainForm, setMainForm] = useState<MainFormState>(defaultMainFormState);
   const [documentMeta, setDocumentMeta] = useState<DocumentResponse | null>(null);
+  const [selectedDocumentType, setSelectedDocumentType] =
+    useState<RequestedDocumentType>('ENCOUNTER_SUMMARY_V1');
 
   const {
     data: encounter,
@@ -698,6 +728,22 @@ export default function EncounterDetailPage() {
     return mainSummaryRows(main);
   }, [main]);
 
+  const availableDocumentTypes = useMemo(() => {
+    if (!encounter) {
+      return ['ENCOUNTER_SUMMARY_V1'] as RequestedDocumentType[];
+    }
+
+    return documentTypeOptions(encounter.type);
+  }, [encounter]);
+
+  useEffect(() => {
+    if (!encounter) {
+      return;
+    }
+
+    setSelectedDocumentType(defaultDocumentType(encounter.type));
+  }, [encounter?.id]);
+
   if (encounterLoading) {
     return <div className="p-8">Loading encounter...</div>;
   }
@@ -832,10 +878,15 @@ export default function EncounterDetailPage() {
     setActionSuccess('');
     setIsGeneratingDocument(true);
 
+    const body: DocumentCommandRequest = {
+      documentType: selectedDocumentType,
+    };
+
     const { data, error } = await client.POST('/encounters/{id}:document', {
       params: {
         path: { id: encounter.id },
       },
+      body,
     });
 
     setIsGeneratingDocument(false);
@@ -853,8 +904,8 @@ export default function EncounterDetailPage() {
     setDocumentMeta(data);
     setActionSuccess(
       data.status === 'RENDERED'
-        ? 'Document rendered and ready to download'
-        : `Document ${data.status.toLowerCase()}`,
+        ? `${data.type} rendered and ready to download`
+        : `${data.type} ${data.status.toLowerCase()}`,
     );
     await refetchEncounter();
   };
@@ -1698,6 +1749,9 @@ export default function EncounterDetailPage() {
                 <span className="font-semibold">Document ID:</span> {documentMeta.id}
               </p>
               <p>
+                <span className="font-semibold">Type:</span> {documentMeta.type}
+              </p>
+              <p>
                 <span className="font-semibold">Status:</span> {documentMeta.status}
               </p>
               <p>
@@ -1713,6 +1767,23 @@ export default function EncounterDetailPage() {
               No document metadata loaded yet.
             </p>
           )}
+
+          <div className="mb-4 max-w-sm">
+            <label className="block text-sm font-medium">Document Type</label>
+            <select
+              value={selectedDocumentType}
+              onChange={(event) =>
+                setSelectedDocumentType(event.target.value as RequestedDocumentType)
+              }
+              className="mt-1 block w-full rounded border border-gray-300 p-2"
+            >
+              {availableDocumentTypes.map((type) => (
+                <option key={type} value={type}>
+                  {type}
+                </option>
+              ))}
+            </select>
+          </div>
 
           <div className="flex flex-wrap gap-3">
             <button

@@ -432,6 +432,12 @@ paths:
       parameters:
         - $ref: '#/components/parameters/TenantIdHeader'
         - $ref: '#/components/parameters/IdPathParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocumentCommandRequest'
       responses:
         '200':
           description: Document queued or already rendered
@@ -439,6 +445,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DocumentResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
         '404':
           $ref: '#/components/responses/NotFoundError'
         '409':
@@ -929,7 +937,48 @@ components:
           nullable: true
     DocumentType:
       type: string
-      enum: [ENCOUNTER_SUMMARY]
+      enum:
+        - ENCOUNTER_SUMMARY_V1
+        - LAB_REPORT_V1
+        - OPD_SUMMARY_V1
+        - RAD_REPORT_V1
+        - BB_ISSUE_SLIP_V1
+        - IPD_SUMMARY_V1
+    DocumentCommandRequest:
+      type: object
+      required:
+        - documentType
+      additionalProperties: false
+      properties:
+        documentType:
+          $ref: '#/components/schemas/DocumentType'
+      example:
+        documentType: LAB_REPORT_V1
+    DocumentPayloadSample:
+      type: object
+      additionalProperties: true
+    DocumentPayloadSampleFixtures:
+      type: object
+      required:
+        - ENCOUNTER_SUMMARY_V1
+        - LAB_REPORT_V1
+        - OPD_SUMMARY_V1
+        - RAD_REPORT_V1
+        - BB_ISSUE_SLIP_V1
+        - IPD_SUMMARY_V1
+      properties:
+        ENCOUNTER_SUMMARY_V1:
+          $ref: '#/components/schemas/DocumentPayloadSample'
+        LAB_REPORT_V1:
+          $ref: '#/components/schemas/DocumentPayloadSample'
+        OPD_SUMMARY_V1:
+          $ref: '#/components/schemas/DocumentPayloadSample'
+        RAD_REPORT_V1:
+          $ref: '#/components/schemas/DocumentPayloadSample'
+        BB_ISSUE_SLIP_V1:
+          $ref: '#/components/schemas/DocumentPayloadSample'
+        IPD_SUMMARY_V1:
+          $ref: '#/components/schemas/DocumentPayloadSample'
     DocumentStatus:
       type: string
       enum: [QUEUED, RENDERED, FAILED]
@@ -938,6 +987,7 @@ components:
       required:
         - id
         - type
+        - templateKey
         - status
         - encounterId
         - payloadHash
@@ -949,6 +999,9 @@ components:
           type: string
         type:
           $ref: '#/components/schemas/DocumentType'
+        templateKey:
+          type: string
+          example: RAD_REPORT_V1
         status:
           $ref: '#/components/schemas/DocumentStatus'
         encounterId:

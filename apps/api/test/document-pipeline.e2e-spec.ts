@@ -818,8 +818,21 @@ describe('Document pipeline (e2e)', () => {
         return;
       }
 
+      const payloadMeta =
+        typeof document.payloadJson === 'object' &&
+        document.payloadJson !== null &&
+        typeof (document.payloadJson as Record<string, unknown>).meta === 'object' &&
+        (document.payloadJson as Record<string, unknown>).meta !== null
+          ? ((document.payloadJson as Record<string, unknown>)
+              .meta as Record<string, unknown>)
+          : null;
+      const templateKey =
+        payloadMeta && typeof payloadMeta.templateKey === 'string'
+          ? payloadMeta.templateKey
+          : 'ENCOUNTER_SUMMARY_V1';
+
       const deterministicPdf = Buffer.from(
-        `ENCOUNTER_SUMMARY|t${document.templateVersion}|p${document.payloadVersion}|${canonicalizeJson(document.payloadJson)}`,
+        `${templateKey}|t${document.templateVersion}|p${document.payloadVersion}|${canonicalizeJson(document.payloadJson)}`,
       );
       const { storageKey } = await storageAdapter.putPdf({
         tenantId: payload.tenantId,
@@ -928,6 +941,9 @@ describe('Document pipeline (e2e)', () => {
     const documentCommandResponse = await request(app.getHttpServer())
       .post(`/encounters/${createdEncounterId}:document`)
       .set('Host', 'tenant-a.test')
+      .send({
+        documentType: 'ENCOUNTER_SUMMARY_V1',
+      })
       .expect(200);
 
     createdDocumentId = documentCommandResponse.body.id;
@@ -958,6 +974,9 @@ describe('Document pipeline (e2e)', () => {
     const secondDocumentCommandResponse = await request(app.getHttpServer())
       .post(`/encounters/${createdEncounterId}:document`)
       .set('Host', 'tenant-a.test')
+      .send({
+        documentType: 'ENCOUNTER_SUMMARY_V1',
+      })
       .expect(200);
 
     expect(secondDocumentCommandResponse.body.id).toBe(createdDocumentId);
@@ -976,6 +995,92 @@ describe('Document pipeline (e2e)', () => {
       .expect(200)
       .expect((response) => {
         expect(response.body.status).toBe('DOCUMENTED');
+      });
+  });
+
+  it('supports typed document requests and enforces encounter/document-type matching', async () => {
+    const patientResponse = await request(app.getHttpServer())
+      .post('/patients')
+      .set('Host', 'tenant-a.test')
+      .send({
+        name: 'Typed Document Patient',
+      })
+      .expect(201);
+
+    const encounterResponse = await request(app.getHttpServer())
+      .post('/encounters')
+      .set('Host', 'tenant-a.test')
+      .send({
+        patientId: patientResponse.body.id,
+        type: 'LAB',
+      })
+      .expect(201);
+
+    const labEncounterId = encounterResponse.body.id as string;
+
+    await request(app.getHttpServer())
+      .post(`/encounters/${labEncounterId}:start-prep`)
+      .set('Host', 'tenant-a.test')
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .post(`/encounters/${labEncounterId}:save-prep`)
+      .set('Host', 'tenant-a.test')
+      .send({
+        specimenType: 'Blood',
+      })
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .post(`/encounters/${labEncounterId}:start-main`)
+      .set('Host', 'tenant-a.test')
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .post(`/encounters/${labEncounterId}:finalize`)
+      .set('Host', 'tenant-a.test')
+      .expect(200);
+
+    const typedDocumentResponse = await request(app.getHttpServer())
+      .post(`/encounters/${labEncounterId}:document`)
+      .set('Host', 'tenant-a.test')
+      .send({
+        documentType: 'LAB_REPORT_V1',
+      })
+      .expect(200);
+
+    expect(typedDocumentResponse.body.type).toBe('LAB_REPORT_V1');
+
+    const typedDocumentId = typedDocumentResponse.body.id as string;
+
+    await request(app.getHttpServer())
+      .get(`/documents/${typedDocumentId}`)
+      .set('Host', 'tenant-a.test')
+      .expect(200)
+      .expect((response) => {
+        expect(response.body.type).toBe('LAB_REPORT_V1');
+      });
+
+    const secondTypedResponse = await request(app.getHttpServer())
+      .post(`/encounters/${labEncounterId}:document`)
+      .set('Host', 'tenant-a.test')
+      .send({
+        documentType: 'LAB_REPORT_V1',
+      })
+      .expect(200);
+
+    expect(secondTypedResponse.body.id).toBe(typedDocumentId);
+
+    await request(app.getHttpServer())
+      .post(`/encounters/${labEncounterId}:document`)
+      .set('Host', 'tenant-a.test')
+      .send({
+        documentType: 'RAD_REPORT_V1',
+      })
+      .expect(409)
+      .expect((response) => {
+        expect(response.body.error.type).toBe('domain_error');
+        expect(response.body.error.code).toBe('INVALID_DOCUMENT_TYPE');
       });
   });
 
@@ -1079,9 +1184,28 @@ describe('Document pipeline (e2e)', () => {
     const documentResponse = await request(app.getHttpServer())
       .post(`/encounters/${radEncounterId}:document`)
       .set('Host', 'tenant-a.test')
+      .send({
+        documentType: 'RAD_REPORT_V1',
+      })
       .expect(200);
 
     expect(documentResponse.body.status).toBe('RENDERED');
+    expect(documentResponse.body.type).toBe('RAD_REPORT_V1');
+    expect(documentResponse.body.templateKey).toBe('RAD_REPORT_V1');
+
+    const secondDocumentResponse = await request(app.getHttpServer())
+      .post(`/encounters/${radEncounterId}:document`)
+      .set('Host', 'tenant-a.test')
+      .send({
+        documentType: 'RAD_REPORT_V1',
+      })
+      .expect(200);
+
+    expect(secondDocumentResponse.body.id).toBe(documentResponse.body.id);
+    expect(secondDocumentResponse.body.pdfHash).toBe(documentResponse.body.pdfHash);
+    expect(secondDocumentResponse.body.payloadHash).toBe(
+      documentResponse.body.payloadHash,
+    );
 
     await request(app.getHttpServer())
       .get(`/documents/${documentResponse.body.id}/file`)
@@ -1093,6 +1217,54 @@ describe('Document pipeline (e2e)', () => {
         expect(response.headers['content-type']).toContain('application/pdf');
         expect((response.body as Buffer).length).toBeGreaterThan(50);
       });
+  });
+
+  it('supports OPD flow and OPD_SUMMARY_V1 document generation', async () => {
+    const patientResponse = await request(app.getHttpServer())
+      .post('/patients')
+      .set('Host', 'tenant-a.test')
+      .send({
+        name: 'Opd Main Flow',
+      })
+      .expect(201);
+
+    const encounterResponse = await request(app.getHttpServer())
+      .post('/encounters')
+      .set('Host', 'tenant-a.test')
+      .send({
+        patientId: patientResponse.body.id,
+        type: 'OPD',
+      })
+      .expect(201);
+
+    const opdEncounterId = encounterResponse.body.id as string;
+
+    await request(app.getHttpServer())
+      .post(`/encounters/${opdEncounterId}:start-prep`)
+      .set('Host', 'tenant-a.test')
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .post(`/encounters/${opdEncounterId}:start-main`)
+      .set('Host', 'tenant-a.test')
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .post(`/encounters/${opdEncounterId}:finalize`)
+      .set('Host', 'tenant-a.test')
+      .expect(200);
+
+    const documentResponse = await request(app.getHttpServer())
+      .post(`/encounters/${opdEncounterId}:document`)
+      .set('Host', 'tenant-a.test')
+      .send({
+        documentType: 'OPD_SUMMARY_V1',
+      })
+      .expect(200);
+
+    expect(documentResponse.body.status).toBe('RENDERED');
+    expect(documentResponse.body.type).toBe('OPD_SUMMARY_V1');
+    expect(documentResponse.body.templateKey).toBe('OPD_SUMMARY_V1');
   });
 
   it('blocks cross-tenant document reads', async () => {
@@ -1117,6 +1289,9 @@ describe('Document pipeline (e2e)', () => {
     await request(app.getHttpServer())
       .post(`/encounters/${createdEncounterId}:document`)
       .set('Host', 'tenant-b.test')
+      .send({
+        documentType: 'ENCOUNTER_SUMMARY_V1',
+      })
       .expect(404)
       .expect((response) => {
         expect(response.body.error.type).toBe('not_found');

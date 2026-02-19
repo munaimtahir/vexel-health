@@ -1,0 +1,40 @@
+{
+  "meta": {
+    "documentType": "LAB_REPORT_V1",
+    "templateKey": "LAB_REPORT_V1",
+    "templateVersion": 1,
+    "payloadVersion": 1,
+    "schemaVersion": 1
+  },
+  "tenant": {
+    "id": "tenant-a"
+  },
+  "patient": {
+    "id": "patient-1",
+    "regNo": "REG-00000001",
+    "name": "Demo Patient",
+    "dob": null,
+    "gender": "male",
+    "phone": null
+  },
+  "encounter": {
+    "id": "encounter-1",
+    "encounterCode": "LAB-2026-000001",
+    "type": "LAB",
+    "status": "FINALIZED",
+    "startedAt": "2026-02-19T10:00:00.000Z",
+    "endedAt": "2026-02-19T10:30:00.000Z",
+    "createdAt": "2026-02-19T10:00:00.000Z"
+  },
+  "prep": {
+    "specimenType": "Blood",
+    "collectedAt": "2026-02-19T10:05:00.000Z",
+    "collectorName": "Nurse A",
+    "receivedAt": "2026-02-19T10:07:00.000Z"
+  },
+  "main": {
+    "resultSummary": "Hemoglobin in expected range.",
+    "verifiedBy": "Lab Specialist",
+    "verifiedAt": "2026-02-19T10:20:00.000Z"
+  }
+}
