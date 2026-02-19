@@ -67,10 +67,12 @@ export default function OperatorVerifyDetailPage() {
       });
       if (error) throw new Error(parseApiError(error, 'Verification failed').message);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['encounter', encounterId] });
-      queryClient.invalidateQueries({ queryKey: operatorKeys.verificationQueue() });
-      refetchLabTests();
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['encounter', encounterId] }),
+        queryClient.invalidateQueries({ queryKey: operatorKeys.verificationQueue() }),
+        refetchLabTests(),
+      ]);
     },
   });
 
@@ -81,8 +83,12 @@ export default function OperatorVerifyDetailPage() {
       });
       if (error) throw new Error(parseApiError(error, 'Publish failed').message);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['encounter', encounterId] });
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['encounter', encounterId] }),
+        queryClient.invalidateQueries({ queryKey: operatorKeys.verificationQueue() }),
+        queryClient.invalidateQueries({ queryKey: ['operator', 'reports', 'published'] }),
+      ]);
     },
   });
 
@@ -93,6 +99,9 @@ export default function OperatorVerifyDetailPage() {
   const status = encounter?.labEncounterStatus ?? encounter?.status ?? null;
   const orderedTests = labTests?.data ?? [];
   const allVerified = orderedTests.length > 0 && orderedTests.every((item) => item.orderItem.status === 'VERIFIED');
+  const isEncounterFinalizedForPublish =
+    encounter?.status === 'FINALIZED' || encounter?.status === 'DOCUMENTED';
+  const canPublish = allVerified && isEncounterFinalizedForPublish;
 
   if (encLoading || !encounterId) {
     return <div><p className="text-[var(--muted)]">Loading encounter…</p></div>;
@@ -120,7 +129,8 @@ export default function OperatorVerifyDetailPage() {
       <div className="rounded border border-[var(--border)] bg-[var(--surface)] p-6 shadow space-y-4">
         <h2 className="text-lg font-semibold text-[var(--text)]">Verification checklist</h2>
         <p className="text-sm text-[var(--muted)]">
-          Verify each RESULTS_ENTERED test item. Publish is enabled once all ordered tests are verified.
+          Verify each RESULTS_ENTERED test item. Once all ordered tests are verified,
+          encounter finalization is automatic and publish is enabled.
         </p>
         {testsLoading ? (
           <p className="text-sm text-[var(--muted)]">Loading ordered tests…</p>
@@ -161,7 +171,7 @@ export default function OperatorVerifyDetailPage() {
           <button
             type="button"
             onClick={() => publishMutation.mutate()}
-            disabled={publishMutation.isPending || !allVerified}
+            disabled={publishMutation.isPending || !canPublish}
             className="rounded bg-[var(--success)] px-4 py-2 text-sm text-white hover:opacity-90 disabled:opacity-50"
           >
             {publishMutation.isPending ? 'Publishing…' : 'Publish report'}
@@ -169,6 +179,11 @@ export default function OperatorVerifyDetailPage() {
           {!allVerified && (
             <p className="self-center text-sm text-[var(--warning)]">
               Publish is disabled until all ordered tests are verified.
+            </p>
+          )}
+          {allVerified && !isEncounterFinalizedForPublish && (
+            <p className="self-center text-sm text-[var(--warning)]">
+              Waiting for encounter finalization to complete.
             </p>
           )}
         </div>

@@ -25,8 +25,9 @@ export function isRequestedDocumentType(
 }
 
 export function toStoredDocumentType(
-  _requested: RequestedDocumentType,
+  requested: RequestedDocumentType,
 ): PrismaDocumentType {
+  void requested;
   // Storage enum remains generic in this phase. Request type is persisted in payload.meta.
   return PrismaDocumentType.ENCOUNTER_SUMMARY;
 }

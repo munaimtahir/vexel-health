@@ -471,6 +471,37 @@ function createPrismaMock(state: MemoryState) {
           return encounter;
         },
       ),
+      updateMany: jest.fn(async ({ where, data }: any) => {
+        const matches = state.encounters.filter((encounter) => {
+          if (encounter.id !== where.id) {
+            return false;
+          }
+          if (
+            typeof where.tenantId === 'string' &&
+            encounter.tenantId !== where.tenantId
+          ) {
+            return false;
+          }
+          if (
+            typeof where.status === 'string' &&
+            encounter.status !== where.status
+          ) {
+            return false;
+          }
+          return true;
+        });
+
+        for (const encounter of matches) {
+          if (data.status !== undefined) {
+            encounter.status = data.status;
+          }
+          if (data.endedAt !== undefined) {
+            encounter.endedAt = data.endedAt;
+          }
+        }
+
+        return { count: matches.length };
+      }),
     },
     labEncounterPrep: {
       upsert: jest.fn(async ({ where, create, update }: any) => {
@@ -1266,6 +1297,32 @@ describe('LAB workflow (e2e)', () => {
   });
 
   it('allows prep command access for user, manager, and admin roles', async () => {
+    const createTestResponse = await request(app.getHttpServer())
+      .post('/lab/tests')
+      .set('Host', 'tenant-a.test')
+      .set('Authorization', `Bearer ${tenantAAllLabPermissionsToken}`)
+      .send({
+        code: 'ROLE-PREP',
+        name: 'Role Prep Test',
+        department: 'Biochemistry',
+      })
+      .expect(201);
+
+    const testId = createTestResponse.body.id as string;
+
+    await request(app.getHttpServer())
+      .post(`/lab/tests/${testId}/parameters`)
+      .set('Host', 'tenant-a.test')
+      .set('Authorization', `Bearer ${tenantAAllLabPermissionsToken}`)
+      .send({
+        name: 'Role Prep Parameter',
+        unit: 'g/dL',
+        refLow: 1,
+        refHigh: 10,
+        displayOrder: 1,
+      })
+      .expect(201);
+
     const patientResponse = await request(app.getHttpServer())
       .post('/patients')
       .set('Host', 'tenant-a.test')
@@ -1284,6 +1341,16 @@ describe('LAB workflow (e2e)', () => {
       .expect(201);
 
     const encounterId = encounterResponse.body.id as string;
+
+    await request(app.getHttpServer())
+      .post(`/encounters/${encounterId}:lab-add-test`)
+      .set('Host', 'tenant-a.test')
+      .set('Authorization', `Bearer ${tenantAAllLabPermissionsToken}`)
+      .send({
+        testId,
+      })
+      .expect(200);
+
     const roleTokens = [
       tenantAUserToken,
       tenantAManagerToken,
@@ -1313,7 +1380,7 @@ describe('LAB workflow (e2e)', () => {
     }
   });
 
-  it('runs LAB catalog -> order -> results -> verify -> finalize -> publish with tenant isolation', async () => {
+  it('runs LAB catalog -> order -> verify -> auto-finalize -> publish with tenant isolation', async () => {
     const patientResponse = await request(app.getHttpServer())
       .post('/patients')
       .set('Host', 'tenant-a.test')
@@ -1332,21 +1399,6 @@ describe('LAB workflow (e2e)', () => {
       .expect(201);
 
     const encounterId = encounterResponse.body.id as string;
-
-    await request(app.getHttpServer())
-      .post('/lims/commands/updateEncounterPrep')
-      .set('Host', 'tenant-a.test')
-      .send({
-        encounter_id: encounterId,
-        prep: {
-          sample_collected_at: new Date().toISOString(),
-        },
-      })
-      .expect(200)
-      .expect((response) => {
-        expect(response.body.prep_complete).toBe(true);
-        expect(response.body.status).toBe('IN_PROGRESS');
-      });
 
     const createTestResponse = await request(app.getHttpServer())
       .post('/lab/tests')
@@ -1374,6 +1426,32 @@ describe('LAB workflow (e2e)', () => {
       })
       .expect(201);
 
+    const createSecondTestResponse = await request(app.getHttpServer())
+      .post('/lab/tests')
+      .set('Host', 'tenant-a.test')
+      .set('Authorization', `Bearer ${tenantAAllLabPermissionsToken}`)
+      .send({
+        code: 'ALT',
+        name: 'Alanine Aminotransferase',
+        department: 'Biochemistry',
+      })
+      .expect(201);
+
+    const secondTestId = createSecondTestResponse.body.id as string;
+
+    await request(app.getHttpServer())
+      .post(`/lab/tests/${secondTestId}/parameters`)
+      .set('Host', 'tenant-a.test')
+      .set('Authorization', `Bearer ${tenantAAllLabPermissionsToken}`)
+      .send({
+        name: 'ALT',
+        unit: 'U/L',
+        refLow: 7,
+        refHigh: 55,
+        displayOrder: 1,
+      })
+      .expect(201);
+
     const addTestResponse = await request(app.getHttpServer())
       .post(`/encounters/${encounterId}:lab-add-test`)
       .set('Host', 'tenant-a.test')
@@ -1386,6 +1464,38 @@ describe('LAB workflow (e2e)', () => {
 
     const orderItemId = addTestResponse.body.orderItem.id as string;
     const parameterId = addTestResponse.body.parameters[0].id as string;
+
+    const addSecondTestResponse = await request(app.getHttpServer())
+      .post(`/encounters/${encounterId}:lab-add-test`)
+      .set('Host', 'tenant-a.test')
+      .set('Authorization', `Bearer ${tenantAAllLabPermissionsToken}`)
+      .set('x-idempotency-key', 'order-lab-add-2')
+      .send({
+        testId: secondTestId,
+      })
+      .expect(200)
+      .expect((response) => {
+        expect(response.body.orderItem.status).toBe('ORDERED');
+      });
+
+    const secondOrderItemId = addSecondTestResponse.body.orderItem.id as string;
+    const secondParameterId = addSecondTestResponse.body.parameters[0]
+      .id as string;
+
+    await request(app.getHttpServer())
+      .post('/lims/commands/updateEncounterPrep')
+      .set('Host', 'tenant-a.test')
+      .send({
+        encounter_id: encounterId,
+        prep: {
+          sample_collected_at: new Date().toISOString(),
+        },
+      })
+      .expect(200)
+      .expect((response) => {
+        expect(response.body.prep_complete).toBe(true);
+        expect(response.body.status).toBe('IN_PROGRESS');
+      });
 
     const paymentResponse = await request(app.getHttpServer())
       .post(`/encounters/${encounterId}/payments`)
@@ -1492,9 +1602,56 @@ describe('LAB workflow (e2e)', () => {
       });
 
     await request(app.getHttpServer())
-      .post(`/encounters/${encounterId}:finalize`)
+      .post(`/encounters/${encounterId}:lab-publish`)
       .set('Host', 'tenant-a.test')
-      .expect(200);
+      .set('Authorization', `Bearer ${tenantAAllLabPermissionsToken}`)
+      .expect(409)
+      .expect((response) => {
+        expect(response.body.error.type).toBe('domain_error');
+        expect(response.body.error.code).toBe(
+          'LAB_PUBLISH_BLOCKED_INVALID_STATE',
+        );
+      });
+
+    await request(app.getHttpServer())
+      .post(`/encounters/${encounterId}:lab-enter-results`)
+      .set('Host', 'tenant-a.test')
+      .set('Authorization', `Bearer ${tenantAAllLabPermissionsToken}`)
+      .set('x-idempotency-key', 'enter-results-2')
+      .send({
+        orderItemId: secondOrderItemId,
+        results: [
+          {
+            parameterId: secondParameterId,
+            value: '25',
+          },
+        ],
+      })
+      .expect(200)
+      .expect((response) => {
+        expect(response.body.orderItem.status).toBe('RESULTS_ENTERED');
+      });
+
+    await request(app.getHttpServer())
+      .post(`/encounters/${encounterId}:lab-verify`)
+      .set('Host', 'tenant-a.test')
+      .set('Authorization', `Bearer ${tenantAAllLabPermissionsToken}`)
+      .set('x-idempotency-key', 'verify-results-2')
+      .send({
+        orderItemId: secondOrderItemId,
+      })
+      .expect(200)
+      .expect((response) => {
+        expect(response.body.orderItem.status).toBe('VERIFIED');
+      });
+
+    await request(app.getHttpServer())
+      .get(`/encounters/${encounterId}`)
+      .set('Host', 'tenant-a.test')
+      .expect(200)
+      .expect((response) => {
+        expect(response.body.status).toBe('FINALIZED');
+      });
 
     const firstPublishResponse = await request(app.getHttpServer())
       .post(`/encounters/${encounterId}:lab-publish`)
@@ -1510,6 +1667,23 @@ describe('LAB workflow (e2e)', () => {
     expect(firstPublishResponse.body.payloadHash).toBeDefined();
 
     const documentId = firstPublishResponse.body.id as string;
+    const publishedDocument = state.documents.find(
+      (document) => document.id === documentId,
+    );
+    expect(publishedDocument).toBeDefined();
+
+    const payload = publishedDocument?.payloadJson as
+      | {
+          lab?: {
+            tests?: Array<{ testCode?: string }>;
+          };
+        }
+      | undefined;
+    expect(payload?.lab?.tests).toHaveLength(2);
+    expect(payload?.lab?.tests?.map((test) => test.testCode).sort()).toEqual([
+      'ALB',
+      'ALT',
+    ]);
 
     const fileResponse = await request(app.getHttpServer())
       .get(`/documents/${documentId}/file`)

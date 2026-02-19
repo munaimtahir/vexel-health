@@ -13,11 +13,13 @@ import {
 // - DOCUMENTS_S3_SECRET_KEY
 // - DOCUMENTS_S3_REGION
 export class MinioStorageAdapter implements DocumentStorageAdapter {
-  async putPdf(_input: PutPdfInput): Promise<PutPdfResult> {
-    throw new Error('MinioStorageAdapter is not wired yet');
+  putPdf(input: PutPdfInput): Promise<PutPdfResult> {
+    void input;
+    return Promise.reject(new Error('MinioStorageAdapter is not wired yet'));
   }
 
-  async getPdf(_input: GetPdfInput): Promise<Buffer> {
-    throw new Error('MinioStorageAdapter is not wired yet');
+  getPdf(input: GetPdfInput): Promise<Buffer> {
+    void input;
+    return Promise.reject(new Error('MinioStorageAdapter is not wired yet'));
   }
 }

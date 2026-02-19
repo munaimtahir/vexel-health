@@ -492,13 +492,11 @@ function createPrismaMock(state: MemoryState) {
       ),
       findFirst: jest.fn(async () => null),
       findMany: jest.fn(
-        async ({
-          where,
-          select,
-        }: {
+        async (_input: {
           where: { tenantId: string; encounterId?: string };
           select?: { status?: boolean };
         }) => {
+          void _input;
           return [];
         },
       ),
@@ -1124,15 +1122,29 @@ describe('Document pipeline (e2e)', () => {
       .set('Host', 'tenant-a.test')
       .expect(200);
 
-    const typedDocumentResponse = await request(app.getHttpServer())
+    await request(app.getHttpServer())
       .post(`/encounters/${labEncounterId}:document`)
       .set('Host', 'tenant-a.test')
       .send({
         documentType: 'LAB_REPORT_V1',
       })
+      .expect(409)
+      .expect((response) => {
+        expect(response.body.error.type).toBe('domain_error');
+        expect(response.body.error.code).toBe(
+          'LAB_PUBLISH_BLOCKED_NO_VERIFIED_TESTS',
+        );
+      });
+
+    const typedDocumentResponse = await request(app.getHttpServer())
+      .post(`/encounters/${labEncounterId}:document`)
+      .set('Host', 'tenant-a.test')
+      .send({
+        documentType: 'ENCOUNTER_SUMMARY_V1',
+      })
       .expect(200);
 
-    expect(typedDocumentResponse.body.type).toBe('LAB_REPORT_V1');
+    expect(typedDocumentResponse.body.type).toBe('ENCOUNTER_SUMMARY_V1');
 
     const typedDocumentId = typedDocumentResponse.body.id as string;
 
@@ -1141,14 +1153,14 @@ describe('Document pipeline (e2e)', () => {
       .set('Host', 'tenant-a.test')
       .expect(200)
       .expect((response) => {
-        expect(response.body.type).toBe('LAB_REPORT_V1');
+        expect(response.body.type).toBe('ENCOUNTER_SUMMARY_V1');
       });
 
     const secondTypedResponse = await request(app.getHttpServer())
       .post(`/encounters/${labEncounterId}:document`)
       .set('Host', 'tenant-a.test')
       .send({
-        documentType: 'LAB_REPORT_V1',
+        documentType: 'ENCOUNTER_SUMMARY_V1',
       })
       .expect(200);
 

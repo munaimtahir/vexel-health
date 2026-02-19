@@ -858,14 +858,10 @@ export default function EncounterDetailPage() {
   const encounterStatus = (encounter?.status ?? '').toUpperCase();
   const orderedLabTests: LabOrderedTest[] = encounterLabTests?.data ?? [];
   const hasOrderedLabTests = orderedLabTests.length > 0;
-  const allLabTestsVerified =
-    hasOrderedLabTests &&
-    orderedLabTests.every((item) => item.orderItem.status === 'VERIFIED');
   const canOrderLabTests =
     encounterStatus === 'CREATED' ||
     encounterStatus === 'PREP' ||
     encounterStatus === 'IN_PROGRESS';
-  const canStartLabPreparation = encounter?.type !== 'LAB' || hasOrderedLabTests;
   const prepFieldErrorFor = (field: string): string | null => {
     const nested = prepFieldErrors[`prep.${field}`];
     if (nested && nested.length > 0) {
@@ -1224,7 +1220,7 @@ export default function EncounterDetailPage() {
     }
 
     setActionSuccess(`Results verified for ${orderedTest.test.name}`);
-    await refetchEncounterLabTests();
+    await Promise.all([refetchEncounter(), refetchEncounterLabTests()]);
   };
 
   const publishLabReport = async () => {
@@ -1423,8 +1419,7 @@ export default function EncounterDetailPage() {
             <li>Record payment and print receipt</li>
             <li>Collect and receive sample (Preparation Data section)</li>
             <li>Enter results → Submit Results per test</li>
-            <li>Verify each order item</li>
-            <li>Finalize Encounter (Main Data section)</li>
+            <li>Verify each order item (auto-finalizes encounter)</li>
             <li>Publish LAB Report → Download PDF (Document section)</li>
           </ol>
         </div>
@@ -1562,25 +1557,35 @@ export default function EncounterDetailPage() {
         </p>
         {encounterStatus === 'CREATED' && (
           <div className="mb-4">
-            <p className="text-sm text-gray-600 mb-3">
-              {encounter.type === 'LAB'
-                ? 'Order tests first. Start preparation when sample collection begins.'
-                : 'Start preparation to continue.'}
-            </p>
-            <button
-              type="button"
-              onClick={() => {
-                void startPrep();
-              }}
-              disabled={isStartingPrep || !canStartLabPreparation}
-              className="rounded bg-gray-900 px-4 py-2 text-white hover:bg-gray-700 disabled:opacity-60"
-            >
-              {isStartingPrep ? 'Starting...' : 'Start preparation'}
-            </button>
-            {encounter.type === 'LAB' && !hasOrderedLabTests && (
-              <p className="mt-2 text-sm text-amber-700">
-                Add at least one ordered test before starting preparation.
-              </p>
+            {encounter.type === 'LAB' ? (
+              <>
+                <p className="text-sm text-gray-600 mb-3">
+                  LAB preparation uses the same step as Operator Samples. Save
+                  collected/received timestamps below to move encounter to
+                  IN_PROGRESS.
+                </p>
+                {!hasOrderedLabTests && (
+                  <p className="mt-2 text-sm text-amber-700">
+                    Add at least one ordered test before saving LAB preparation.
+                  </p>
+                )}
+              </>
+            ) : (
+              <>
+                <p className="text-sm text-gray-600 mb-3">
+                  Start preparation to continue.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    void startPrep();
+                  }}
+                  disabled={isStartingPrep}
+                  className="rounded bg-gray-900 px-4 py-2 text-white hover:bg-gray-700 disabled:opacity-60"
+                >
+                  {isStartingPrep ? 'Starting...' : 'Start preparation'}
+                </button>
+              </>
             )}
           </div>
         )}
@@ -1954,7 +1959,7 @@ export default function EncounterDetailPage() {
                 onClick={() => {
                   void savePrep();
                 }}
-                disabled={isSavingPrep}
+                disabled={isSavingPrep || (encounter.type === 'LAB' && !hasOrderedLabTests)}
                 className="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-60"
               >
                 {isSavingPrep ? 'Saving...' : 'Save preparation'}
@@ -2249,25 +2254,23 @@ export default function EncounterDetailPage() {
                   {isSavingMain ? 'Saving...' : 'Save Main'}
                 </button>
               )}
-              <button
-                type="button"
-                onClick={() => {
-                  void finalizeEncounter();
-                }}
-                disabled={
-                  isFinalizing ||
-                  (encounter.type === 'LAB' &&
-                    (!hasOrderedLabTests || !allLabTestsVerified))
-                }
-                className="rounded bg-gray-900 px-4 py-2 text-white hover:bg-gray-700 disabled:opacity-60"
-              >
-                {isFinalizing ? 'Finalizing...' : 'Finalize Encounter'}
-              </button>
+              {encounter.type !== 'LAB' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    void finalizeEncounter();
+                  }}
+                  disabled={isFinalizing}
+                  className="rounded bg-gray-900 px-4 py-2 text-white hover:bg-gray-700 disabled:opacity-60"
+                >
+                  {isFinalizing ? 'Finalizing...' : 'Finalize Encounter'}
+                </button>
+              )}
             </div>
-            {encounter.type === 'LAB' && (!hasOrderedLabTests || !allLabTestsVerified) && (
-              <p className="text-sm text-amber-700">
-                Finalize is disabled until at least one LAB test is ordered and all
-                ordered tests are verified.
+            {encounter.type === 'LAB' && (
+              <p className="text-sm text-slate-700">
+                LAB encounters finalize automatically after all ordered tests are
+                verified from this page or Operator Verify.
               </p>
             )}
           </div>

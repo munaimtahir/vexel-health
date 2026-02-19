@@ -55,3 +55,5 @@ This is the canonical checklist.
 
 ## Audit evidence
 - [x] 2026-02-19: workflow audit artifacts generated under `_audit_evidence/workflow_audit/`
+- [x] 2026-02-19: LAB verify now auto-finalizes encounter when all ordered tests are VERIFIED; LAB publish is gated to `FINALIZED`/`DOCUMENTED` for consistent encounter+operator workflow
+- [x] 2026-02-19: API lint/build stabilization completed (Prisma prebuild generation + zero-warning lint baseline for tests)

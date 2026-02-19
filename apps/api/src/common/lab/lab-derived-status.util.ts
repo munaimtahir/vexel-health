@@ -21,7 +21,7 @@ export type LabOrderItemStatusLike = LabOrderItemStatus;
  * - ORDERED: has items, none with results entered (all ORDERED)
  * - RESULTS_ENTERED: any item has RESULTS_ENTERED, not all verified
  * - VERIFIED: all items VERIFIED (regardless of publish)
- * - PUBLISHED: report published for encounter (document RENDERED)
+ * - PUBLISHED: report published for encounter and all items are VERIFIED
  *
  * @param labOrderItems - status of each lab order item for this encounter (empty = no items)
  * @param hasPublishedReport - true if a document exists for this encounter with status RENDERED
@@ -34,11 +34,11 @@ export function deriveLabEncounterStatus(
     return 'DRAFT';
   }
 
-  if (hasPublishedReport) {
+  const allVerified = labOrderItems.every((item) => item.status === 'VERIFIED');
+  if (hasPublishedReport && allVerified) {
     return 'PUBLISHED';
   }
 
-  const allVerified = labOrderItems.every((item) => item.status === 'VERIFIED');
   if (allVerified) {
     return 'VERIFIED';
   }

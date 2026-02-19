@@ -106,16 +106,26 @@ export class DocumentsService {
           throw new NotFoundException('Encounter not found');
         }
 
-        if (
+        if (documentType === 'LAB_REPORT_V1') {
+          const canPublishLabReport =
+            encounter.status === 'FINALIZED' ||
+            encounter.status === 'DOCUMENTED';
+
+          if (!canPublishLabReport) {
+            throw new DomainException(
+              'LAB_PUBLISH_BLOCKED_INVALID_STATE',
+              'LAB report can only be published after encounter finalization',
+              {
+                current_status: encounter.status,
+              },
+            );
+          }
+        } else if (
           encounter.status !== 'FINALIZED' &&
           encounter.status !== 'DOCUMENTED'
         ) {
-          const notFinalizedCode =
-            documentType === 'LAB_REPORT_V1'
-              ? 'LAB_PUBLISH_BLOCKED_NOT_FINALIZED'
-              : 'ENCOUNTER_STATE_INVALID';
           throw new DomainException(
-            notFinalizedCode,
+            'ENCOUNTER_STATE_INVALID',
             'Encounter must be FINALIZED before document generation',
             {
               current_status: encounter.status,

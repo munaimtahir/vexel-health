@@ -97,7 +97,11 @@ function formatDomainErrorMessage(envelope: DomainErrorEnvelope): string {
         }
     }
 
-    if (envelope.error.code === 'LAB_PUBLISH_BLOCKED_NOT_FINALIZED' && isRecord(details)) {
+    if (
+        (envelope.error.code === 'LAB_PUBLISH_BLOCKED_NOT_FINALIZED' ||
+            envelope.error.code === 'LAB_PUBLISH_BLOCKED_INVALID_STATE') &&
+        isRecord(details)
+    ) {
         const currentStatus = typeof details.current_status === 'string' ? details.current_status : null;
         if (currentStatus) {
             return `${message} (current status: ${currentStatus})`;

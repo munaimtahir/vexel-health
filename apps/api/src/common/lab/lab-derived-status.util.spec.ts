@@ -71,10 +71,16 @@ describe('deriveLabEncounterStatus', () => {
       expected: 'PUBLISHED',
     },
     {
-      name: 'one ORDERED with report -> PUBLISHED (report takes precedence)',
+      name: 'one ORDERED with report -> ORDERED',
       items: [{ status: 'ORDERED' }],
       hasPublishedReport: true,
-      expected: 'PUBLISHED',
+      expected: 'ORDERED',
+    },
+    {
+      name: 'one VERIFIED one ORDERED with report -> RESULTS_ENTERED',
+      items: [{ status: 'VERIFIED' }, { status: 'ORDERED' }],
+      hasPublishedReport: true,
+      expected: 'RESULTS_ENTERED',
     },
   ];
 

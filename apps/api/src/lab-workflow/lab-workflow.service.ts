@@ -374,10 +374,13 @@ export class LabWorkflowService {
       return await this.prisma.$transaction(async (tx) => {
         const encounter = await this.assertLabEncounter(tx, encounterId);
 
-        if (encounter.status !== 'IN_PROGRESS') {
+        if (
+          encounter.status !== 'IN_PROGRESS' &&
+          encounter.status !== 'FINALIZED'
+        ) {
           throw new DomainException(
             'INVALID_STATE',
-            'LAB results can only be verified while encounter is IN_PROGRESS',
+            'LAB results can only be verified while encounter is IN_PROGRESS or FINALIZED',
           );
         }
 
@@ -508,6 +511,12 @@ export class LabWorkflowService {
           },
         });
 
+        await this.finalizeEncounterAfterLabVerification(tx, {
+          encounterId: encounter.id,
+          actor,
+          triggeringOrderItemId: orderItem.id,
+        });
+
         return this.buildOrderedTest(tx, orderItem.id);
       });
     } catch (error) {
@@ -553,19 +562,6 @@ export class LabWorkflowService {
         throw new DomainException(
           'INVALID_ENCOUNTER_TYPE',
           'LAB workflow commands are only valid for LAB encounters',
-        );
-      }
-
-      if (
-        encounter.status !== 'FINALIZED' &&
-        encounter.status !== 'DOCUMENTED'
-      ) {
-        throw new DomainException(
-          'LAB_PUBLISH_BLOCKED_NOT_FINALIZED',
-          'Encounter must be FINALIZED before LAB report publishing',
-          {
-            current_status: encounter.status,
-          },
         );
       }
 
@@ -698,6 +694,65 @@ export class LabWorkflowService {
       parameters,
       results,
     };
+  }
+
+  private async finalizeEncounterAfterLabVerification(
+    tx: Prisma.TransactionClient,
+    input: {
+      encounterId: string;
+      actor: string;
+      triggeringOrderItemId: string;
+    },
+  ): Promise<void> {
+    const pendingVerification = await tx.labOrderItem.findFirst({
+      where: {
+        tenantId: this.tenantId,
+        encounterId: input.encounterId,
+        status: {
+          not: LabOrderItemStatus.VERIFIED,
+        },
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (pendingVerification) {
+      return;
+    }
+
+    const finalizedAt = new Date();
+    const transition = await tx.encounter.updateMany({
+      where: {
+        id: input.encounterId,
+        tenantId: this.tenantId,
+        status: 'IN_PROGRESS',
+      },
+      data: {
+        status: 'FINALIZED',
+        endedAt: finalizedAt,
+      },
+    });
+
+    if (transition.count === 0) {
+      return;
+    }
+
+    await this.writeAuditEvent(tx, {
+      actorUserId: input.actor,
+      eventType: 'lims.encounter.finalized',
+      entityType: 'encounter',
+      entityId: input.encounterId,
+      payload: {
+        tenant_id: this.tenantId,
+        user_id: input.actor,
+        encounter_id: input.encounterId,
+        trigger: 'lab_results_verified',
+        trigger_order_id: input.triggeringOrderItemId,
+        next_status: 'FINALIZED',
+        finalized_at: finalizedAt.toISOString(),
+      },
+    });
   }
 
   private parseNumericValue(value: string): number | null {

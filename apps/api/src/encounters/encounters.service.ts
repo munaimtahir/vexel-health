@@ -31,23 +31,13 @@ import {
 import { traceSpan } from '../common/observability/workflow-trace';
 import { PrismaService } from '../prisma/prisma.service';
 import {
-  type BbMainSaveRequest,
   type EncounterMainResponse,
   type EncounterMainSaveRequest,
-  type IpdMainSaveRequest,
-  type LabMainSaveRequest,
-  type OpdMainSaveRequest,
-  type RadMainSaveRequest,
 } from './encounter-main.types';
 import {
-  type BbPrepSaveRequest,
   type EncounterPrepResponse,
   type EncounterPrepSaveRequest,
   type EncounterType,
-  type IpdPrepSaveRequest,
-  type LabPrepSaveRequest,
-  type OpdPrepSaveRequest,
-  type RadPrepSaveRequest,
 } from './encounter-prep.types';
 import { CreateEncounterDto } from './dto/create-encounter.dto';
 import { UpdateEncounterPrepCommandDto } from './dto/update-encounter-prep-command.dto';

@@ -123,6 +123,10 @@ type EncounterWithRelations = {
   }>;
 };
 
+type LabOrderItemForPayload = NonNullable<
+  EncounterWithRelations['labOrderItems']
+>[number];
+
 export type BuiltDocumentPayload = {
   documentType: RequestedDocumentType;
   templateKey: string;
@@ -324,31 +328,71 @@ function buildReferenceText(parameter: {
   return '-';
 }
 
-function buildLabStructuredPayload(
-  encounter: EncounterWithRelations,
-): JsonRecord {
-  const sortedOrderItems = [...(encounter.labOrderItems ?? [])].sort(
-    (left, right) => {
-      const departmentOrder = left.test.department.localeCompare(
-        right.test.department,
-      );
-      if (departmentOrder !== 0) {
-        return departmentOrder;
-      }
+function hasNonEmptyResultValue(value: string | null | undefined): boolean {
+  return typeof value === 'string' && value.trim().length > 0;
+}
 
-      const nameOrder = left.test.name.localeCompare(right.test.name);
-      if (nameOrder !== 0) {
-        return nameOrder;
-      }
+export function isLabOrderItemPublishable(
+  orderItem: LabOrderItemForPayload,
+): boolean {
+  if (orderItem.status !== 'VERIFIED') {
+    return false;
+  }
 
-      const codeOrder = left.test.code.localeCompare(right.test.code);
-      if (codeOrder !== 0) {
-        return codeOrder;
-      }
-
-      return left.id.localeCompare(right.id);
-    },
+  const activeParameters = orderItem.test.parameters.filter(
+    (parameter) => parameter.active,
   );
+
+  if (activeParameters.length === 0) {
+    return orderItem.results.some(
+      (result) =>
+        result.verifiedAt !== null && hasNonEmptyResultValue(result.value),
+    );
+  }
+
+  const resultByParameterId = new Map(
+    orderItem.results.map((result) => [result.parameterId, result]),
+  );
+
+  return activeParameters.every((parameter) => {
+    const result = resultByParameterId.get(parameter.id);
+    return Boolean(
+      result &&
+      result.verifiedAt !== null &&
+      hasNonEmptyResultValue(result.value),
+    );
+  });
+}
+
+export function selectPublishableLabOrderItems(
+  encounter: EncounterWithRelations,
+): LabOrderItemForPayload[] {
+  return (encounter.labOrderItems ?? []).filter(isLabOrderItemPublishable);
+}
+
+function buildLabStructuredPayload(
+  orderItems: LabOrderItemForPayload[],
+): JsonRecord {
+  const sortedOrderItems = [...orderItems].sort((left, right) => {
+    const departmentOrder = left.test.department.localeCompare(
+      right.test.department,
+    );
+    if (departmentOrder !== 0) {
+      return departmentOrder;
+    }
+
+    const nameOrder = left.test.name.localeCompare(right.test.name);
+    if (nameOrder !== 0) {
+      return nameOrder;
+    }
+
+    const codeOrder = left.test.code.localeCompare(right.test.code);
+    if (codeOrder !== 0) {
+      return codeOrder;
+    }
+
+    return left.id.localeCompare(right.id);
+  });
 
   const tests = sortedOrderItems.map((orderItem) => {
     const orderedParameters = [...orderItem.test.parameters]
@@ -482,7 +526,15 @@ export function buildPayloadForDocumentType(input: {
   };
 
   if (documentType === 'LAB_REPORT_V1') {
-    payload.lab = buildLabStructuredPayload(encounter);
+    const publishableLabOrderItems = selectPublishableLabOrderItems(encounter);
+    if (publishableLabOrderItems.length === 0) {
+      throw new DomainException(
+        'LAB_PUBLISH_BLOCKED_NO_VERIFIED_TESTS',
+        'At least one fully verified LAB test is required before report publishing',
+      );
+    }
+
+    payload.lab = buildLabStructuredPayload(publishableLabOrderItems);
   }
 
   return {
