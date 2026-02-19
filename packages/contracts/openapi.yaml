@@ -249,6 +249,37 @@ paths:
           $ref: '#/components/responses/NotFoundError'
         '500':
           $ref: '#/components/responses/UnexpectedError'
+  /encounters/{id}/payments:
+    post:
+      summary: Record a payment for an encounter
+      description: Creates or uses the encounter invoice, adds the payment, returns invoice summary and payments list.
+      operationId: recordEncounterPayment
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+        - $ref: '#/components/parameters/IdPathParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecordPaymentRequest'
+      responses:
+        '200':
+          description: Invoice and payments
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecordPaymentResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/DomainError'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
   /lab/tests:
     post:
       summary: Create LAB test definition
@@ -359,6 +390,47 @@ paths:
                 $ref: '#/components/schemas/ListLabTestParametersResponse'
         '404':
           $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+  /lab/verification-queue:
+    get:
+      summary: List lab order items pending verification
+      description: Tenant-scoped queue of items with status RESULTS_ENTERED, with patient and test context.
+      operationId: getLabVerificationQueue
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 50
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: from
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Verification queue items
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerificationQueueResponse'
         '500':
           $ref: '#/components/responses/UnexpectedError'
   /encounters/{id}/prep:
@@ -752,6 +824,24 @@ paths:
           $ref: '#/components/responses/DomainError'
         '500':
           $ref: '#/components/responses/UnexpectedError'
+  /admin/overview:
+    get:
+      summary: Tenant admin overview
+      description: Counts by derived status, verification queue count, published last 24h, PDF health, catalog, feature flags.
+      operationId: getAdminOverview
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+      responses:
+        '200':
+          description: Admin overview
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminOverviewResponse'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
 components:
   securitySchemes:
     bearerAuth:
@@ -909,6 +999,10 @@ components:
             status:
               type: string
               enum: [CREATED, PREP, IN_PROGRESS, FINALIZED, DOCUMENTED]
+            labEncounterStatus:
+              type: string
+              description: Derived lab encounter status (present for LAB encounters only)
+              enum: [DRAFT, ORDERED, RESULTS_ENTERED, VERIFIED, PUBLISHED]
             endedAt:
               type: string
               format: date-time
@@ -924,6 +1018,168 @@ components:
             $ref: '#/components/schemas/Encounter'
         total:
           type: integer
+    RecordPaymentRequest:
+      type: object
+      required:
+        - amount
+        - method
+      properties:
+        amount:
+          type: number
+          minimum: 0
+          exclusiveMinimum: true
+        method:
+          type: string
+          enum: [CASH, CARD, ONLINE, OTHER]
+        reference:
+          type: string
+        notes:
+          type: string
+    InvoiceSummary:
+      type: object
+      required:
+        - invoice_id
+        - encounter_id
+        - total_amount
+        - paid_amount
+        - status
+      properties:
+        invoice_id:
+          type: string
+        encounter_id:
+          type: string
+        total_amount:
+          type: number
+        paid_amount:
+          type: number
+        status:
+          type: string
+          enum: [UNPAID, PARTIAL, PAID]
+    PaymentRecord:
+      type: object
+      properties:
+        id:
+          type: string
+        amount:
+          type: number
+        method:
+          type: string
+        receivedAt:
+          type: string
+          format: date-time
+        reference:
+          type: string
+    RecordPaymentResponse:
+      type: object
+      required:
+        - invoice
+        - payments
+      properties:
+        invoice:
+          $ref: '#/components/schemas/InvoiceSummary'
+        payments:
+          type: array
+          items:
+            $ref: '#/components/schemas/PaymentRecord'
+    VerificationQueueItemPatient:
+      type: object
+      properties:
+        patient_id:
+          type: string
+        mrn:
+          type: string
+        name:
+          type: string
+        age:
+          type: number
+        sex:
+          type: string
+    VerificationQueueItemTest:
+      type: object
+      properties:
+        test_code:
+          type: string
+        test_name:
+          type: string
+    VerificationQueueItem:
+      type: object
+      properties:
+        encounter_id:
+          type: string
+        lab_order_item_id:
+          type: string
+        derived_encounter_status:
+          type: string
+          enum: [DRAFT, ORDERED, RESULTS_ENTERED, VERIFIED, PUBLISHED]
+        patient:
+          $ref: '#/components/schemas/VerificationQueueItemPatient'
+        test:
+          $ref: '#/components/schemas/VerificationQueueItemTest'
+        created_at:
+          type: string
+          format: date-time
+        results_entered_at:
+          type: string
+          format: date-time
+    VerificationQueueResponse:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/VerificationQueueItem'
+    AdminOverviewCounts:
+      type: object
+      properties:
+        encounters_by_status:
+          type: object
+          additionalProperties:
+            type: integer
+          description: Map of derived lab encounter status to count
+        verification_queue_count:
+          type: integer
+        published_last_24h_count:
+          type: integer
+    AdminOverviewSystem:
+      type: object
+      properties:
+        pdf_service_health:
+          type: object
+          properties:
+            status:
+              type: string
+              enum: [ok, degraded]
+            last_checked_at:
+              type: string
+              format: date-time
+    AdminOverviewCatalog:
+      type: object
+      properties:
+        tests_count:
+          type: integer
+        parameters_count:
+          type: integer
+    AdminOverviewResponse:
+      type: object
+      required:
+        - counts
+        - system
+        - catalog
+        - features
+      properties:
+        counts:
+          $ref: '#/components/schemas/AdminOverviewCounts'
+        system:
+          $ref: '#/components/schemas/AdminOverviewSystem'
+        catalog:
+          $ref: '#/components/schemas/AdminOverviewCatalog'
+        features:
+          type: object
+          additionalProperties:
+            type: boolean
+          description: Enabled feature flags for tenant
     LabTestDefinition:
       type: object
       required:

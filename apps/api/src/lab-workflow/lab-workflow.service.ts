@@ -1,4 +1,5 @@
 import {
+  DocumentStatus,
   LabOrderItemStatus,
   LabResultFlag,
   Prisma,
@@ -19,6 +20,7 @@ import type { Request } from 'express';
 import { ClsService } from 'nestjs-cls';
 import { DomainException } from '../common/errors/domain.exception';
 import { parseMockBearerTokenHeader } from '../common/auth/mock-token.util';
+import { deriveLabEncounterStatus } from '../common/lab/lab-derived-status.util';
 import { ensureSingleReferenceRangeMatch } from '../common/lab/lab-catalog-integrity.util';
 import { DocumentsService } from '../documents/documents.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -866,5 +868,109 @@ export class LabWorkflowService {
         failure_reason_details: input.error.details ?? null,
       },
     });
+  }
+
+  async getVerificationQueue(params: {
+    limit?: number;
+    cursor?: string;
+  }): Promise<{
+    items: Array<{
+      encounter_id: string;
+      lab_order_item_id: string;
+      derived_encounter_status: string;
+      patient: {
+        patient_id: string;
+        mrn: string | null;
+        name: string;
+        age: number | null;
+        sex: string | null;
+      };
+      test: { test_code: string; test_name: string };
+      created_at: string;
+      results_entered_at: string | null;
+    }>;
+  }> {
+    const tenantId = this.tenantId;
+    const limit = Math.min(Math.max(params.limit ?? 50, 1), 100);
+
+    const items = await this.prisma.labOrderItem.findMany({
+      where: {
+        tenantId,
+        status: LabOrderItemStatus.RESULTS_ENTERED,
+      },
+      take: limit + 1,
+      ...(params.cursor
+        ? { cursor: { id: params.cursor }, skip: 1 }
+        : {}),
+      orderBy: { createdAt: 'desc' },
+      include: {
+        encounter: { include: { patient: true } },
+        test: { select: { code: true, name: true } },
+      },
+    });
+
+    const encounterIds = [...new Set(items.map((i) => i.encounterId))];
+    const [allItemsByEncounter, publishedEncounterIds] = await Promise.all([
+      this.prisma.labOrderItem.findMany({
+        where: { tenantId, encounterId: { in: encounterIds } },
+        select: { encounterId: true, status: true },
+      }),
+      this.prisma.document
+        .findMany({
+          where: {
+            tenantId,
+            encounterId: { in: encounterIds },
+            status: DocumentStatus.RENDERED,
+          },
+          select: { encounterId: true },
+          distinct: ['encounterId'],
+        })
+        .then((docs) => new Set(docs.map((d) => d.encounterId))),
+    ]);
+    const itemsByEncounterId = new Map<string, { status: LabOrderItemStatus }[]>();
+    for (const item of allItemsByEncounter) {
+      const list = itemsByEncounterId.get(item.encounterId) ?? [];
+      list.push({ status: item.status });
+      itemsByEncounterId.set(item.encounterId, list);
+    }
+
+    const toAge = (dob: Date | null): number | null => {
+      if (!dob) return null;
+      const today = new Date();
+      const age = today.getFullYear() - dob.getFullYear();
+      const m = today.getMonth() - dob.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) return age - 1;
+      return age;
+    };
+
+    const result = items.slice(0, limit).map((row) => {
+      const labItems = itemsByEncounterId.get(row.encounterId) ?? [];
+      const hasPublishedReport = publishedEncounterIds.has(row.encounterId);
+      const derived_encounter_status = deriveLabEncounterStatus(
+        labItems,
+        hasPublishedReport,
+      );
+      const patient = row.encounter.patient;
+      return {
+        encounter_id: row.encounterId,
+        lab_order_item_id: row.id,
+        derived_encounter_status,
+        patient: {
+          patient_id: patient.id,
+          mrn: patient.mrn ?? patient.regNo,
+          name: patient.name,
+          age: toAge(patient.dob),
+          sex: patient.gender ?? null,
+        },
+        test: {
+          test_code: row.test.code,
+          test_name: row.test.name,
+        },
+        created_at: row.createdAt.toISOString(),
+        results_entered_at: row.updatedAt.toISOString(),
+      };
+    });
+
+    return { items: result };
   }
 }

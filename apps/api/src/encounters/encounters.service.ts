@@ -1,5 +1,6 @@
 import {
   BbCrossmatchResult,
+  DocumentStatus,
   LabOrderItemStatus,
   BbUrgency,
   type BbEncounterMain,
@@ -23,6 +24,10 @@ import {
 } from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
 import { DomainException } from '../common/errors/domain.exception';
+import {
+  deriveLabEncounterStatus,
+  type LabEncounterStatus,
+} from '../common/lab/lab-derived-status.util';
 import { traceSpan } from '../common/observability/workflow-trace';
 import { PrismaService } from '../prisma/prisma.service';
 import {
@@ -177,12 +182,13 @@ export class EncountersService {
       this.prisma.encounter.count({ where }),
     ]);
 
-    return { data, total };
+    const dataWithStatus = await this.withLabEncounterStatusForList(data);
+    return { data: dataWithStatus, total };
   }
 
   async findById(id: string) {
     const encounter = await this.findEncounterById(id);
-    return encounter;
+    return this.withLabEncounterStatus(encounter);
   }
 
   async startPrep(id: string) {
@@ -747,6 +753,74 @@ export class EncountersService {
         });
       },
     );
+  }
+
+  private async withLabEncounterStatus(
+    encounter: Encounter,
+  ): Promise<Encounter & { labEncounterStatus?: LabEncounterStatus }> {
+    if (encounter.type !== 'LAB') {
+      return encounter;
+    }
+    const [items, publishedDoc] = await Promise.all([
+      this.prisma.labOrderItem.findMany({
+        where: { tenantId: this.tenantId, encounterId: encounter.id },
+        select: { status: true },
+      }),
+      this.prisma.document.findFirst({
+        where: {
+          tenantId: this.tenantId,
+          encounterId: encounter.id,
+          status: DocumentStatus.RENDERED,
+        },
+      }),
+    ]);
+    const labEncounterStatus = deriveLabEncounterStatus(
+      items,
+      !!publishedDoc,
+    );
+    return { ...encounter, labEncounterStatus };
+  }
+
+  private async withLabEncounterStatusForList(
+    encounters: Encounter[],
+  ): Promise<(Encounter & { labEncounterStatus?: LabEncounterStatus })[]> {
+    const labIds = encounters.filter((e) => e.type === 'LAB').map((e) => e.id);
+    if (labIds.length === 0) {
+      return encounters;
+    }
+    const [itemsByEncounter, publishedEncounterIds] = await Promise.all([
+      this.prisma.labOrderItem.findMany({
+        where: {
+          tenantId: this.tenantId,
+          encounterId: { in: labIds },
+        },
+        select: { encounterId: true, status: true },
+      }),
+      this.prisma.document
+        .findMany({
+          where: {
+            tenantId: this.tenantId,
+            encounterId: { in: labIds },
+            status: DocumentStatus.RENDERED,
+          },
+          select: { encounterId: true },
+          distinct: ['encounterId'],
+        })
+        .then((docs) => new Set(docs.map((d) => d.encounterId))),
+    ]);
+    const itemsByEncounterId = new Map<string, { status: LabOrderItemStatus }[]>();
+    for (const item of itemsByEncounter) {
+      const list = itemsByEncounterId.get(item.encounterId) ?? [];
+      list.push({ status: item.status });
+      itemsByEncounterId.set(item.encounterId, list);
+    }
+    return encounters.map((e) => {
+      if (e.type !== 'LAB') return e;
+      const items = itemsByEncounterId.get(e.id) ?? [];
+      const hasPublishedReport = publishedEncounterIds.has(e.id);
+      const labEncounterStatus = deriveLabEncounterStatus(items, hasPublishedReport);
+      return { ...e, labEncounterStatus };
+    });
   }
 
   private async findEncounterById(id: string): Promise<Encounter> {

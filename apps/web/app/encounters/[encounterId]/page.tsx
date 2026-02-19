@@ -46,6 +46,8 @@ type VerifyLabResultsRequest =
   NonNullable<
     paths['/encounters/{id}:lab-verify']['post']['requestBody']
   >['content']['application/json'];
+type RecordPaymentResponse =
+  paths['/encounters/{id}/payments']['post']['responses'][200]['content']['application/json'];
 
 type PrepFormState = {
   specimenType: string;
@@ -475,6 +477,10 @@ export default function EncounterDetailPage() {
   >({});
   const [selectedDocumentType, setSelectedDocumentType] =
     useState<RequestedDocumentType>('ENCOUNTER_SUMMARY_V1');
+  const [billingInvoice, setBillingInvoice] = useState<RecordPaymentResponse['invoice'] | null>(null);
+  const [billingPayments, setBillingPayments] = useState<RecordPaymentResponse['payments']>([]);
+  const [paymentForm, setPaymentForm] = useState({ amount: '', method: 'CASH' as const, reference: '' });
+  const [isRecordingPayment, setIsRecordingPayment] = useState(false);
 
   const {
     data: encounter,
@@ -1318,7 +1324,114 @@ export default function EncounterDetailPage() {
               ? new Date(encounter.createdAt).toLocaleString()
               : '-'}
           </p>
+          {'labEncounterStatus' in encounter && encounter.labEncounterStatus && (
+            <p>
+              <span className="font-semibold">Lab status:</span>{' '}
+              {encounter.labEncounterStatus}
+            </p>
+          )}
         </div>
+      </div>
+
+      <div className="rounded border bg-white p-6 shadow mb-6">
+        <h2 className="text-lg font-semibold mb-4">Billing</h2>
+        {billingInvoice && (
+          <div className="mb-4 text-sm">
+            <p><span className="font-semibold">Total:</span> {billingInvoice.total_amount}</p>
+            <p><span className="font-semibold">Paid:</span> {billingInvoice.paid_amount}</p>
+            <p><span className="font-semibold">Status:</span> {billingInvoice.status}</p>
+            {billingPayments.length > 0 && (
+              <ul className="mt-2 list-disc pl-5">
+                {billingPayments.map((p) => (
+                  <li key={p.id}>
+                    {p.amount} ({p.method}) {p.receivedAt ? new Date(p.receivedAt).toLocaleString() : ''}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+        <form
+          className="space-y-3"
+          onSubmit={async (e) => {
+            e.preventDefault();
+            const amount = parseFloat(paymentForm.amount);
+            if (Number.isNaN(amount) || amount <= 0) {
+              setActionError('Enter a valid amount');
+              return;
+            }
+            setActionError('');
+            setActionSuccess('');
+            setIsRecordingPayment(true);
+            const { data, error } = await client.POST('/encounters/{id}/payments', {
+              params: { path: { id: encounter.id } },
+              body: {
+                amount,
+                method: paymentForm.method,
+                reference: paymentForm.reference || undefined,
+              },
+            });
+            setIsRecordingPayment(false);
+            if (error) {
+              setActionError(parseApiError(error, 'Failed to record payment').message);
+              return;
+            }
+            if (data) {
+              setBillingInvoice(data.invoice);
+              setBillingPayments(data.payments);
+              setPaymentForm((prev) => ({ ...prev, amount: '', reference: '' }));
+              setActionSuccess('Payment recorded');
+            }
+          }}
+        >
+          <div>
+            <label className="block text-sm font-medium">Amount</label>
+            <input
+              type="number"
+              step="0.01"
+              min="0.01"
+              value={paymentForm.amount}
+              onChange={(e) => setPaymentForm((prev) => ({ ...prev, amount: e.target.value }))}
+              className="mt-1 block w-full rounded border border-gray-300 p-2"
+              placeholder="0.00"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium">Method</label>
+            <select
+              value={paymentForm.method}
+              onChange={(e) =>
+                setPaymentForm((prev) => ({
+                  ...prev,
+                  method: e.target.value as 'CASH' | 'CARD' | 'ONLINE' | 'OTHER',
+                }))
+              }
+              className="mt-1 block w-full rounded border border-gray-300 p-2"
+            >
+              <option value="CASH">CASH</option>
+              <option value="CARD">CARD</option>
+              <option value="ONLINE">ONLINE</option>
+              <option value="OTHER">OTHER</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium">Reference (optional)</label>
+            <input
+              type="text"
+              value={paymentForm.reference}
+              onChange={(e) => setPaymentForm((prev) => ({ ...prev, reference: e.target.value }))}
+              className="mt-1 block w-full rounded border border-gray-300 p-2"
+              placeholder="Receipt or ref"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={isRecordingPayment}
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
+          >
+            {isRecordingPayment ? 'Recording…' : 'Record payment'}
+          </button>
+        </form>
       </div>
 
       <div className="rounded border bg-white p-6 shadow mb-6">

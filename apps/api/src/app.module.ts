@@ -14,6 +14,7 @@ import { RequestTraceInterceptor } from './common/observability/request-trace.in
 import { LabCatalogModule } from './lab-catalog/lab-catalog.module';
 import { LabWorkflowModule } from './lab-workflow/lab-workflow.module';
 import { PermissionsGuard } from './common/guards/permissions.guard';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { PermissionsGuard } from './common/guards/permissions.guard';
     LabCatalogModule,
     LabWorkflowModule,
     MeModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [

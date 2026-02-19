@@ -11,6 +11,8 @@ import {
 } from '@nestjs/common';
 import { TenantGuard } from '../common/guards/tenant.guard';
 import { DocumentsService } from '../documents/documents.service';
+import { PaymentsService } from '../payments/payments.service';
+import { RecordPaymentDto } from '../payments/dto/record-payment.dto';
 import type { EncounterMainSaveRequest } from './encounter-main.types';
 import type { EncounterPrepSaveRequest } from './encounter-prep.types';
 import { CreateEncounterDto } from './dto/create-encounter.dto';
@@ -22,6 +24,7 @@ export class EncountersController {
   constructor(
     private readonly service: EncountersService,
     private readonly documentsService: DocumentsService,
+    private readonly paymentsService: PaymentsService,
   ) {}
 
   @Post()
@@ -42,6 +45,15 @@ export class EncountersController {
   @Get(':id')
   findById(@Param('id') id: string) {
     return this.service.findById(id);
+  }
+
+  @Post(':id/payments')
+  @HttpCode(HttpStatus.OK)
+  recordPayment(
+    @Param('id') id: string,
+    @Body() dto: RecordPaymentDto,
+  ) {
+    return this.paymentsService.recordPayment(id, dto);
   }
 
   @Get(':id/prep')

@@ -113,7 +113,11 @@ export default function PatientDetailPage() {
                                     <tr key={enc.id}>
                                         <td className="px-4 py-3 whitespace-nowrap font-medium text-gray-900">{enc.encounterCode ?? '—'}</td>
                                         <td className="px-4 py-3 whitespace-nowrap">{enc.type ?? '—'}</td>
-                                        <td className="px-4 py-3 whitespace-nowrap">{enc.status ?? '—'}</td>
+                                        <td className="px-4 py-3 whitespace-nowrap">
+                                            {'labEncounterStatus' in enc && enc.labEncounterStatus
+                                                ? enc.labEncounterStatus
+                                                : (enc.status ?? '—')}
+                                        </td>
                                         <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
                                             {enc.createdAt ? new Date(enc.createdAt).toLocaleString() : '—'}
                                         </td>

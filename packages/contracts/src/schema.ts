@@ -142,6 +142,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/encounters/{id}/payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record a payment for an encounter
+         * @description Creates or uses the encounter invoice, adds the payment, returns invoice summary and payments list.
+         */
+        post: operations["recordEncounterPayment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/lab/tests": {
         parameters: {
             query?: never;
@@ -189,6 +209,26 @@ export interface paths {
         put?: never;
         /** Add parameter to LAB test definition */
         post: operations["addLabTestParameter"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/lab/verification-queue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List lab order items pending verification
+         * @description Tenant-scoped queue of items with status RESULTS_ENTERED, with patient and test context.
+         */
+        get: operations["getLabVerificationQueue"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -450,6 +490,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Tenant admin overview
+         * @description Counts by derived status, verification queue count, published last 24h, PDF health, catalog, feature flags.
+         */
+        get: operations["getAdminOverview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -495,6 +555,11 @@ export interface components {
             encounterCode: string;
             /** @enum {string} */
             status: "CREATED" | "PREP" | "IN_PROGRESS" | "FINALIZED" | "DOCUMENTED";
+            /**
+             * @description Derived lab encounter status (present for LAB encounters only)
+             * @enum {string}
+             */
+            labEncounterStatus?: "DRAFT" | "ORDERED" | "RESULTS_ENTERED" | "VERIFIED" | "PUBLISHED";
             /** Format: date-time */
             endedAt?: string;
             /** Format: date-time */
@@ -503,6 +568,88 @@ export interface components {
         ListEncountersResponse: {
             data?: components["schemas"]["Encounter"][];
             total?: number;
+        };
+        RecordPaymentRequest: {
+            amount: number;
+            /** @enum {string} */
+            method: "CASH" | "CARD" | "ONLINE" | "OTHER";
+            reference?: string;
+            notes?: string;
+        };
+        InvoiceSummary: {
+            invoice_id: string;
+            encounter_id: string;
+            total_amount: number;
+            paid_amount: number;
+            /** @enum {string} */
+            status: "UNPAID" | "PARTIAL" | "PAID";
+        };
+        PaymentRecord: {
+            id?: string;
+            amount?: number;
+            method?: string;
+            /** Format: date-time */
+            receivedAt?: string;
+            reference?: string;
+        };
+        RecordPaymentResponse: {
+            invoice: components["schemas"]["InvoiceSummary"];
+            payments: components["schemas"]["PaymentRecord"][];
+        };
+        VerificationQueueItemPatient: {
+            patient_id?: string;
+            mrn?: string;
+            name?: string;
+            age?: number;
+            sex?: string;
+        };
+        VerificationQueueItemTest: {
+            test_code?: string;
+            test_name?: string;
+        };
+        VerificationQueueItem: {
+            encounter_id?: string;
+            lab_order_item_id?: string;
+            /** @enum {string} */
+            derived_encounter_status?: "DRAFT" | "ORDERED" | "RESULTS_ENTERED" | "VERIFIED" | "PUBLISHED";
+            patient?: components["schemas"]["VerificationQueueItemPatient"];
+            test?: components["schemas"]["VerificationQueueItemTest"];
+            /** Format: date-time */
+            created_at?: string;
+            /** Format: date-time */
+            results_entered_at?: string;
+        };
+        VerificationQueueResponse: {
+            items: components["schemas"]["VerificationQueueItem"][];
+        };
+        AdminOverviewCounts: {
+            /** @description Map of derived lab encounter status to count */
+            encounters_by_status?: {
+                [key: string]: number;
+            };
+            verification_queue_count?: number;
+            published_last_24h_count?: number;
+        };
+        AdminOverviewSystem: {
+            pdf_service_health?: {
+                /** @enum {string} */
+                status?: "ok" | "degraded";
+                /** Format: date-time */
+                last_checked_at?: string;
+            };
+        };
+        AdminOverviewCatalog: {
+            tests_count?: number;
+            parameters_count?: number;
+        };
+        AdminOverviewResponse: {
+            counts: components["schemas"]["AdminOverviewCounts"];
+            system: components["schemas"]["AdminOverviewSystem"];
+            catalog: components["schemas"]["AdminOverviewCatalog"];
+            /** @description Enabled feature flags for tenant */
+            features: {
+                [key: string]: boolean;
+            };
         };
         LabTestDefinition: {
             /** Format: uuid */
@@ -1135,6 +1282,39 @@ export interface operations {
             500: components["responses"]["UnexpectedError"];
         };
     };
+    recordEncounterPayment: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
+                "x-tenant-id"?: components["parameters"]["TenantIdHeader"];
+            };
+            path: {
+                id: components["parameters"]["IdPathParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecordPaymentRequest"];
+            };
+        };
+        responses: {
+            /** @description Invoice and payments */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecordPaymentResponse"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["DomainError"];
+            500: components["responses"]["UnexpectedError"];
+        };
+    };
     listLabTests: {
         parameters: {
             query?: never;
@@ -1273,6 +1453,35 @@ export interface operations {
             400: components["responses"]["ValidationError"];
             403: components["responses"]["AuthError"];
             404: components["responses"]["NotFoundError"];
+            500: components["responses"]["UnexpectedError"];
+        };
+    };
+    getLabVerificationQueue: {
+        parameters: {
+            query?: {
+                limit?: number;
+                cursor?: string;
+                from?: string;
+                to?: string;
+            };
+            header?: {
+                /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
+                "x-tenant-id"?: components["parameters"]["TenantIdHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Verification queue items */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VerificationQueueResponse"];
+                };
+            };
             500: components["responses"]["UnexpectedError"];
         };
     };
@@ -1724,6 +1933,30 @@ export interface operations {
             };
             404: components["responses"]["NotFoundError"];
             409: components["responses"]["DomainError"];
+            500: components["responses"]["UnexpectedError"];
+        };
+    };
+    getAdminOverview: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
+                "x-tenant-id"?: components["parameters"]["TenantIdHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Admin overview */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminOverviewResponse"];
+                };
+            };
             500: components["responses"]["UnexpectedError"];
         };
     };

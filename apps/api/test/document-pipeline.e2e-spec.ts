@@ -467,6 +467,17 @@ function createPrismaMock(state: MemoryState) {
         },
       ),
       findFirst: jest.fn(async () => null),
+      findMany: jest.fn(
+        async ({
+          where,
+          select,
+        }: {
+          where: { tenantId: string; encounterId?: string };
+          select?: { status?: boolean };
+        }) => {
+          return [];
+        },
+      ),
     },
     document: {
       findFirst: jest.fn(

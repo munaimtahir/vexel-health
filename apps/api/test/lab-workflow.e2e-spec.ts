@@ -128,6 +128,27 @@ type DocumentRecord = {
   renderedAt: Date | null;
 };
 
+type InvoiceRecord = {
+  id: string;
+  tenantId: string;
+  patientId: string;
+  encounterId: string | null;
+  status: string;
+  totalAmount: number;
+  currency: string;
+  createdAt: Date;
+};
+
+type PaymentRecord = {
+  id: string;
+  tenantId: string;
+  invoiceId: string;
+  method: string;
+  amount: number;
+  receivedAt: Date;
+  reference: string | null;
+};
+
 type MemoryState = {
   patients: PatientRecord[];
   encounters: EncounterRecord[];
@@ -136,6 +157,8 @@ type MemoryState = {
   labParameters: LabParameterRecord[];
   labOrders: LabOrderRecord[];
   labResults: LabResultRecord[];
+  invoices: InvoiceRecord[];
+  payments: PaymentRecord[];
   documents: DocumentRecord[];
   auditEvents: Array<{
     id: string;
@@ -793,6 +816,60 @@ function createPrismaMock(state: MemoryState) {
         return { count };
       }),
     },
+    invoice: {
+      findFirst: jest.fn(async ({ where }: any) => {
+        return (
+          state.invoices.find(
+            (inv) =>
+              inv.tenantId === where.tenantId &&
+              (where.encounterId == null || inv.encounterId === where.encounterId),
+          ) ?? null
+        );
+      }),
+      create: jest.fn(async ({ data, include }: any) => {
+        const record: InvoiceRecord = {
+          id: makeId(9000 + state.invoices.length + 1),
+          tenantId: data.tenantId,
+          patientId: data.patientId,
+          encounterId: data.encounterId ?? null,
+          status: data.status ?? 'UNPAID',
+          totalAmount: typeof data.totalAmount === 'object' && data.totalAmount?.toString ? Number(data.totalAmount.toString()) : Number(data.totalAmount ?? 0),
+          currency: data.currency ?? 'USD',
+          createdAt: new Date(),
+        };
+        state.invoices.push(record);
+        return include?.payments ? { ...record, payments: state.payments.filter((p) => p.invoiceId === record.id) } : record;
+      }),
+      findUniqueOrThrow: jest.fn(async ({ where, include }: any) => {
+        const inv = state.invoices.find((i) => i.id === where.id);
+        if (!inv) throw new Error('Invoice not found');
+        const payments = include?.payments
+          ? state.payments.filter((p) => p.invoiceId === inv.id).sort((a, b) => a.receivedAt.getTime() - b.receivedAt.getTime())
+          : [];
+        return { ...inv, payments };
+      }),
+      update: jest.fn(async ({ where, data }: any) => {
+        const inv = state.invoices.find((i) => i.id === where.id);
+        if (!inv) throw new Error('Invoice not found');
+        if (data.status !== undefined) inv.status = data.status;
+        return inv;
+      }),
+    },
+    payment: {
+      create: jest.fn(async ({ data }: any) => {
+        const record: PaymentRecord = {
+          id: makeId(9500 + state.payments.length + 1),
+          tenantId: data.tenantId,
+          invoiceId: data.invoiceId,
+          method: data.method,
+          amount: typeof data.amount === 'object' && data.amount?.toString ? Number(data.amount.toString()) : Number(data.amount),
+          receivedAt: data.receivedAt ? new Date(data.receivedAt) : new Date(),
+          reference: data.reference ?? null,
+        };
+        state.payments.push(record);
+        return record;
+      }),
+    },
     document: {
       findFirst: jest.fn(async ({ where }: any) => {
         return (
@@ -922,6 +999,8 @@ describe('LAB workflow (e2e)', () => {
     labParameters: [],
     labOrders: [],
     labResults: [],
+    invoices: [],
+    payments: [],
     documents: [],
     auditEvents: [],
     files: new Map<string, Buffer>(),
@@ -1146,6 +1225,20 @@ describe('LAB workflow (e2e)', () => {
     const orderItemId = addTestResponse.body.orderItem.id as string;
     const parameterId = addTestResponse.body.parameters[0].id as string;
 
+    const paymentResponse = await request(app.getHttpServer())
+      .post(`/encounters/${encounterId}/payments`)
+      .set('Host', 'tenant-a.test')
+      .send({
+        amount: 500,
+        method: 'CASH',
+        reference: 'e2e-ref-1',
+      })
+      .expect(200);
+    expect(paymentResponse.body.invoice).toBeDefined();
+    expect(paymentResponse.body.invoice.encounter_id).toBe(encounterId);
+    expect(paymentResponse.body.payments).toHaveLength(1);
+    expect(paymentResponse.body.payments[0].amount).toBe(500);
+
     await request(app.getHttpServer())
       .post(`/encounters/${encounterId}:lab-enter-results`)
       .set('Host', 'tenant-a.test')
@@ -1250,6 +1343,9 @@ describe('LAB workflow (e2e)', () => {
       .expect((response) => {
         expect(response.body.type).toBe('LAB_REPORT_V1');
       });
+
+    expect(firstPublishResponse.body.id).toBeDefined();
+    expect(firstPublishResponse.body.payloadHash).toBeDefined();
 
     const documentId = firstPublishResponse.body.id as string;
 
