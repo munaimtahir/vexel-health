@@ -66,13 +66,13 @@ export function mapEncounter(api: Record<string, unknown> | null | undefined): I
     return { code, status };
 }
 
-/** Map API module order/request to IdentityModuleRef */
+/** Map API module order/request to IdentityModuleRef. Uses only order-level code (orderCode/requestCode); never encounter/visit code. */
 export function mapModuleRef(
     api: Record<string, unknown> | null | undefined,
     type: IdentityModuleRef['type'] = 'LIMS'
 ): IdentityModuleRef | undefined {
     if (!api || typeof api !== 'object') return undefined;
-    const code = (api.orderCode ?? api.encounterCode ?? api.code ?? api.requestCode) as string | undefined;
+    const code = (api.orderCode ?? api.requestCode) as string | undefined;
     const status = (api.status as string) ?? undefined;
     if (!code && !status) return undefined;
     return { type, code, status };

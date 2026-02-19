@@ -18,6 +18,8 @@ import { REQUEST } from '@nestjs/core';
 import type { Request } from 'express';
 import { ClsService } from 'nestjs-cls';
 import { DomainException } from '../common/errors/domain.exception';
+import { parseMockBearerTokenHeader } from '../common/auth/mock-token.util';
+import { ensureSingleReferenceRangeMatch } from '../common/lab/lab-catalog-integrity.util';
 import { DocumentsService } from '../documents/documents.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AddTestToEncounterDto } from './dto/add-test-to-encounter.dto';
@@ -50,78 +52,115 @@ export class LabWorkflowService {
 
   async addTestToEncounter(encounterId: string, dto: AddTestToEncounterDto) {
     const tenantId = this.tenantId;
+    const actor = this.getActorIdentity();
+    const idempotencyKey = this.getIdempotencyKey();
 
-    return this.prisma.$transaction(async (tx) => {
-      const encounter = await this.assertLabEncounter(tx, encounterId);
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        const encounter = await this.assertLabEncounter(tx, encounterId);
 
-      if (encounter.status === 'FINALIZED' || encounter.status === 'DOCUMENTED') {
-        throw new DomainException(
-          'ENCOUNTER_STATE_INVALID',
-          'Cannot add LAB tests after encounter finalization',
-        );
-      }
-
-      const test = await tx.labTestDefinition.findFirst({
-        where: {
-          id: dto.testId,
-          tenantId,
-          active: true,
-        },
-      });
-
-      if (!test) {
-        throw new DomainException(
-          'LAB_TEST_NOT_FOUND',
-          'LAB test is not available for this tenant',
-        );
-      }
-
-      try {
-        const orderItem = await tx.labOrderItem.create({
-          data: {
-            tenantId,
-            encounterId: encounter.id,
-            testId: test.id,
-            status: LabOrderItemStatus.ORDERED,
-          },
-        });
-
-        const activeParameters = await tx.labTestParameter.findMany({
-          where: {
-            tenantId,
-            testId: test.id,
-            active: true,
-          },
-          orderBy: [{ displayOrder: 'asc' }, { name: 'asc' }],
-        });
-
-        if (activeParameters.length > 0) {
-          await tx.labResultItem.createMany({
-            data: activeParameters.map((parameter) => ({
-              tenantId,
-              orderItemId: orderItem.id,
-              parameterId: parameter.id,
-              value: '',
-              flag: LabResultFlag.UNKNOWN,
-            })),
-          });
-        }
-
-        return this.buildOrderedTest(tx, orderItem.id);
-      } catch (error) {
-        if (
-          error instanceof Prisma.PrismaClientKnownRequestError &&
-          error.code === 'P2002'
-        ) {
+        if (encounter.status === 'FINALIZED' || encounter.status === 'DOCUMENTED') {
           throw new DomainException(
-            'LAB_TEST_ALREADY_ORDERED',
-            'This LAB test is already ordered for the encounter',
+            'ENCOUNTER_STATE_INVALID',
+            'Cannot add LAB tests after encounter finalization',
           );
         }
 
-        throw error;
-      }
-    });
+        const test = await tx.labTestDefinition.findFirst({
+          where: {
+            id: dto.testId,
+            tenantId,
+            active: true,
+          },
+        });
+
+        if (!test) {
+          throw new DomainException(
+            'LAB_TEST_NOT_FOUND',
+            'LAB test is not available for this tenant',
+          );
+        }
+
+        try {
+          const orderItem = await tx.labOrderItem.create({
+            data: {
+              tenantId,
+              encounterId: encounter.id,
+              testId: test.id,
+              status: LabOrderItemStatus.ORDERED,
+            },
+          });
+
+          const activeParameters = await tx.labTestParameter.findMany({
+            where: {
+              tenantId,
+              testId: test.id,
+              active: true,
+            },
+            orderBy: [{ displayOrder: 'asc' }, { name: 'asc' }],
+          });
+
+          if (activeParameters.length > 0) {
+            await tx.labResultItem.createMany({
+              data: activeParameters.map((parameter) => ({
+                tenantId,
+                orderItemId: orderItem.id,
+                parameterId: parameter.id,
+                value: '',
+                flag: LabResultFlag.UNKNOWN,
+              })),
+            });
+          }
+
+          await this.writeAuditEvent(tx, {
+            actorUserId: actor,
+            eventType: 'lims.order.created',
+            entityType: 'lab_order_item',
+            entityId: orderItem.id,
+            payload: {
+              tenant_id: tenantId,
+              user_id: actor,
+              encounter_id: encounter.id,
+              order_id: orderItem.id,
+              idempotency_key: idempotencyKey,
+              correlation_id: this.getCorrelationId(),
+              prev_status: null,
+              next_status: LabOrderItemStatus.ORDERED,
+              failure_reason_code: null,
+              failure_reason_details: null,
+            },
+          });
+
+          return this.buildOrderedTest(tx, orderItem.id);
+        } catch (error) {
+          if (
+            error instanceof Prisma.PrismaClientKnownRequestError &&
+            error.code === 'P2002'
+          ) {
+            throw new DomainException(
+              'LAB_TEST_ALREADY_ORDERED',
+              'This LAB test is already ordered for the encounter',
+            );
+          }
+
+          throw error;
+        }
+      });
+    } catch (error) {
+      await this.writeAuditFailure({
+        actorUserId: actor,
+        eventType: 'lims.order.create_blocked',
+        entityType: 'encounter',
+        entityId: encounterId,
+        encounterId,
+        orderId: null,
+        idempotencyKey,
+        prevStatus: null,
+        nextStatus: null,
+        error,
+      });
+      throw error;
+    }
   }
 
   async listEncounterLabTests(encounterId: string) {
@@ -155,245 +194,408 @@ export class LabWorkflowService {
   async enterResults(encounterId: string, dto: EnterLabResultsDto) {
     const tenantId = this.tenantId;
     const actor = this.getActorIdentity();
+    const idempotencyKey = this.getIdempotencyKey();
 
-    return this.prisma.$transaction(async (tx) => {
-      const encounter = await this.assertLabEncounter(tx, encounterId);
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        const encounter = await this.assertLabEncounter(tx, encounterId);
 
-      if (encounter.status !== 'IN_PROGRESS') {
-        throw new DomainException(
-          'INVALID_STATE',
-          'LAB results can only be entered while encounter is IN_PROGRESS',
-        );
-      }
-
-      const orderItem = await tx.labOrderItem.findFirst({
-        where: {
-          id: dto.orderItemId,
-          tenantId,
-          encounterId: encounter.id,
-        },
-      });
-
-      if (!orderItem) {
-        throw new NotFoundException('LAB order item not found');
-      }
-
-      if (orderItem.status === LabOrderItemStatus.VERIFIED) {
-        throw new DomainException(
-          'LAB_RESULTS_LOCKED',
-          'Cannot edit results after verification',
-        );
-      }
-
-      const activeParameters = await tx.labTestParameter.findMany({
-        where: {
-          tenantId,
-          testId: orderItem.testId,
-          active: true,
-        },
-      });
-      const parameterById = new Map(activeParameters.map((item) => [item.id, item]));
-
-      for (const result of dto.results) {
-        const parameter = parameterById.get(result.parameterId);
-        if (!parameter) {
+        if (encounter.status !== 'IN_PROGRESS') {
           throw new DomainException(
-            'LAB_PARAMETER_NOT_FOUND',
-            'One or more parameters do not belong to the ordered test',
+            'INVALID_STATE',
+            'LAB results can only be entered while encounter is IN_PROGRESS',
           );
         }
 
-        const normalizedValue = result.value.trim();
-        const valueNumeric = this.parseNumericValue(normalizedValue);
-        const flag = this.computeFlag(parameter, valueNumeric);
-
-        await tx.labResultItem.upsert({
+        const orderItem = await tx.labOrderItem.findFirst({
           where: {
-            tenantId_orderItemId_parameterId: {
+            id: dto.orderItemId,
+            tenantId,
+            encounterId: encounter.id,
+          },
+        });
+
+        if (!orderItem) {
+          throw new NotFoundException('LAB order item not found');
+        }
+
+        if (orderItem.status === LabOrderItemStatus.VERIFIED) {
+          throw new DomainException(
+            'LAB_RESULTS_LOCKED',
+            'Cannot edit results after verification',
+          );
+        }
+
+        const activeParameters = await tx.labTestParameter.findMany({
+          where: {
+            tenantId,
+            testId: orderItem.testId,
+            active: true,
+          },
+        });
+        const parameterById = new Map(activeParameters.map((item) => [item.id, item]));
+
+        for (const result of dto.results) {
+          const parameter = parameterById.get(result.parameterId);
+          if (!parameter) {
+            throw new DomainException(
+              'LAB_PARAMETER_NOT_FOUND',
+              'One or more parameters do not belong to the ordered test',
+            );
+          }
+
+          const normalizedValue = result.value.trim();
+          const valueNumeric = this.parseNumericValue(normalizedValue);
+          const flag = this.computeFlag(parameter, valueNumeric);
+
+          // Deterministic result upsert ensures idempotent retries do not duplicate values.
+          await tx.labResultItem.upsert({
+            where: {
+              tenantId_orderItemId_parameterId: {
+                tenantId,
+                orderItemId: orderItem.id,
+                parameterId: parameter.id,
+              },
+            },
+            create: {
               tenantId,
               orderItemId: orderItem.id,
               parameterId: parameter.id,
+              value: normalizedValue,
+              valueNumeric,
+              flag,
+              enteredBy: actor,
+              enteredAt: new Date(),
             },
-          },
-          create: {
+            update: {
+              value: normalizedValue,
+              valueNumeric,
+              flag,
+              enteredBy: actor,
+              enteredAt: new Date(),
+              verifiedBy: null,
+              verifiedAt: null,
+            },
+          });
+        }
+
+        const allValues = await tx.labResultItem.findMany({
+          where: {
             tenantId,
             orderItemId: orderItem.id,
-            parameterId: parameter.id,
-            value: normalizedValue,
-            valueNumeric,
-            flag,
-            enteredBy: actor,
-            enteredAt: new Date(),
-          },
-          update: {
-            value: normalizedValue,
-            valueNumeric,
-            flag,
-            enteredBy: actor,
-            enteredAt: new Date(),
-            verifiedBy: null,
-            verifiedAt: null,
+            parameterId: {
+              in: activeParameters.map((parameter) => parameter.id),
+            },
           },
         });
-      }
 
-      const allValues = await tx.labResultItem.findMany({
-        where: {
-          tenantId,
-          orderItemId: orderItem.id,
-          parameterId: {
-            in: activeParameters.map((parameter) => parameter.id),
+        const allRequiredValuesPresent = activeParameters.every((parameter) => {
+          const value = allValues.find((item) => item.parameterId === parameter.id);
+          return Boolean(value && value.value.trim().length > 0);
+        });
+
+        const nextStatus = allRequiredValuesPresent
+          ? LabOrderItemStatus.RESULTS_ENTERED
+          : LabOrderItemStatus.ORDERED;
+
+        const updateResult = await tx.labOrderItem.updateMany({
+          where: {
+            id: orderItem.id,
+            tenantId,
+            status: {
+              not: LabOrderItemStatus.VERIFIED,
+            },
           },
-        },
-      });
+          data: {
+            status: nextStatus,
+          },
+        });
 
-      const allRequiredValuesPresent = activeParameters.every((parameter) => {
-        const value = allValues.find((item) => item.parameterId === parameter.id);
-        return Boolean(value && value.value.trim().length > 0);
-      });
+        if (updateResult.count === 0) {
+          throw new DomainException(
+            'LAB_RESULTS_LOCKED',
+            'Cannot edit results after verification',
+          );
+        }
 
-      await tx.labOrderItem.update({
-        where: {
-          id: orderItem.id,
-        },
-        data: {
-          status: allRequiredValuesPresent
-            ? LabOrderItemStatus.RESULTS_ENTERED
-            : LabOrderItemStatus.ORDERED,
-        },
-      });
+        await this.writeAuditEvent(tx, {
+          actorUserId: actor,
+          eventType: 'lims.results.entered',
+          entityType: 'lab_order_item',
+          entityId: orderItem.id,
+          payload: {
+            tenant_id: tenantId,
+            user_id: actor,
+            encounter_id: encounter.id,
+            order_id: orderItem.id,
+            idempotency_key: idempotencyKey,
+            correlation_id: this.getCorrelationId(),
+            prev_status: orderItem.status,
+            next_status: nextStatus,
+            failure_reason_code: null,
+            failure_reason_details: null,
+          },
+        });
 
-      return this.buildOrderedTest(tx, orderItem.id);
-    });
+        return this.buildOrderedTest(tx, orderItem.id);
+      });
+    } catch (error) {
+      await this.writeAuditFailure({
+        actorUserId: actor,
+        eventType: 'lims.results.enter_blocked',
+        entityType: 'lab_order_item',
+        entityId: dto.orderItemId,
+        encounterId,
+        orderId: dto.orderItemId,
+        idempotencyKey,
+        prevStatus: null,
+        nextStatus: null,
+        error,
+      });
+      throw error;
+    }
   }
 
   async verifyResults(encounterId: string, dto: VerifyLabResultsDto) {
     const tenantId = this.tenantId;
     const actor = this.getActorIdentity() ?? 'system';
+    const idempotencyKey = this.getIdempotencyKey();
 
-    return this.prisma.$transaction(async (tx) => {
-      const encounter = await this.assertLabEncounter(tx, encounterId);
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        const encounter = await this.assertLabEncounter(tx, encounterId);
 
-      if (encounter.status !== 'IN_PROGRESS') {
-        throw new DomainException(
-          'INVALID_STATE',
-          'LAB results can only be verified while encounter is IN_PROGRESS',
-        );
-      }
+        if (encounter.status !== 'IN_PROGRESS') {
+          throw new DomainException(
+            'INVALID_STATE',
+            'LAB results can only be verified while encounter is IN_PROGRESS',
+          );
+        }
 
-      const orderItem = await tx.labOrderItem.findFirst({
-        where: {
-          id: dto.orderItemId,
-          tenantId,
-          encounterId: encounter.id,
-        },
-      });
-
-      if (!orderItem) {
-        throw new NotFoundException('LAB order item not found');
-      }
-
-      if (orderItem.status !== LabOrderItemStatus.RESULTS_ENTERED) {
-        throw new DomainException(
-          'LAB_RESULTS_NOT_READY',
-          'LAB order item must be in RESULTS_ENTERED status before verification',
-        );
-      }
-
-      const activeParameters = await tx.labTestParameter.findMany({
-        where: {
-          tenantId,
-          testId: orderItem.testId,
-          active: true,
-        },
-        select: {
-          id: true,
-        },
-      });
-
-      const activeParameterIds = activeParameters.map((parameter) => parameter.id);
-      const values = await tx.labResultItem.findMany({
-        where: {
-          tenantId,
-          orderItemId: orderItem.id,
-          parameterId: {
-            in: activeParameterIds,
+        const orderItem = await tx.labOrderItem.findFirst({
+          where: {
+            id: dto.orderItemId,
+            tenantId,
+            encounterId: encounter.id,
           },
-        },
-      });
+        });
 
-      const complete = activeParameterIds.every((parameterId) => {
-        const value = values.find((item) => item.parameterId === parameterId);
-        return Boolean(value && value.value.trim().length > 0);
-      });
+        if (!orderItem) {
+          throw new NotFoundException('LAB order item not found');
+        }
 
-      if (!complete) {
-        throw new DomainException(
-          'LAB_RESULTS_INCOMPLETE',
-          'All active parameters must have values before verification',
-        );
-      }
-
-      const verifiedAt = new Date();
-      await tx.labResultItem.updateMany({
-        where: {
-          tenantId,
-          orderItemId: orderItem.id,
-          parameterId: {
-            in: activeParameterIds,
+        const activeParameters = await tx.labTestParameter.findMany({
+          where: {
+            tenantId,
+            testId: orderItem.testId,
+            active: true,
           },
-        },
-        data: {
-          verifiedBy: actor,
-          verifiedAt,
-        },
-      });
+          select: {
+            id: true,
+            name: true,
+          },
+        });
 
-      await tx.labOrderItem.update({
-        where: {
-          id: orderItem.id,
-        },
-        data: {
-          status: LabOrderItemStatus.VERIFIED,
-        },
-      });
+        if (orderItem.status === LabOrderItemStatus.VERIFIED) {
+          return this.handleAlreadyVerified(tx, {
+            tenantId,
+            orderItemId: orderItem.id,
+            actor,
+            activeParameters,
+          });
+        }
 
-      return this.buildOrderedTest(tx, orderItem.id);
-    });
+        if (orderItem.status !== LabOrderItemStatus.RESULTS_ENTERED) {
+          throw new DomainException(
+            'LAB_RESULTS_NOT_READY',
+            'LAB order item must be in RESULTS_ENTERED status before verification',
+          );
+        }
+
+        const activeParameterIds = activeParameters.map((parameter) => parameter.id);
+        const values = await tx.labResultItem.findMany({
+          where: {
+            tenantId,
+            orderItemId: orderItem.id,
+            parameterId: {
+              in: activeParameterIds,
+            },
+          },
+        });
+
+        const missing = activeParameters
+          .filter((parameter) => {
+            const value = values.find((item) => item.parameterId === parameter.id);
+            return !value || value.value.trim().length === 0;
+          })
+          .map((parameter) => ({
+            parameter_id: parameter.id,
+            parameter_name: parameter.name,
+          }));
+
+        if (missing.length > 0) {
+          throw new DomainException(
+            'LAB_RESULTS_INCOMPLETE',
+            'All active parameters must have values before verification',
+            { missing },
+          );
+        }
+
+        const verifiedAt = new Date();
+        await tx.labResultItem.updateMany({
+          where: {
+            tenantId,
+            orderItemId: orderItem.id,
+            parameterId: {
+              in: activeParameterIds,
+            },
+          },
+          data: {
+            verifiedBy: actor,
+            verifiedAt,
+          },
+        });
+
+        const transition = await tx.labOrderItem.updateMany({
+          where: {
+            id: orderItem.id,
+            tenantId,
+            status: LabOrderItemStatus.RESULTS_ENTERED,
+          },
+          data: {
+            status: LabOrderItemStatus.VERIFIED,
+          },
+        });
+
+        if (transition.count === 0) {
+          return this.handleAlreadyVerified(tx, {
+            tenantId,
+            orderItemId: orderItem.id,
+            actor,
+            activeParameters,
+          });
+        }
+
+        await this.writeAuditEvent(tx, {
+          actorUserId: actor,
+          eventType: 'lims.results.verified',
+          entityType: 'lab_order_item',
+          entityId: orderItem.id,
+          payload: {
+            tenant_id: tenantId,
+            user_id: actor,
+            encounter_id: encounter.id,
+            order_id: orderItem.id,
+            idempotency_key: idempotencyKey,
+            correlation_id: this.getCorrelationId(),
+            prev_status: LabOrderItemStatus.RESULTS_ENTERED,
+            next_status: LabOrderItemStatus.VERIFIED,
+            failure_reason_code: null,
+            failure_reason_details: null,
+          },
+        });
+
+        return this.buildOrderedTest(tx, orderItem.id);
+      });
+    } catch (error) {
+      await this.writeAuditFailure({
+        actorUserId: actor,
+        eventType: 'lims.results.verify_blocked',
+        entityType: 'lab_order_item',
+        entityId: dto.orderItemId,
+        encounterId,
+        orderId: dto.orderItemId,
+        idempotencyKey,
+        prevStatus: null,
+        nextStatus: null,
+        error,
+      });
+      throw error;
+    }
   }
 
   async publishLabReport(encounterId: string) {
-    const encounter = await this.prisma.encounter.findFirst({
-      where: {
-        id: encounterId,
-        tenantId: this.tenantId,
-      },
-      select: {
-        id: true,
-        type: true,
-        status: true,
-      },
-    });
+    const tenantId = this.tenantId;
+    const actor = this.getActorIdentity();
+    const idempotencyKey = this.getIdempotencyKey();
 
-    if (!encounter) {
-      throw new NotFoundException('Encounter not found');
-    }
+    try {
+      const encounter = await this.prisma.encounter.findFirst({
+        where: {
+          id: encounterId,
+          tenantId,
+        },
+        select: {
+          id: true,
+          type: true,
+          status: true,
+        },
+      });
 
-    if (encounter.type !== 'LAB') {
-      throw new DomainException(
-        'INVALID_ENCOUNTER_TYPE',
-        'LAB workflow commands are only valid for LAB encounters',
+      if (!encounter) {
+        throw new NotFoundException('Encounter not found');
+      }
+
+      if (encounter.type !== 'LAB') {
+        throw new DomainException(
+          'INVALID_ENCOUNTER_TYPE',
+          'LAB workflow commands are only valid for LAB encounters',
+        );
+      }
+
+      if (encounter.status !== 'FINALIZED' && encounter.status !== 'DOCUMENTED') {
+        throw new DomainException(
+          'LAB_PUBLISH_BLOCKED_NOT_FINALIZED',
+          'Encounter must be FINALIZED before LAB report publishing',
+          {
+            current_status: encounter.status,
+          },
+        );
+      }
+
+      const document = await this.documentsService.queueEncounterDocument(
+        encounter.id,
+        'LAB_REPORT_V1',
       );
-    }
 
-    if (encounter.status !== 'FINALIZED' && encounter.status !== 'DOCUMENTED') {
-      throw new DomainException(
-        'ENCOUNTER_STATE_INVALID',
-        'Encounter must be FINALIZED before LAB report publishing',
-      );
-    }
+      await this.writeAuditEvent(this.prisma, {
+        actorUserId: actor,
+        eventType: 'lims.report.publish.requested',
+        entityType: 'encounter',
+        entityId: encounter.id,
+        payload: {
+          tenant_id: tenantId,
+          user_id: actor,
+          encounter_id: encounter.id,
+          order_id: null,
+          idempotency_key: idempotencyKey,
+          correlation_id: this.getCorrelationId(),
+          prev_status: encounter.status,
+          next_status: document.status,
+          failure_reason_code: null,
+          failure_reason_details: null,
+          document_id: document.id,
+          payload_hash: document.payloadHash,
+          pdf_hash: document.pdfHash,
+        },
+      });
 
-    return this.documentsService.queueEncounterDocument(encounter.id, 'LAB_REPORT_V1');
+      return document;
+    } catch (error) {
+      await this.writeAuditFailure({
+        actorUserId: actor,
+        eventType: 'lims.report.publish_blocked',
+        entityType: 'encounter',
+        entityId: encounterId,
+        encounterId,
+        orderId: null,
+        idempotencyKey,
+        prevStatus: null,
+        nextStatus: null,
+        error,
+      });
+      throw error;
+    }
   }
 
   private async assertLabEncounter(
@@ -491,19 +693,31 @@ export class LabWorkflowService {
     parameter: LabTestParameter,
     valueNumeric: number | null,
   ): LabResultFlag {
+    const matchedRange = ensureSingleReferenceRangeMatch([
+      {
+        id: parameter.id,
+        refLow: parameter.refLow,
+        refHigh: parameter.refHigh,
+        refText: parameter.refText,
+      },
+    ]);
+
     if (valueNumeric === null) {
       return LabResultFlag.UNKNOWN;
     }
 
-    if (parameter.refLow !== null && valueNumeric < parameter.refLow) {
+    if (matchedRange?.refLow !== null && matchedRange?.refLow !== undefined && valueNumeric < matchedRange.refLow) {
       return LabResultFlag.LOW;
     }
 
-    if (parameter.refHigh !== null && valueNumeric > parameter.refHigh) {
+    if (matchedRange?.refHigh !== null && matchedRange?.refHigh !== undefined && valueNumeric > matchedRange.refHigh) {
       return LabResultFlag.HIGH;
     }
 
-    if (parameter.refLow !== null || parameter.refHigh !== null) {
+    if (
+      matchedRange?.refLow !== null ||
+      matchedRange?.refHigh !== null
+    ) {
       return LabResultFlag.NORMAL;
     }
 
@@ -520,21 +734,137 @@ export class LabWorkflowService {
       return fromCls;
     }
 
-    const authorization = this.request.headers.authorization;
-    if (!authorization || !authorization.startsWith('Bearer ')) {
-      return null;
-    }
+    const claims = parseMockBearerTokenHeader(this.request.headers.authorization);
+    return claims?.userId ?? null;
+  }
 
-    const token = authorization.slice('Bearer '.length).trim();
-    if (!token) {
-      return null;
+  private getIdempotencyKey(): string | null {
+    const header = this.request.headers['x-idempotency-key'];
+    if (typeof header === 'string' && header.trim().length > 0) {
+      return header.trim();
     }
-
-    const parts = token.split('.');
-    if (parts.length >= 3 && parts[0] === 'mock' && parts[2].length > 0) {
-      return parts[2];
+    if (Array.isArray(header) && header[0]?.trim().length) {
+      return header[0].trim();
     }
-
     return null;
+  }
+
+  private getCorrelationId(): string | null {
+    return this.cls.get<string>('REQUEST_ID') ?? null;
+  }
+
+  private async handleAlreadyVerified(
+    tx: Prisma.TransactionClient,
+    input: {
+      tenantId: string;
+      orderItemId: string;
+      actor: string;
+      activeParameters: Array<{ id: string; name: string }>;
+    },
+  ): Promise<LabOrderedTestResponse> {
+    const values = await tx.labResultItem.findMany({
+      where: {
+        tenantId: input.tenantId,
+        orderItemId: input.orderItemId,
+        parameterId: {
+          in: input.activeParameters.map((parameter) => parameter.id),
+        },
+      },
+      orderBy: {
+        updatedAt: 'desc',
+      },
+    });
+
+    const verified = values.find(
+      (item) => item.verifiedBy !== null && item.verifiedAt !== null,
+    );
+    if (!verified) {
+      throw new DomainException(
+        'LAB_RESULTS_NOT_READY',
+        'LAB order item must be in RESULTS_ENTERED status before verification',
+      );
+    }
+
+    if (verified.verifiedBy === input.actor) {
+      return this.buildOrderedTest(tx, input.orderItemId);
+    }
+
+    throw new DomainException(
+      'LAB_ALREADY_VERIFIED',
+      'LAB results already verified by another user',
+      {
+        verified_by: verified.verifiedBy,
+        verified_at: verified.verifiedAt?.toISOString() ?? null,
+      },
+    );
+  }
+
+  private async writeAuditEvent(
+    source: Prisma.TransactionClient | PrismaService,
+    input: {
+      actorUserId: string | null;
+      eventType: string;
+      entityType: string;
+      entityId: string;
+      payload: Record<string, unknown>;
+    },
+  ): Promise<void> {
+    const auditModel = (source as unknown as {
+      auditEvent?: {
+        create?: (args: unknown) => Promise<unknown>;
+      };
+    }).auditEvent;
+
+    if (!auditModel?.create) {
+      return;
+    }
+
+    await auditModel.create({
+      data: {
+        tenantId: this.tenantId,
+        actorUserId: input.actorUserId,
+        eventType: input.eventType,
+        entityType: input.entityType,
+        entityId: input.entityId,
+        payloadJson: JSON.stringify(input.payload),
+        correlationId: this.getCorrelationId(),
+      },
+    });
+  }
+
+  private async writeAuditFailure(input: {
+    actorUserId: string | null;
+    eventType: string;
+    entityType: string;
+    entityId: string;
+    encounterId: string;
+    orderId: string | null;
+    idempotencyKey: string | null;
+    prevStatus: string | null;
+    nextStatus: string | null;
+    error: unknown;
+  }): Promise<void> {
+    if (!(input.error instanceof DomainException)) {
+      return;
+    }
+
+    await this.writeAuditEvent(this.prisma, {
+      actorUserId: input.actorUserId,
+      eventType: input.eventType,
+      entityType: input.entityType,
+      entityId: input.entityId,
+      payload: {
+        tenant_id: this.tenantId,
+        user_id: input.actorUserId,
+        encounter_id: input.encounterId,
+        order_id: input.orderId,
+        idempotency_key: input.idempotencyKey,
+        correlation_id: this.getCorrelationId(),
+        prev_status: input.prevStatus,
+        next_status: input.nextStatus,
+        failure_reason_code: input.error.code,
+        failure_reason_details: input.error.details ?? null,
+      },
+    });
   }
 }

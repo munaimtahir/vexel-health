@@ -1238,11 +1238,7 @@ export default function EncounterDetailPage() {
       mapIdentityHeader({
         patient: patient as unknown as Record<string, unknown>,
         encounter: encounter as unknown as Record<string, unknown>,
-        moduleRef:
-          encounter.type === 'LAB'
-            ? (encounter as unknown as Record<string, unknown>)
-            : undefined,
-        moduleType: 'LIMS',
+        moduleRef: undefined,
       }),
     [patient, encounter],
   );

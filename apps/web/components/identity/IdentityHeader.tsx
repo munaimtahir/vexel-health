@@ -14,7 +14,7 @@ export function IdentityHeader({ patient, encounter, moduleRef }: IdentityHeader
     const visitLabel = encounter?.code ? `Visit: ${encounter.code}` : 'Visit';
     const visitValue = encounter?.code ?? encounter?.status ?? '—';
 
-    const showModuleChip = moduleRef?.code != null || moduleRef?.status != null;
+    const showModuleChip = moduleRef?.code != null;
     const moduleLabel = moduleRef?.type && moduleRef?.code
         ? `${moduleRef.type}: ${moduleRef.code}`
         : moduleRef?.type ?? 'Order';

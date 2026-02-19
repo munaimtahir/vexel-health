@@ -189,6 +189,8 @@ paths:
                 $ref: '#/components/schemas/Encounter'
         '400':
           $ref: '#/components/responses/ValidationError'
+        '403':
+          $ref: '#/components/responses/AuthError'
         '409':
           $ref: '#/components/responses/DomainError'
         '500':
@@ -334,6 +336,8 @@ paths:
                 $ref: '#/components/schemas/LabTestParameter'
         '400':
           $ref: '#/components/responses/ValidationError'
+        '403':
+          $ref: '#/components/responses/AuthError'
         '404':
           $ref: '#/components/responses/NotFoundError'
         '500':
@@ -448,6 +452,8 @@ paths:
                 $ref: '#/components/schemas/EncounterPrepResponse'
         '400':
           $ref: '#/components/responses/ValidationError'
+        '403':
+          $ref: '#/components/responses/AuthError'
         '404':
           $ref: '#/components/responses/NotFoundError'
         '409':
@@ -483,6 +489,8 @@ paths:
                 $ref: '#/components/schemas/EncounterMainResponse'
         '400':
           $ref: '#/components/responses/ValidationError'
+        '403':
+          $ref: '#/components/responses/AuthError'
         '404':
           $ref: '#/components/responses/NotFoundError'
         '409':
@@ -557,6 +565,8 @@ paths:
                 $ref: '#/components/schemas/DocumentResponse'
         '400':
           $ref: '#/components/responses/ValidationError'
+        '403':
+          $ref: '#/components/responses/AuthError'
         '404':
           $ref: '#/components/responses/NotFoundError'
         '409':
@@ -589,6 +599,8 @@ paths:
           $ref: '#/components/responses/ValidationError'
         '404':
           $ref: '#/components/responses/NotFoundError'
+        '403':
+          $ref: '#/components/responses/AuthError'
         '409':
           $ref: '#/components/responses/DomainError'
         '500':
@@ -1583,6 +1595,9 @@ components:
               type: string
             message:
               type: string
+            details:
+              type: object
+              additionalProperties: true
           required:
             - type
             - code

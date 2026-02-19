@@ -5,6 +5,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
+import { normalizeCatalogText } from '../common/lab/lab-catalog-integrity.util';
 import { DomainException } from '../common/errors/domain.exception';
 import { PrismaService } from '../prisma/prisma.service';
 import { AddParameterDto } from './dto/add-parameter.dto';
@@ -104,6 +105,13 @@ export class LabCatalogService {
       dto.displayOrder ??
       (await this.getNextParameterDisplayOrder(tenantId, test.id));
 
+    await this.ensureParameterIdentityUnique({
+      tenantId,
+      testId: test.id,
+      name: dto.name,
+      unit: dto.unit,
+    });
+
     try {
       return await this.prisma.labTestParameter.create({
         data: {
@@ -170,5 +178,42 @@ export class LabCatalogService {
     });
 
     return (current?.displayOrder ?? -1) + 1;
+  }
+
+  private async ensureParameterIdentityUnique(input: {
+    tenantId: string;
+    testId: string;
+    name: string;
+    unit?: string;
+  }): Promise<void> {
+    const normalizedName = normalizeCatalogText(input.name);
+    const normalizedUnit = normalizeCatalogText(input.unit);
+
+    const existing = await this.prisma.labTestParameter.findMany({
+      where: {
+        tenantId: input.tenantId,
+        testId: input.testId,
+      },
+      select: {
+        id: true,
+        name: true,
+        unit: true,
+      },
+    });
+
+    const conflict = existing.find(
+      (parameter) =>
+        normalizeCatalogText(parameter.name) === normalizedName &&
+        normalizeCatalogText(parameter.unit) === normalizedUnit,
+    );
+    if (conflict) {
+      throw new DomainException(
+        'LAB_PARAMETER_CONFLICT',
+        'A parameter with this name and unit already exists for this test',
+        {
+          conflicting_parameter_id: conflict.id,
+        },
+      );
+    }
   }
 }

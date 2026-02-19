@@ -137,6 +137,16 @@ type MemoryState = {
   labOrders: LabOrderRecord[];
   labResults: LabResultRecord[];
   documents: DocumentRecord[];
+  auditEvents: Array<{
+    id: string;
+    tenantId: string;
+    actorUserId: string | null;
+    eventType: string;
+    entityType: string;
+    entityId: string;
+    payloadJson: string | null;
+    correlationId: string | null;
+  }>;
   files: Map<string, Buffer>;
   patientCounters: Map<string, number>;
   encounterCounters: Map<string, number>;
@@ -659,6 +669,29 @@ function createPrismaMock(state: MemoryState) {
         order.updatedAt = new Date();
         return order;
       }),
+      updateMany: jest.fn(async ({ where, data }: any) => {
+        let count = 0;
+        for (const order of state.labOrders) {
+          if (order.id !== where.id || order.tenantId !== where.tenantId) {
+            continue;
+          }
+
+          if (where.status?.not && order.status === where.status.not) {
+            continue;
+          }
+
+          if (where.status && typeof where.status === 'string' && order.status !== where.status) {
+            continue;
+          }
+
+          if (data.status !== undefined) {
+            order.status = data.status;
+          }
+          order.updatedAt = new Date();
+          count += 1;
+        }
+        return { count };
+      }),
       count: jest.fn(async ({ where }: any) => {
         return state.labOrders.filter(
           (item) =>
@@ -836,6 +869,22 @@ function createPrismaMock(state: MemoryState) {
         return { count };
       }),
     },
+    auditEvent: {
+      create: jest.fn(async ({ data }: any) => {
+        const record = {
+          id: makeId(8000 + state.auditEvents.length + 1),
+          tenantId: data.tenantId,
+          actorUserId: data.actorUserId ?? null,
+          eventType: data.eventType,
+          entityType: data.entityType,
+          entityId: data.entityId,
+          payloadJson: data.payloadJson ?? null,
+          correlationId: data.correlationId ?? null,
+        };
+        state.auditEvents.push(record);
+        return record;
+      }),
+    },
     $transaction: jest.fn(
       async (operation: (tx: Record<string, unknown>) => Promise<unknown>) => {
         return operation(prismaMock);
@@ -874,6 +923,7 @@ describe('LAB workflow (e2e)', () => {
     labOrders: [],
     labResults: [],
     documents: [],
+    auditEvents: [],
     files: new Map<string, Buffer>(),
     patientCounters: new Map<string, number>(),
     encounterCounters: new Map<string, number>(),
@@ -882,6 +932,11 @@ describe('LAB workflow (e2e)', () => {
       ['tenant-b.test', 'tenant-b'],
     ]),
   };
+  const tenantAAllLabPermissionsToken =
+    'mock.tenant-a.user-a.LAB_CATALOG_WRITE,LAB_ORDER_WRITE,LAB_RESULTS_WRITE,LAB_RESULTS_VERIFY,LAB_REPORT_PUBLISH';
+  const tenantAWriteWithoutPublishToken =
+    'mock.tenant-a.user-b.LAB_CATALOG_WRITE,LAB_ORDER_WRITE,LAB_RESULTS_WRITE,LAB_RESULTS_VERIFY';
+  const tenantBPublishToken = 'mock.tenant-b.user-c.LAB_REPORT_PUBLISH';
 
   const prismaMock = createPrismaMock(state);
   const storageAdapter = new InMemoryStorageAdapter(state.files);
@@ -975,6 +1030,45 @@ describe('LAB workflow (e2e)', () => {
     await app.close();
   });
 
+  it('returns 403 for LAB publish without required permission', async () => {
+    await request(app.getHttpServer())
+      .post('/lab/tests')
+      .set('Host', 'tenant-a.test')
+      .set('Authorization', `Bearer ${tenantAWriteWithoutPublishToken}`)
+      .send({
+        code: 'RBAC403',
+        name: 'RBAC Denied Test',
+        department: 'Biochemistry',
+      })
+      .expect(201);
+
+    const patientResponse = await request(app.getHttpServer())
+      .post('/patients')
+      .set('Host', 'tenant-a.test')
+      .send({
+        name: 'RBAC Patient',
+      })
+      .expect(201);
+
+    const encounterResponse = await request(app.getHttpServer())
+      .post('/encounters')
+      .set('Host', 'tenant-a.test')
+      .send({
+        patientId: patientResponse.body.id,
+        type: 'LAB',
+      })
+      .expect(201);
+
+    await request(app.getHttpServer())
+      .post(`/encounters/${encounterResponse.body.id}:lab-publish`)
+      .set('Host', 'tenant-a.test')
+      .set('Authorization', `Bearer ${tenantAWriteWithoutPublishToken}`)
+      .expect(403)
+      .expect((response) => {
+        expect(response.body.error.type).toBe('auth_error');
+      });
+  });
+
   it('runs LAB catalog -> order -> results -> verify -> finalize -> publish with tenant isolation', async () => {
     const patientResponse = await request(app.getHttpServer())
       .post('/patients')
@@ -1016,6 +1110,7 @@ describe('LAB workflow (e2e)', () => {
     const createTestResponse = await request(app.getHttpServer())
       .post('/lab/tests')
       .set('Host', 'tenant-a.test')
+      .set('Authorization', `Bearer ${tenantAAllLabPermissionsToken}`)
       .send({
         code: 'ALB',
         name: 'Serum Albumin',
@@ -1028,6 +1123,7 @@ describe('LAB workflow (e2e)', () => {
     await request(app.getHttpServer())
       .post(`/lab/tests/${testId}/parameters`)
       .set('Host', 'tenant-a.test')
+      .set('Authorization', `Bearer ${tenantAAllLabPermissionsToken}`)
       .send({
         name: 'Albumin',
         unit: 'g/dL',
@@ -1040,6 +1136,8 @@ describe('LAB workflow (e2e)', () => {
     const addTestResponse = await request(app.getHttpServer())
       .post(`/encounters/${encounterId}:lab-add-test`)
       .set('Host', 'tenant-a.test')
+      .set('Authorization', `Bearer ${tenantAAllLabPermissionsToken}`)
+      .set('x-idempotency-key', 'order-lab-add-1')
       .send({
         testId,
       })
@@ -1051,7 +1149,8 @@ describe('LAB workflow (e2e)', () => {
     await request(app.getHttpServer())
       .post(`/encounters/${encounterId}:lab-enter-results`)
       .set('Host', 'tenant-a.test')
-      .set('Authorization', 'Bearer mock.tenant-a.user-a')
+      .set('Authorization', `Bearer ${tenantAAllLabPermissionsToken}`)
+      .set('x-idempotency-key', 'enter-results-1')
       .send({
         orderItemId,
         results: [
@@ -1068,24 +1167,73 @@ describe('LAB workflow (e2e)', () => {
       });
 
     await request(app.getHttpServer())
+      .post(`/encounters/${encounterId}:lab-enter-results`)
+      .set('Host', 'tenant-a.test')
+      .set('Authorization', `Bearer ${tenantAAllLabPermissionsToken}`)
+      .set('x-idempotency-key', 'enter-results-1')
+      .send({
+        orderItemId,
+        results: [
+          {
+            parameterId,
+            value: '4.5',
+          },
+        ],
+      })
+      .expect(200)
+      .expect((response) => {
+        expect(response.body.results).toHaveLength(1);
+        expect(response.body.results[0].value).toBe('4.5');
+      });
+
+    await request(app.getHttpServer())
       .post(`/encounters/${encounterId}:finalize`)
       .set('Host', 'tenant-a.test')
       .expect(409)
       .expect((response) => {
         expect(response.body.error.type).toBe('domain_error');
-        expect(response.body.error.code).toBe('LAB_NOT_VERIFIED');
+        expect(response.body.error.code).toBe(
+          'ENCOUNTER_FINALIZE_BLOCKED_UNVERIFIED_LAB',
+        );
       });
 
     await request(app.getHttpServer())
       .post(`/encounters/${encounterId}:lab-verify`)
       .set('Host', 'tenant-a.test')
-      .set('Authorization', 'Bearer mock.tenant-a.user-a')
+      .set('Authorization', `Bearer ${tenantAAllLabPermissionsToken}`)
+      .set('x-idempotency-key', 'verify-results-1')
       .send({
         orderItemId,
       })
       .expect(200)
       .expect((response) => {
         expect(response.body.orderItem.status).toBe('VERIFIED');
+      });
+
+    await request(app.getHttpServer())
+      .post(`/encounters/${encounterId}:lab-verify`)
+      .set('Host', 'tenant-a.test')
+      .set('Authorization', `Bearer ${tenantAAllLabPermissionsToken}`)
+      .set('x-idempotency-key', 'verify-results-1')
+      .send({
+        orderItemId,
+      })
+      .expect(200)
+      .expect((response) => {
+        expect(response.body.orderItem.status).toBe('VERIFIED');
+      });
+
+    await request(app.getHttpServer())
+      .post(`/encounters/${encounterId}:lab-verify`)
+      .set('Host', 'tenant-a.test')
+      .set('Authorization', `Bearer ${tenantAWriteWithoutPublishToken}`)
+      .send({
+        orderItemId,
+      })
+      .expect(409)
+      .expect((response) => {
+        expect(response.body.error.code).toBe('LAB_ALREADY_VERIFIED');
+        expect(response.body.error.details.verified_by).toBe('user-a');
       });
 
     await request(app.getHttpServer())
@@ -1096,6 +1244,8 @@ describe('LAB workflow (e2e)', () => {
     const firstPublishResponse = await request(app.getHttpServer())
       .post(`/encounters/${encounterId}:lab-publish`)
       .set('Host', 'tenant-a.test')
+      .set('Authorization', `Bearer ${tenantAAllLabPermissionsToken}`)
+      .set('x-idempotency-key', 'publish-lab-1')
       .expect(200)
       .expect((response) => {
         expect(response.body.type).toBe('LAB_REPORT_V1');
@@ -1116,10 +1266,14 @@ describe('LAB workflow (e2e)', () => {
     const secondPublishResponse = await request(app.getHttpServer())
       .post(`/encounters/${encounterId}:lab-publish`)
       .set('Host', 'tenant-a.test')
+      .set('Authorization', `Bearer ${tenantAAllLabPermissionsToken}`)
+      .set('x-idempotency-key', 'publish-lab-1')
       .expect(200);
 
     expect(secondPublishResponse.body.id).toBe(documentId);
     expect(secondPublishResponse.body.pdfHash).toBe(firstPublishResponse.body.pdfHash);
+    expect(state.documents).toHaveLength(1);
+    expect((queueAdapter.enqueueDocumentRender as jest.Mock).mock.calls.length).toBe(1);
 
     await request(app.getHttpServer())
       .get('/lab/tests')
@@ -1143,5 +1297,20 @@ describe('LAB workflow (e2e)', () => {
       .get(`/documents/${documentId}/file`)
       .set('Host', 'tenant-b.test')
       .expect(404);
+
+    await request(app.getHttpServer())
+      .post(`/encounters/${encounterId}:lab-publish`)
+      .set('Host', 'tenant-b.test')
+      .set('Authorization', `Bearer ${tenantBPublishToken}`)
+      .expect(404);
+
+    expect(state.auditEvents.some((event) => event.eventType === 'lims.order.created')).toBe(
+      true,
+    );
+    expect(
+      state.auditEvents.some(
+        (event) => event.eventType === 'lims.report.publish.requested',
+      ),
+    ).toBe(true);
   });
 });

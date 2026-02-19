@@ -655,12 +655,12 @@ export class EncountersService {
 
             if (totalLabOrderItems === 0) {
               throw new DomainException(
-                'LAB_NOT_VERIFIED',
+                'LAB_ORDER_EMPTY',
                 'At least one LAB test must be ordered and verified before finalize',
               );
             }
 
-            const pendingVerification = await tx.labOrderItem.findFirst({
+            const pendingVerification = await tx.labOrderItem.findMany({
               where: {
                 tenantId,
                 encounterId: encounter.id,
@@ -670,13 +670,20 @@ export class EncountersService {
               },
               select: {
                 id: true,
+                status: true,
               },
             });
 
-            if (pendingVerification) {
+            if (pendingVerification.length > 0) {
               throw new DomainException(
-                'LAB_NOT_VERIFIED',
+                'ENCOUNTER_FINALIZE_BLOCKED_UNVERIFIED_LAB',
                 'All ordered LAB tests must be verified before finalize',
+                {
+                  unverified_order_items: pendingVerification.map((item) => ({
+                    order_id: item.id,
+                    status: item.status,
+                  })),
+                },
               );
             }
           }

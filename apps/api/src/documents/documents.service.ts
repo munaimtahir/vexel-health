@@ -110,9 +110,16 @@ export class DocumentsService {
           encounter.status !== 'FINALIZED' &&
           encounter.status !== 'DOCUMENTED'
         ) {
+          const notFinalizedCode =
+            documentType === 'LAB_REPORT_V1'
+              ? 'LAB_PUBLISH_BLOCKED_NOT_FINALIZED'
+              : 'ENCOUNTER_STATE_INVALID';
           throw new DomainException(
-            'ENCOUNTER_STATE_INVALID',
+            notFinalizedCode,
             'Encounter must be FINALIZED before document generation',
+            {
+              current_status: encounter.status,
+            },
           );
         }
 
@@ -179,10 +186,11 @@ export class DocumentsService {
           }
 
           if (existing.status === DocumentStatus.FAILED) {
-            enqueueJob = true;
-            return tx.document.update({
+            const resetResult = await tx.document.updateMany({
               where: {
                 id: existing.id,
+                tenantId,
+                status: DocumentStatus.FAILED,
               },
               data: {
                 status: DocumentStatus.QUEUED,
@@ -197,6 +205,21 @@ export class DocumentsService {
                 storageKey: null,
               },
             });
+
+            if (resetResult.count > 0) {
+              enqueueJob = true;
+            }
+
+            const refreshed = await tx.document.findFirst({
+              where: {
+                id: existing.id,
+                tenantId,
+              },
+            });
+            if (!refreshed) {
+              throw new NotFoundException('Document not found');
+            }
+            return refreshed;
           }
 
           return existing;

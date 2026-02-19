@@ -31,11 +31,13 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     response.setHeader('x-correlation-id', correlationId);
 
     if (exception instanceof DomainException) {
+      const details = this.extractDomainDetails(exception.getResponse());
       response.status(HttpStatus.CONFLICT).json({
         error: {
           type: 'domain_error',
           code: exception.code,
           message: this.extractMessage(exception.getResponse()),
+          ...(details ? { details } : {}),
         },
       });
       return;
@@ -171,6 +173,32 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     }
 
     return 'Request failed';
+  }
+
+  private extractDomainDetails(
+    payload: unknown,
+  ): Record<string, unknown> | undefined {
+    if (
+      typeof payload === 'object' &&
+      payload !== null &&
+      'error' in payload &&
+      typeof (payload as { error?: unknown }).error === 'object' &&
+      (payload as { error?: unknown }).error !== null &&
+      'details' in ((payload as { error: Record<string, unknown> }).error ?? {})
+    ) {
+      const details = (
+        payload as {
+          error: {
+            details?: unknown;
+          };
+        }
+      ).error.details;
+      if (typeof details === 'object' && details !== null) {
+        return details as Record<string, unknown>;
+      }
+    }
+
+    return undefined;
   }
 
   private logUnexpectedError(

@@ -28,8 +28,33 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    // Generate Mock Token with encoded tenant for debugging
-    const accessToken = `mock.${tenantId}.${user.id}`;
+    const rolePermissions = await this.prisma.rolePermission.findMany({
+      where: {
+        role: {
+          tenantId,
+          users: {
+            some: {
+              userId: user.id,
+            },
+          },
+        },
+      },
+      select: {
+        permission: {
+          select: {
+            key: true,
+          },
+        },
+      },
+    });
+    const permissions = Array.from(
+      new Set(rolePermissions.map((mapping) => mapping.permission.key)),
+    ).sort();
+
+    const permissionSegment = permissions.join(',');
+    const accessToken = permissionSegment
+      ? `mock.${tenantId}.${user.id}.${permissionSegment}`
+      : `mock.${tenantId}.${user.id}`;
 
     return {
       accessToken,

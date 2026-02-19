@@ -13,6 +13,7 @@ import { APP_INTERCEPTOR } from '@nestjs/core';
 import { RequestTraceInterceptor } from './common/observability/request-trace.interceptor';
 import { LabCatalogModule } from './lab-catalog/lab-catalog.module';
 import { LabWorkflowModule } from './lab-workflow/lab-workflow.module';
+import { PermissionsGuard } from './common/guards/permissions.guard';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { LabWorkflowModule } from './lab-workflow/lab-workflow.module';
   controllers: [AppController],
   providers: [
     AppService,
+    PermissionsGuard,
     {
       provide: APP_INTERCEPTOR,
       useClass: RequestTraceInterceptor,
