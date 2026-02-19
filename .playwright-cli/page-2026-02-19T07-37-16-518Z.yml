@@ -1,0 +1,39 @@
+- generic [active] [ref=e1]:
+  - navigation [ref=e2]:
+    - link "Patients" [ref=e3] [cursor=pointer]:
+      - /url: /patients
+    - link "Operator" [ref=e4] [cursor=pointer]:
+      - /url: /operator/worklist
+    - link "Verification" [ref=e5] [cursor=pointer]:
+      - /url: /verification
+    - link "Admin" [ref=e6] [cursor=pointer]:
+      - /url: /admin
+  - alert [ref=e7]
+  - generic [ref=e8]:
+    - banner [ref=e9]:
+      - generic [ref=e10]:
+        - heading "Operator" [level=1] [ref=e11]
+        - generic [ref=e12]: Tenant · User
+    - generic [ref=e13]:
+      - navigation [ref=e14]:
+        - generic [ref=e15]: Operator
+        - list [ref=e16]:
+          - listitem [ref=e17]:
+            - link "Register" [ref=e18] [cursor=pointer]:
+              - /url: /operator/register
+          - listitem [ref=e19]:
+            - link "Worklist" [ref=e20] [cursor=pointer]:
+              - /url: /operator/worklist
+          - listitem [ref=e21]:
+            - link "Samples" [ref=e22] [cursor=pointer]:
+              - /url: /operator/samples
+          - listitem [ref=e23]:
+            - link "Verify" [ref=e24] [cursor=pointer]:
+              - /url: /operator/verify
+          - listitem [ref=e25]:
+            - link "Published Reports" [ref=e26] [cursor=pointer]:
+              - /url: /operator/reports/published
+      - main [ref=e27]:
+        - generic [ref=e28]:
+          - heading "Worklist" [level=1] [ref=e29]
+          - paragraph [ref=e30]: Loading…

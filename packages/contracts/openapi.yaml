@@ -988,6 +988,12 @@ components:
           enum: [male, female, other]
         phone:
           type: string
+        fatherOrHusbandName:
+          type: string
+        cnic:
+          type: string
+        address:
+          type: string
     Patient:
       allOf:
         - $ref: '#/components/schemas/CreatePatientDto'

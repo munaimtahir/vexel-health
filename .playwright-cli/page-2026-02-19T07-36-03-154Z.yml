@@ -1,0 +1,241 @@
+- generic [active] [ref=e1]:
+  - navigation [ref=e2]:
+    - link "Patients" [ref=e3] [cursor=pointer]:
+      - /url: /patients
+    - link "Operator" [ref=e4] [cursor=pointer]:
+      - /url: /operator/worklist
+    - link "Verification" [ref=e5] [cursor=pointer]:
+      - /url: /verification
+    - link "Admin" [ref=e6] [cursor=pointer]:
+      - /url: /admin
+  - alert [ref=e18]
+  - generic [ref=e19]:
+    - generic [ref=e20]:
+      - heading "Patients" [level=1] [ref=e21]
+      - generic [ref=e22]:
+        - link "Create Encounter" [ref=e23] [cursor=pointer]:
+          - /url: /encounters/new
+        - link "Register New" [ref=e24] [cursor=pointer]:
+          - /url: /patients/register
+    - generic [ref=e25]:
+      - textbox "Search by patient name or Reg No" [ref=e26]
+      - button "Search" [ref=e27]
+    - table [ref=e29]:
+      - rowgroup [ref=e30]:
+        - 'row "Reg # Name DOB Gender Actions" [ref=e31]':
+          - 'columnheader "Reg #" [ref=e32]'
+          - columnheader "Name" [ref=e33]
+          - columnheader "DOB" [ref=e34]
+          - columnheader "Gender" [ref=e35]
+          - columnheader "Actions" [ref=e36]
+      - rowgroup [ref=e37]:
+        - row "REG-00000015 nmyb' 12/1/202 male Create visitDetail" [ref=e38]:
+          - cell "REG-00000015" [ref=e39]:
+            - link "REG-00000015" [ref=e40] [cursor=pointer]:
+              - /url: /patients/934c463a-88fd-4752-8717-3be59eb2eabf
+          - cell "nmyb'" [ref=e41]:
+            - link "nmyb'" [ref=e42] [cursor=pointer]:
+              - /url: /patients/934c463a-88fd-4752-8717-3be59eb2eabf
+          - cell "12/1/202" [ref=e43]
+          - cell "male" [ref=e44]
+          - cell "Create visitDetail" [ref=e45]:
+            - link "Create visit" [ref=e46] [cursor=pointer]:
+              - /url: /encounters/new?patientId=934c463a-88fd-4752-8717-3be59eb2eabf
+            - link "Detail" [ref=e47] [cursor=pointer]:
+              - /url: /patients/934c463a-88fd-4752-8717-3be59eb2eabf
+        - row "REG-00000014 understand---- 1/12/1988 male Create visitDetail" [ref=e48]:
+          - cell "REG-00000014" [ref=e49]:
+            - link "REG-00000014" [ref=e50] [cursor=pointer]:
+              - /url: /patients/e3ef273e-21b4-49c8-ba6b-e66f4cb0fdcc
+          - cell "understand----" [ref=e51]:
+            - link "understand----" [ref=e52] [cursor=pointer]:
+              - /url: /patients/e3ef273e-21b4-49c8-ba6b-e66f4cb0fdcc
+          - cell "1/12/1988" [ref=e53]
+          - cell "male" [ref=e54]
+          - cell "Create visitDetail" [ref=e55]:
+            - link "Create visit" [ref=e56] [cursor=pointer]:
+              - /url: /encounters/new?patientId=e3ef273e-21b4-49c8-ba6b-e66f4cb0fdcc
+            - link "Detail" [ref=e57] [cursor=pointer]:
+              - /url: /patients/e3ef273e-21b4-49c8-ba6b-e66f4cb0fdcc
+        - row "REG-00000013 Smoke Patient OneByOne - male Create visitDetail" [ref=e58]:
+          - cell "REG-00000013" [ref=e59]:
+            - link "REG-00000013" [ref=e60] [cursor=pointer]:
+              - /url: /patients/6b4b851a-9f7b-40ed-ac0c-646f79a0c23c
+          - cell "Smoke Patient OneByOne" [ref=e61]:
+            - link "Smoke Patient OneByOne" [ref=e62] [cursor=pointer]:
+              - /url: /patients/6b4b851a-9f7b-40ed-ac0c-646f79a0c23c
+          - cell "-" [ref=e63]
+          - cell "male" [ref=e64]
+          - cell "Create visitDetail" [ref=e65]:
+            - link "Create visit" [ref=e66] [cursor=pointer]:
+              - /url: /encounters/new?patientId=6b4b851a-9f7b-40ed-ac0c-646f79a0c23c
+            - link "Detail" [ref=e67] [cursor=pointer]:
+              - /url: /patients/6b4b851a-9f7b-40ed-ac0c-646f79a0c23c
+        - row "REG-00000012 Smoke Patient OneByOne - male Create visitDetail" [ref=e68]:
+          - cell "REG-00000012" [ref=e69]:
+            - link "REG-00000012" [ref=e70] [cursor=pointer]:
+              - /url: /patients/54c8ed20-9542-48f0-9339-c82d4635a1c0
+          - cell "Smoke Patient OneByOne" [ref=e71]:
+            - link "Smoke Patient OneByOne" [ref=e72] [cursor=pointer]:
+              - /url: /patients/54c8ed20-9542-48f0-9339-c82d4635a1c0
+          - cell "-" [ref=e73]
+          - cell "male" [ref=e74]
+          - cell "Create visitDetail" [ref=e75]:
+            - link "Create visit" [ref=e76] [cursor=pointer]:
+              - /url: /encounters/new?patientId=54c8ed20-9542-48f0-9339-c82d4635a1c0
+            - link "Detail" [ref=e77] [cursor=pointer]:
+              - /url: /patients/54c8ed20-9542-48f0-9339-c82d4635a1c0
+        - row "REG-00000011 Smoke Patient OneByOne - male Create visitDetail" [ref=e78]:
+          - cell "REG-00000011" [ref=e79]:
+            - link "REG-00000011" [ref=e80] [cursor=pointer]:
+              - /url: /patients/34ddce77-e227-49ab-b373-92fe2e2bd197
+          - cell "Smoke Patient OneByOne" [ref=e81]:
+            - link "Smoke Patient OneByOne" [ref=e82] [cursor=pointer]:
+              - /url: /patients/34ddce77-e227-49ab-b373-92fe2e2bd197
+          - cell "-" [ref=e83]
+          - cell "male" [ref=e84]
+          - cell "Create visitDetail" [ref=e85]:
+            - link "Create visit" [ref=e86] [cursor=pointer]:
+              - /url: /encounters/new?patientId=34ddce77-e227-49ab-b373-92fe2e2bd197
+            - link "Detail" [ref=e87] [cursor=pointer]:
+              - /url: /patients/34ddce77-e227-49ab-b373-92fe2e2bd197
+        - row "REG-00000010 Smoke Patient OneByOne - male Create visitDetail" [ref=e88]:
+          - cell "REG-00000010" [ref=e89]:
+            - link "REG-00000010" [ref=e90] [cursor=pointer]:
+              - /url: /patients/701fd6ba-b795-4236-acd2-93a7b26bf663
+          - cell "Smoke Patient OneByOne" [ref=e91]:
+            - link "Smoke Patient OneByOne" [ref=e92] [cursor=pointer]:
+              - /url: /patients/701fd6ba-b795-4236-acd2-93a7b26bf663
+          - cell "-" [ref=e93]
+          - cell "male" [ref=e94]
+          - cell "Create visitDetail" [ref=e95]:
+            - link "Create visit" [ref=e96] [cursor=pointer]:
+              - /url: /encounters/new?patientId=701fd6ba-b795-4236-acd2-93a7b26bf663
+            - link "Detail" [ref=e97] [cursor=pointer]:
+              - /url: /patients/701fd6ba-b795-4236-acd2-93a7b26bf663
+        - row "REG-00000009 ,munaim 1/11/1991 male Create visitDetail" [ref=e98]:
+          - cell "REG-00000009" [ref=e99]:
+            - link "REG-00000009" [ref=e100] [cursor=pointer]:
+              - /url: /patients/fa2a2b23-edd5-4275-a5cd-1ac528d36670
+          - cell ",munaim" [ref=e101]:
+            - link ",munaim" [ref=e102] [cursor=pointer]:
+              - /url: /patients/fa2a2b23-edd5-4275-a5cd-1ac528d36670
+          - cell "1/11/1991" [ref=e103]
+          - cell "male" [ref=e104]
+          - cell "Create visitDetail" [ref=e105]:
+            - link "Create visit" [ref=e106] [cursor=pointer]:
+              - /url: /encounters/new?patientId=fa2a2b23-edd5-4275-a5cd-1ac528d36670
+            - link "Detail" [ref=e107] [cursor=pointer]:
+              - /url: /patients/fa2a2b23-edd5-4275-a5cd-1ac528d36670
+        - row "REG-00000008 hello 1/1/1920 male Create visitDetail" [ref=e108]:
+          - cell "REG-00000008" [ref=e109]:
+            - link "REG-00000008" [ref=e110] [cursor=pointer]:
+              - /url: /patients/3cc83670-beba-4e66-9a35-f6e27b68c374
+          - cell "hello" [ref=e111]:
+            - link "hello" [ref=e112] [cursor=pointer]:
+              - /url: /patients/3cc83670-beba-4e66-9a35-f6e27b68c374
+          - cell "1/1/1920" [ref=e113]
+          - cell "male" [ref=e114]
+          - cell "Create visitDetail" [ref=e115]:
+            - link "Create visit" [ref=e116] [cursor=pointer]:
+              - /url: /encounters/new?patientId=3cc83670-beba-4e66-9a35-f6e27b68c374
+            - link "Detail" [ref=e117] [cursor=pointer]:
+              - /url: /patients/3cc83670-beba-4e66-9a35-f6e27b68c374
+        - row "REG-00000007 testpatient 9/4/1991 male Create visitDetail" [ref=e118]:
+          - cell "REG-00000007" [ref=e119]:
+            - link "REG-00000007" [ref=e120] [cursor=pointer]:
+              - /url: /patients/3ad29a64-77b1-4066-bd86-f7ab77f58b69
+          - cell "testpatient" [ref=e121]:
+            - link "testpatient" [ref=e122] [cursor=pointer]:
+              - /url: /patients/3ad29a64-77b1-4066-bd86-f7ab77f58b69
+          - cell "9/4/1991" [ref=e123]
+          - cell "male" [ref=e124]
+          - cell "Create visitDetail" [ref=e125]:
+            - link "Create visit" [ref=e126] [cursor=pointer]:
+              - /url: /encounters/new?patientId=3ad29a64-77b1-4066-bd86-f7ab77f58b69
+            - link "Detail" [ref=e127] [cursor=pointer]:
+              - /url: /patients/3ad29a64-77b1-4066-bd86-f7ab77f58b69
+        - row "REG-00000006 Smoke Patient - male Create visitDetail" [ref=e128]:
+          - cell "REG-00000006" [ref=e129]:
+            - link "REG-00000006" [ref=e130] [cursor=pointer]:
+              - /url: /patients/ddf2ee42-a1dc-4d7c-aa10-eb4b341dc136
+          - cell "Smoke Patient" [ref=e131]:
+            - link "Smoke Patient" [ref=e132] [cursor=pointer]:
+              - /url: /patients/ddf2ee42-a1dc-4d7c-aa10-eb4b341dc136
+          - cell "-" [ref=e133]
+          - cell "male" [ref=e134]
+          - cell "Create visitDetail" [ref=e135]:
+            - link "Create visit" [ref=e136] [cursor=pointer]:
+              - /url: /encounters/new?patientId=ddf2ee42-a1dc-4d7c-aa10-eb4b341dc136
+            - link "Detail" [ref=e137] [cursor=pointer]:
+              - /url: /patients/ddf2ee42-a1dc-4d7c-aa10-eb4b341dc136
+        - row "REG-00000005 new patient 1/9/1919 male Create visitDetail" [ref=e138]:
+          - cell "REG-00000005" [ref=e139]:
+            - link "REG-00000005" [ref=e140] [cursor=pointer]:
+              - /url: /patients/bc1bc4ef-a443-4653-8b9f-19c683e263e1
+          - cell "new patient" [ref=e141]:
+            - link "new patient" [ref=e142] [cursor=pointer]:
+              - /url: /patients/bc1bc4ef-a443-4653-8b9f-19c683e263e1
+          - cell "1/9/1919" [ref=e143]
+          - cell "male" [ref=e144]
+          - cell "Create visitDetail" [ref=e145]:
+            - link "Create visit" [ref=e146] [cursor=pointer]:
+              - /url: /encounters/new?patientId=bc1bc4ef-a443-4653-8b9f-19c683e263e1
+            - link "Detail" [ref=e147] [cursor=pointer]:
+              - /url: /patients/bc1bc4ef-a443-4653-8b9f-19c683e263e1
+        - row "REG-00000004 new patient 1/9/1919 male Create visitDetail" [ref=e148]:
+          - cell "REG-00000004" [ref=e149]:
+            - link "REG-00000004" [ref=e150] [cursor=pointer]:
+              - /url: /patients/ae6ced74-4089-4743-880d-94432e6ed8e8
+          - cell "new patient" [ref=e151]:
+            - link "new patient" [ref=e152] [cursor=pointer]:
+              - /url: /patients/ae6ced74-4089-4743-880d-94432e6ed8e8
+          - cell "1/9/1919" [ref=e153]
+          - cell "male" [ref=e154]
+          - cell "Create visitDetail" [ref=e155]:
+            - link "Create visit" [ref=e156] [cursor=pointer]:
+              - /url: /encounters/new?patientId=ae6ced74-4089-4743-880d-94432e6ed8e8
+            - link "Detail" [ref=e157] [cursor=pointer]:
+              - /url: /patients/ae6ced74-4089-4743-880d-94432e6ed8e8
+        - row "REG-00000003 Workflow Audit Patient 1/1/1990 male Create visitDetail" [ref=e158]:
+          - cell "REG-00000003" [ref=e159]:
+            - link "REG-00000003" [ref=e160] [cursor=pointer]:
+              - /url: /patients/5d1c7a75-adc7-47c7-b032-29549d8390ba
+          - cell "Workflow Audit Patient" [ref=e161]:
+            - link "Workflow Audit Patient" [ref=e162] [cursor=pointer]:
+              - /url: /patients/5d1c7a75-adc7-47c7-b032-29549d8390ba
+          - cell "1/1/1990" [ref=e163]
+          - cell "male" [ref=e164]
+          - cell "Create visitDetail" [ref=e165]:
+            - link "Create visit" [ref=e166] [cursor=pointer]:
+              - /url: /encounters/new?patientId=5d1c7a75-adc7-47c7-b032-29549d8390ba
+            - link "Detail" [ref=e167] [cursor=pointer]:
+              - /url: /patients/5d1c7a75-adc7-47c7-b032-29549d8390ba
+        - row "REG-00000002 munaim 9/4/1991 male Create visitDetail" [ref=e168]:
+          - cell "REG-00000002" [ref=e169]:
+            - link "REG-00000002" [ref=e170] [cursor=pointer]:
+              - /url: /patients/cf8a8eec-bc18-4aea-89e8-ee81ea3744fc
+          - cell "munaim" [ref=e171]:
+            - link "munaim" [ref=e172] [cursor=pointer]:
+              - /url: /patients/cf8a8eec-bc18-4aea-89e8-ee81ea3744fc
+          - cell "9/4/1991" [ref=e173]
+          - cell "male" [ref=e174]
+          - cell "Create visitDetail" [ref=e175]:
+            - link "Create visit" [ref=e176] [cursor=pointer]:
+              - /url: /encounters/new?patientId=cf8a8eec-bc18-4aea-89e8-ee81ea3744fc
+            - link "Detail" [ref=e177] [cursor=pointer]:
+              - /url: /patients/cf8a8eec-bc18-4aea-89e8-ee81ea3744fc
+        - row "REG-00000001 Smoke Patient - male Create visitDetail" [ref=e178]:
+          - cell "REG-00000001" [ref=e179]:
+            - link "REG-00000001" [ref=e180] [cursor=pointer]:
+              - /url: /patients/ba742b76-6542-41cb-8c98-8a7ae5f15b73
+          - cell "Smoke Patient" [ref=e181]:
+            - link "Smoke Patient" [ref=e182] [cursor=pointer]:
+              - /url: /patients/ba742b76-6542-41cb-8c98-8a7ae5f15b73
+          - cell "-" [ref=e183]
+          - cell "male" [ref=e184]
+          - cell "Create visitDetail" [ref=e185]:
+            - link "Create visit" [ref=e186] [cursor=pointer]:
+              - /url: /encounters/new?patientId=ba742b76-6542-41cb-8c98-8a7ae5f15b73
+            - link "Detail" [ref=e187] [cursor=pointer]:
+              - /url: /patients/ba742b76-6542-41cb-8c98-8a7ae5f15b73

@@ -1,0 +1,8 @@
+route	url	title	http_status_hint
+/patients	https://vexel.alshifalab.pk/patients	Vexel Health	ok
+/admin	https://vexel.alshifalab.pk/admin	Vexel Health	ok
+/admin/business	https://vexel.alshifalab.pk/admin/business	Vexel Health	ok
+/admin/catalog/tests	https://vexel.alshifalab.pk/admin/catalog/tests	Vexel Health	ok
+/operator/worklist	https://vexel.alshifalab.pk/operator/worklist	Vexel Health	ok
+/operator/verify	https://vexel.alshifalab.pk/operator/verify	Vexel Health	ok
+/operator/reports/published	https://vexel.alshifalab.pk/operator/reports/published	Vexel Health	ok

@@ -1,0 +1,252 @@
+- generic [active] [ref=e1]:
+  - navigation [ref=e2]:
+    - link "Patients" [ref=e3] [cursor=pointer]:
+      - /url: /patients
+    - link "Operator" [ref=e4] [cursor=pointer]:
+      - /url: /operator/worklist
+    - link "Verification" [ref=e5] [cursor=pointer]:
+      - /url: /verification
+    - link "Admin" [ref=e6] [cursor=pointer]:
+      - /url: /admin
+  - alert [ref=e7]
+  - generic [ref=e8]:
+    - banner [ref=e9]:
+      - generic [ref=e10]:
+        - heading "Operator" [level=1] [ref=e11]
+        - generic [ref=e12]: Tenant · User
+    - generic [ref=e13]:
+      - navigation [ref=e14]:
+        - generic [ref=e15]: Operator
+        - list [ref=e16]:
+          - listitem [ref=e17]:
+            - link "Register" [ref=e18] [cursor=pointer]:
+              - /url: /operator/register
+          - listitem [ref=e19]:
+            - link "Worklist" [ref=e20] [cursor=pointer]:
+              - /url: /operator/worklist
+          - listitem [ref=e21]:
+            - link "Samples" [ref=e22] [cursor=pointer]:
+              - /url: /operator/samples
+          - listitem [ref=e23]:
+            - link "Verify" [ref=e24] [cursor=pointer]:
+              - /url: /operator/verify
+          - listitem [ref=e25]:
+            - link "Published Reports" [ref=e26] [cursor=pointer]:
+              - /url: /operator/reports/published
+      - main [ref=e27]:
+        - generic [ref=e28]:
+          - heading "Worklist" [level=1] [ref=e29]
+          - paragraph [ref=e30]: Lab encounters with current status from backend.
+          - generic [ref=e31]:
+            - 'textbox "Search by name or Reg # (TODO: wire to API if supported)" [ref=e32]'
+            - button "Search" [ref=e33]
+          - table [ref=e35]:
+            - rowgroup [ref=e36]:
+              - 'row "Reg # Patient Visit / Encounter Status Updated Actions" [ref=e37]':
+                - 'columnheader "Reg #" [ref=e38]'
+                - columnheader "Patient" [ref=e39]
+                - columnheader "Visit / Encounter" [ref=e40]
+                - columnheader "Status" [ref=e41]
+                - columnheader "Updated" [ref=e42]
+                - columnheader "Actions" [ref=e43]
+            - rowgroup [ref=e44]:
+              - row "— — LAB-2026-000020 Draft 2/19/2026, 11:28:02 AM Open" [ref=e45]:
+                - cell "—" [ref=e46]
+                - cell "—" [ref=e47]
+                - cell "LAB-2026-000020" [ref=e48]
+                - cell "Draft" [ref=e49]:
+                  - generic [ref=e50]: Draft
+                - cell "2/19/2026, 11:28:02 AM" [ref=e51]
+                - cell "Open" [ref=e52]:
+                  - link "Open" [ref=e53] [cursor=pointer]:
+                    - /url: /operator/worklist/8d2c72f0-f939-4100-872c-b48c04940c19
+              - row "— — LAB-2026-000019 Draft 2/19/2026, 11:15:16 AM Open" [ref=e54]:
+                - cell "—" [ref=e55]
+                - cell "—" [ref=e56]
+                - cell "LAB-2026-000019" [ref=e57]
+                - cell "Draft" [ref=e58]:
+                  - generic [ref=e59]: Draft
+                - cell "2/19/2026, 11:15:16 AM" [ref=e60]
+                - cell "Open" [ref=e61]:
+                  - link "Open" [ref=e62] [cursor=pointer]:
+                    - /url: /operator/worklist/9f9f62a3-4d34-4fbe-8bad-b6572503d491
+              - row "— — LAB-2026-000018 Published 2/19/2026, 11:15:16 AM Open" [ref=e63]:
+                - cell "—" [ref=e64]
+                - cell "—" [ref=e65]
+                - cell "LAB-2026-000018" [ref=e66]
+                - cell "Published" [ref=e67]:
+                  - generic [ref=e68]: Published
+                - cell "2/19/2026, 11:15:16 AM" [ref=e69]
+                - cell "Open" [ref=e70]:
+                  - link "Open" [ref=e71] [cursor=pointer]:
+                    - /url: /operator/worklist/e025f4d2-4b6a-412c-8ede-a9ed112a000e
+              - row "— — LAB-2026-000017 Draft 2/19/2026, 10:48:17 AM Open" [ref=e72]:
+                - cell "—" [ref=e73]
+                - cell "—" [ref=e74]
+                - cell "LAB-2026-000017" [ref=e75]
+                - cell "Draft" [ref=e76]:
+                  - generic [ref=e77]: Draft
+                - cell "2/19/2026, 10:48:17 AM" [ref=e78]
+                - cell "Open" [ref=e79]:
+                  - link "Open" [ref=e80] [cursor=pointer]:
+                    - /url: /operator/worklist/80a14a0d-e6ff-4316-b071-42ac928dfc3f
+              - row "— — LAB-2026-000016 Draft 2/19/2026, 10:46:28 AM Open" [ref=e81]:
+                - cell "—" [ref=e82]
+                - cell "—" [ref=e83]
+                - cell "LAB-2026-000016" [ref=e84]
+                - cell "Draft" [ref=e85]:
+                  - generic [ref=e86]: Draft
+                - cell "2/19/2026, 10:46:28 AM" [ref=e87]
+                - cell "Open" [ref=e88]:
+                  - link "Open" [ref=e89] [cursor=pointer]:
+                    - /url: /operator/worklist/dd6339d6-7f7c-4cf8-b2a5-95efa93fc8ca
+              - row "— — LAB-2026-000015 Draft 2/19/2026, 9:58:49 AM Open" [ref=e90]:
+                - cell "—" [ref=e91]
+                - cell "—" [ref=e92]
+                - cell "LAB-2026-000015" [ref=e93]
+                - cell "Draft" [ref=e94]:
+                  - generic [ref=e95]: Draft
+                - cell "2/19/2026, 9:58:49 AM" [ref=e96]
+                - cell "Open" [ref=e97]:
+                  - link "Open" [ref=e98] [cursor=pointer]:
+                    - /url: /operator/worklist/67c18e0b-a863-4997-864d-9f840b65f354
+              - row "— — LAB-2026-000014 Published 2/19/2026, 9:44:30 AM Open" [ref=e99]:
+                - cell "—" [ref=e100]
+                - cell "—" [ref=e101]
+                - cell "LAB-2026-000014" [ref=e102]
+                - cell "Published" [ref=e103]:
+                  - generic [ref=e104]: Published
+                - cell "2/19/2026, 9:44:30 AM" [ref=e105]
+                - cell "Open" [ref=e106]:
+                  - link "Open" [ref=e107] [cursor=pointer]:
+                    - /url: /operator/worklist/ce9fc3b6-b88e-4275-a8cc-5c1125948255
+              - row "— — LAB-2026-000013 Draft 2/19/2026, 9:43:28 AM Open" [ref=e108]:
+                - cell "—" [ref=e109]
+                - cell "—" [ref=e110]
+                - cell "LAB-2026-000013" [ref=e111]
+                - cell "Draft" [ref=e112]:
+                  - generic [ref=e113]: Draft
+                - cell "2/19/2026, 9:43:28 AM" [ref=e114]
+                - cell "Open" [ref=e115]:
+                  - link "Open" [ref=e116] [cursor=pointer]:
+                    - /url: /operator/worklist/a23054a0-e001-4c1e-a587-db4b00aadff5
+              - row "— — LAB-2026-000012 Draft 2/19/2026, 9:42:38 AM Open" [ref=e117]:
+                - cell "—" [ref=e118]
+                - cell "—" [ref=e119]
+                - cell "LAB-2026-000012" [ref=e120]
+                - cell "Draft" [ref=e121]:
+                  - generic [ref=e122]: Draft
+                - cell "2/19/2026, 9:42:38 AM" [ref=e123]
+                - cell "Open" [ref=e124]:
+                  - link "Open" [ref=e125] [cursor=pointer]:
+                    - /url: /operator/worklist/ef994977-8082-4670-8e81-5d56b2190c5c
+              - row "— — LAB-2026-000011 Draft 2/19/2026, 9:42:00 AM Open" [ref=e126]:
+                - cell "—" [ref=e127]
+                - cell "—" [ref=e128]
+                - cell "LAB-2026-000011" [ref=e129]
+                - cell "Draft" [ref=e130]:
+                  - generic [ref=e131]: Draft
+                - cell "2/19/2026, 9:42:00 AM" [ref=e132]
+                - cell "Open" [ref=e133]:
+                  - link "Open" [ref=e134] [cursor=pointer]:
+                    - /url: /operator/worklist/4b48f5e7-4255-417c-8db2-1f2a6fbce00c
+              - row "— — LAB-2026-000010 Draft 2/19/2026, 8:25:29 AM Open" [ref=e135]:
+                - cell "—" [ref=e136]
+                - cell "—" [ref=e137]
+                - cell "LAB-2026-000010" [ref=e138]
+                - cell "Draft" [ref=e139]:
+                  - generic [ref=e140]: Draft
+                - cell "2/19/2026, 8:25:29 AM" [ref=e141]
+                - cell "Open" [ref=e142]:
+                  - link "Open" [ref=e143] [cursor=pointer]:
+                    - /url: /operator/worklist/f098dc3b-f373-49e4-95d4-1e8bf416762c
+              - row "— — LAB-2026-000009 Draft 2/19/2026, 8:24:43 AM Open" [ref=e144]:
+                - cell "—" [ref=e145]
+                - cell "—" [ref=e146]
+                - cell "LAB-2026-000009" [ref=e147]
+                - cell "Draft" [ref=e148]:
+                  - generic [ref=e149]: Draft
+                - cell "2/19/2026, 8:24:43 AM" [ref=e150]
+                - cell "Open" [ref=e151]:
+                  - link "Open" [ref=e152] [cursor=pointer]:
+                    - /url: /operator/worklist/ec65dbd4-fe27-4955-9acb-ecfc0cd860f5
+              - row "— — LAB-2026-000008 Draft 2/19/2026, 8:24:40 AM Open" [ref=e153]:
+                - cell "—" [ref=e154]
+                - cell "—" [ref=e155]
+                - cell "LAB-2026-000008" [ref=e156]
+                - cell "Draft" [ref=e157]:
+                  - generic [ref=e158]: Draft
+                - cell "2/19/2026, 8:24:40 AM" [ref=e159]
+                - cell "Open" [ref=e160]:
+                  - link "Open" [ref=e161] [cursor=pointer]:
+                    - /url: /operator/worklist/c563540b-b8cd-4ed1-b388-93a2500af63a
+              - row "— — LAB-2026-000007 Draft 2/19/2026, 8:11:19 AM Open" [ref=e162]:
+                - cell "—" [ref=e163]
+                - cell "—" [ref=e164]
+                - cell "LAB-2026-000007" [ref=e165]
+                - cell "Draft" [ref=e166]:
+                  - generic [ref=e167]: Draft
+                - cell "2/19/2026, 8:11:19 AM" [ref=e168]
+                - cell "Open" [ref=e169]:
+                  - link "Open" [ref=e170] [cursor=pointer]:
+                    - /url: /operator/worklist/afc3414f-0d4d-4160-ab5d-aaaaa6152fa4
+              - row "— — LAB-2026-000006 Draft 2/19/2026, 8:09:44 AM Open" [ref=e171]:
+                - cell "—" [ref=e172]
+                - cell "—" [ref=e173]
+                - cell "LAB-2026-000006" [ref=e174]
+                - cell "Draft" [ref=e175]:
+                  - generic [ref=e176]: Draft
+                - cell "2/19/2026, 8:09:44 AM" [ref=e177]
+                - cell "Open" [ref=e178]:
+                  - link "Open" [ref=e179] [cursor=pointer]:
+                    - /url: /operator/worklist/93b344ce-d76c-4eb0-8c4c-b5c4e4ba454d
+              - row "— — LAB-2026-000005 Published 2/19/2026, 7:55:41 AM Open" [ref=e180]:
+                - cell "—" [ref=e181]
+                - cell "—" [ref=e182]
+                - cell "LAB-2026-000005" [ref=e183]
+                - cell "Published" [ref=e184]:
+                  - generic [ref=e185]: Published
+                - cell "2/19/2026, 7:55:41 AM" [ref=e186]
+                - cell "Open" [ref=e187]:
+                  - link "Open" [ref=e188] [cursor=pointer]:
+                    - /url: /operator/worklist/83530825-1b26-4806-b8d4-d82ba0afaf95
+              - row "— — LAB-2026-000004 Draft 2/19/2026, 6:45:37 AM Open" [ref=e189]:
+                - cell "—" [ref=e190]
+                - cell "—" [ref=e191]
+                - cell "LAB-2026-000004" [ref=e192]
+                - cell "Draft" [ref=e193]:
+                  - generic [ref=e194]: Draft
+                - cell "2/19/2026, 6:45:37 AM" [ref=e195]
+                - cell "Open" [ref=e196]:
+                  - link "Open" [ref=e197] [cursor=pointer]:
+                    - /url: /operator/worklist/50a46c14-eef4-447c-bca8-d46c8844de9a
+              - row "— — LAB-2026-000003 Draft 2/19/2026, 6:44:45 AM Open" [ref=e198]:
+                - cell "—" [ref=e199]
+                - cell "—" [ref=e200]
+                - cell "LAB-2026-000003" [ref=e201]
+                - cell "Draft" [ref=e202]:
+                  - generic [ref=e203]: Draft
+                - cell "2/19/2026, 6:44:45 AM" [ref=e204]
+                - cell "Open" [ref=e205]:
+                  - link "Open" [ref=e206] [cursor=pointer]:
+                    - /url: /operator/worklist/51660750-e5df-4375-9732-c0ff02015a7b
+              - row "— — LAB-2026-000002 Draft 2/19/2026, 6:42:42 AM Open" [ref=e207]:
+                - cell "—" [ref=e208]
+                - cell "—" [ref=e209]
+                - cell "LAB-2026-000002" [ref=e210]
+                - cell "Draft" [ref=e211]:
+                  - generic [ref=e212]: Draft
+                - cell "2/19/2026, 6:42:42 AM" [ref=e213]
+                - cell "Open" [ref=e214]:
+                  - link "Open" [ref=e215] [cursor=pointer]:
+                    - /url: /operator/worklist/45ebf157-7893-4d46-94fd-2eb212f29791
+              - row "— — LAB-2026-000001 Draft 2/19/2026, 2:05:03 AM Open" [ref=e216]:
+                - cell "—" [ref=e217]
+                - cell "—" [ref=e218]
+                - cell "LAB-2026-000001" [ref=e219]
+                - cell "Draft" [ref=e220]:
+                  - generic [ref=e221]: Draft
+                - cell "2/19/2026, 2:05:03 AM" [ref=e222]
+                - cell "Open" [ref=e223]:
+                  - link "Open" [ref=e224] [cursor=pointer]:
+                    - /url: /operator/worklist/6d752b3d-9069-4400-8064-ea4a4ee49398

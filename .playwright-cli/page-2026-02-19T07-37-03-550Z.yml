@@ -1,0 +1,111 @@
+- generic [active] [ref=e1]:
+  - navigation [ref=e2]:
+    - link "Patients" [ref=e3] [cursor=pointer]:
+      - /url: /patients
+    - link "Operator" [ref=e4] [cursor=pointer]:
+      - /url: /operator/worklist
+    - link "Verification" [ref=e5] [cursor=pointer]:
+      - /url: /verification
+    - link "Admin" [ref=e6] [cursor=pointer]:
+      - /url: /admin
+  - alert [ref=e7]
+  - generic [ref=e9]:
+    - complementary [ref=e10]:
+      - generic [ref=e11]:
+        - paragraph [ref=e12]: Vexel
+        - paragraph [ref=e13]: Admin Panel
+      - navigation [ref=e14]:
+        - generic [ref=e15]:
+          - paragraph [ref=e16]: Dashboard
+          - list [ref=e17]:
+            - listitem [ref=e18]:
+              - link "Dashboard" [ref=e19] [cursor=pointer]:
+                - /url: /admin
+        - generic [ref=e20]:
+          - paragraph [ref=e21]: Business
+          - list [ref=e22]:
+            - listitem [ref=e23]:
+              - link "Business Overview" [ref=e24] [cursor=pointer]:
+                - /url: /admin/business
+            - listitem [ref=e25]:
+              - link "Branding" [ref=e26] [cursor=pointer]:
+                - /url: /admin/business/branding
+        - generic [ref=e27]:
+          - paragraph [ref=e28]: Users
+          - list [ref=e29]:
+            - listitem [ref=e30]:
+              - link "Users List" [ref=e31] [cursor=pointer]:
+                - /url: /admin/users
+            - listitem [ref=e32]:
+              - link "Invite User" [ref=e33] [cursor=pointer]:
+                - /url: /admin/users/invite
+        - generic [ref=e34]:
+          - paragraph [ref=e35]: Catalog
+          - list [ref=e36]:
+            - listitem [ref=e37]:
+              - link "Catalog Overview" [ref=e38] [cursor=pointer]:
+                - /url: /admin/catalog
+            - listitem [ref=e39]:
+              - link "Tests" [ref=e40] [cursor=pointer]:
+                - /url: /admin/catalog/tests
+            - listitem [ref=e41]:
+              - link "Parameters" [ref=e42] [cursor=pointer]:
+                - /url: /admin/catalog/parameters
+            - listitem [ref=e43]:
+              - link "Panels" [ref=e44] [cursor=pointer]:
+                - /url: /admin/catalog/panels
+            - listitem [ref=e45]:
+              - link "Linking" [ref=e46] [cursor=pointer]:
+                - /url: /admin/catalog/linking
+            - listitem [ref=e47]:
+              - link "Import/Export" [ref=e48] [cursor=pointer]:
+                - /url: /admin/catalog/import-export
+    - generic [ref=e49]:
+      - banner [ref=e50]:
+        - generic [ref=e51]:
+          - generic [ref=e52]:
+            - paragraph [ref=e53]: Tenant-scoped
+            - heading "Administration" [level=2] [ref=e54]
+          - paragraph [ref=e55]: Authenticated tenant user
+      - main [ref=e56]:
+        - generic [ref=e57]:
+          - generic [ref=e58]:
+            - generic [ref=e59]:
+              - heading "Business Overview" [level=1] [ref=e60]
+              - paragraph [ref=e61]: Tenant profile and branding readiness for report publishing.
+            - link "Open Branding" [ref=e63] [cursor=pointer]:
+              - /url: /admin/business/branding
+          - generic [ref=e64]:
+            - generic [ref=e65]:
+              - generic [ref=e67]:
+                - heading "Tenant Profile" [level=2] [ref=e68]
+                - paragraph [ref=e69]: Derived from authenticated session context.
+              - generic [ref=e70]:
+                - generic [ref=e71]:
+                  - term [ref=e72]: Tenant ID
+                  - definition [ref=e73]: Not available
+                - separator [ref=e74]
+                - generic [ref=e75]:
+                  - term [ref=e76]: User Name
+                  - definition [ref=e77]: Not available
+                - separator [ref=e78]
+                - generic [ref=e79]:
+                  - term [ref=e80]: User Email
+                  - definition [ref=e81]: Not available
+            - generic [ref=e82]:
+              - generic [ref=e84]:
+                - heading "Branding Summary" [level=2] [ref=e85]
+                - paragraph [ref=e86]: Scaffold values until contract endpoints are available.
+              - generic [ref=e87]:
+                - heading "Report Identity" [level=3] [ref=e88]
+                - paragraph [ref=e89]: Lab name, address, phone, and header text.
+              - paragraph [ref=e90]: Branding persistence endpoint is not available in current OpenAPI contract.
+              - generic [ref=e91]:
+                - generic [ref=e92]: "Logo: Placeholder"
+                - generic [ref=e93]: "Header: Optional"
+                - generic [ref=e94]: "Footer: Optional"
+          - generic [ref=e95]:
+            - generic [ref=e97]:
+              - heading "Feature Visibility" [level=2] [ref=e98]
+              - paragraph [ref=e99]: UI remains wrap-ready; backend remains authoritative.
+            - paragraph [ref=e101]: No feature payload returned.

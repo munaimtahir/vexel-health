@@ -24,4 +24,16 @@ export class CreatePatientDto {
   @IsString()
   @IsOptional()
   phone?: string;
+
+  @IsString()
+  @IsOptional()
+  fatherOrHusbandName?: string;
+
+  @IsString()
+  @IsOptional()
+  cnic?: string;
+
+  @IsString()
+  @IsOptional()
+  address?: string;
 }

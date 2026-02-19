@@ -49,6 +49,9 @@ export class PatientsService {
           dob: dto.dob ? new Date(dto.dob) : undefined,
           gender: dto.gender,
           phone: dto.phone,
+          fatherOrHusbandName: dto.fatherOrHusbandName,
+          cnic: dto.cnic,
+          address: dto.address,
         },
       });
     });
@@ -87,6 +90,12 @@ export class PatientsService {
         },
         {
           regNo: {
+            contains: query,
+            mode: 'insensitive',
+          },
+        },
+        {
+          phone: {
             contains: query,
             mode: 'insensitive',
           },

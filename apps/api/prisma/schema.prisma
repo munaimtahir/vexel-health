@@ -128,16 +128,19 @@ model AuditEvent {
 }
 
 model Patient {
-  id        String    @id @default(uuid())
-  tenantId  String
-  tenant    Tenant    @relation(fields: [tenantId], references: [id])
-  regNo     String
-  mrn       String?
-  name      String
-  dob       DateTime?
-  gender    String?
-  phone     String?
-  createdAt DateTime  @default(now())
+  id                   String    @id @default(uuid())
+  tenantId             String
+  tenant               Tenant    @relation(fields: [tenantId], references: [id])
+  regNo                String
+  mrn                  String?
+  name                 String
+  dob                  DateTime?
+  gender               String?
+  phone                String?
+  fatherOrHusbandName  String?
+  cnic                 String?
+  address              String?
+  createdAt            DateTime  @default(now())
 
   encounters Encounter[]
   invoices   Invoice[]

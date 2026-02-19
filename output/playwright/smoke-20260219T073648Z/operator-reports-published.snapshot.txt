@@ -1,0 +1,5 @@
+### Page
+- Page URL: https://vexel.alshifalab.pk/operator/reports/published
+- Page Title: Vexel Health
+### Snapshot
+- [Snapshot](.playwright-cli/page-2026-02-19T07-37-31-569Z.yml)

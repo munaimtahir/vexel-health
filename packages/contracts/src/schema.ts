@@ -561,6 +561,9 @@ export interface components {
             /** @enum {string} */
             gender?: "male" | "female" | "other";
             phone?: string;
+            fatherOrHusbandName?: string;
+            cnic?: string;
+            address?: string;
         };
         Patient: components["schemas"]["CreatePatientDto"] & {
             id: string;
