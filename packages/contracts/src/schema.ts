@@ -467,7 +467,26 @@ export interface components {
             ipdMain: components["schemas"]["IpdMainSaveRequest"] | null;
         };
         /** @enum {string} */
-        DocumentType: "ENCOUNTER_SUMMARY";
+        DocumentType: "ENCOUNTER_SUMMARY" | "LAB_REPORT" | "RAD_REPORT" | "OPD_CLINICAL_NOTE" | "BB_TRANSFUSION_NOTE" | "IPD_DISCHARGE_SUMMARY";
+        /**
+         * @example {
+         *       "documentType": "LAB_REPORT"
+         *     }
+         */
+        DocumentCommandRequest: {
+            documentType?: components["schemas"]["DocumentType"];
+        };
+        DocumentPayloadSample: {
+            [key: string]: unknown;
+        };
+        DocumentPayloadSampleFixtures: {
+            ENCOUNTER_SUMMARY: components["schemas"]["DocumentPayloadSample"];
+            LAB_REPORT: components["schemas"]["DocumentPayloadSample"];
+            RAD_REPORT: components["schemas"]["DocumentPayloadSample"];
+            OPD_CLINICAL_NOTE: components["schemas"]["DocumentPayloadSample"];
+            BB_TRANSFUSION_NOTE: components["schemas"]["DocumentPayloadSample"];
+            IPD_DISCHARGE_SUMMARY: components["schemas"]["DocumentPayloadSample"];
+        };
         /** @enum {string} */
         DocumentStatus: "QUEUED" | "RENDERED" | "FAILED";
         DocumentResponse: {
@@ -1077,7 +1096,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["DocumentCommandRequest"];
+            };
+        };
         responses: {
             /** @description Document queued or already rendered */
             200: {
@@ -1088,6 +1111,7 @@ export interface operations {
                     "application/json": components["schemas"]["DocumentResponse"];
                 };
             };
+            400: components["responses"]["ValidationError"];
             404: components["responses"]["NotFoundError"];
             409: components["responses"]["DomainError"];
             500: components["responses"]["UnexpectedError"];

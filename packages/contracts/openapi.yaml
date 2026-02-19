@@ -432,6 +432,12 @@ paths:
       parameters:
         - $ref: '#/components/parameters/TenantIdHeader'
         - $ref: '#/components/parameters/IdPathParam'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocumentCommandRequest'
       responses:
         '200':
           description: Document queued or already rendered
@@ -439,6 +445,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DocumentResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
         '404':
           $ref: '#/components/responses/NotFoundError'
         '409':
@@ -929,7 +937,46 @@ components:
           nullable: true
     DocumentType:
       type: string
-      enum: [ENCOUNTER_SUMMARY]
+      enum:
+        - ENCOUNTER_SUMMARY
+        - LAB_REPORT
+        - RAD_REPORT
+        - OPD_CLINICAL_NOTE
+        - BB_TRANSFUSION_NOTE
+        - IPD_DISCHARGE_SUMMARY
+    DocumentCommandRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        documentType:
+          $ref: '#/components/schemas/DocumentType'
+      example:
+        documentType: LAB_REPORT
+    DocumentPayloadSample:
+      type: object
+      additionalProperties: true
+    DocumentPayloadSampleFixtures:
+      type: object
+      required:
+        - ENCOUNTER_SUMMARY
+        - LAB_REPORT
+        - RAD_REPORT
+        - OPD_CLINICAL_NOTE
+        - BB_TRANSFUSION_NOTE
+        - IPD_DISCHARGE_SUMMARY
+      properties:
+        ENCOUNTER_SUMMARY:
+          $ref: '#/components/schemas/DocumentPayloadSample'
+        LAB_REPORT:
+          $ref: '#/components/schemas/DocumentPayloadSample'
+        RAD_REPORT:
+          $ref: '#/components/schemas/DocumentPayloadSample'
+        OPD_CLINICAL_NOTE:
+          $ref: '#/components/schemas/DocumentPayloadSample'
+        BB_TRANSFUSION_NOTE:
+          $ref: '#/components/schemas/DocumentPayloadSample'
+        IPD_DISCHARGE_SUMMARY:
+          $ref: '#/components/schemas/DocumentPayloadSample'
     DocumentStatus:
       type: string
       enum: [QUEUED, RENDERED, FAILED]

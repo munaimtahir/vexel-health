@@ -1,18 +1,18 @@
+import { DocumentStatus, Prisma, StorageBackend } from '@prisma/client';
 import {
-  DocumentStatus,
-  DocumentType,
-  Prisma,
-  StorageBackend,
-} from '@prisma/client';
-import {
+  BadRequestException,
   Inject,
   Injectable,
   NotFoundException,
+  Scope,
   UnauthorizedException,
 } from '@nestjs/common';
+import { REQUEST } from '@nestjs/core';
+import type { Request } from 'express';
 import { ClsService } from 'nestjs-cls';
 import { DomainException } from '../common/errors/domain.exception';
 import { PrismaService } from '../prisma/prisma.service';
+import { buildPayloadForDocumentType } from './document-payload.builder';
 import {
   DOCUMENT_RENDER_QUEUE,
   type DocumentRenderQueue,
@@ -22,26 +22,19 @@ import {
   type DocumentStorageAdapter,
 } from './document-storage.adapter';
 import { canonicalizeJson, sha256HexFromText } from './document-hash.util';
+import {
+  DEFAULT_REQUESTED_DOCUMENT_TYPE,
+  isRequestedDocumentType,
+  type RequestedDocumentType,
+} from './document-types';
 import { type DocumentResponse, toDocumentResponse } from './documents.types';
 
-const DEFAULT_PAYLOAD_VERSION = 1;
-const DEFAULT_TEMPLATE_VERSION = 1;
-
-type EncounterSummaryPayload = {
-  encounterId: string;
-  encounterCode: string;
-  encounterType: string;
-  encounterStatus: 'FINALIZED';
-  patientId: string;
-  patientRegNo: string;
-  patientName: string;
-};
-
-@Injectable()
+@Injectable({ scope: Scope.REQUEST })
 export class DocumentsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly cls: ClsService,
+    @Inject(REQUEST) private readonly request: Request,
     @Inject(DOCUMENT_RENDER_QUEUE)
     private readonly queue: DocumentRenderQueue,
     @Inject(DOCUMENT_STORAGE_ADAPTER)
@@ -59,6 +52,7 @@ export class DocumentsService {
 
   async queueEncounterDocument(encounterId: string): Promise<DocumentResponse> {
     const tenantId = this.tenantId;
+    const requestedDocumentType = this.getRequestedDocumentTypeFromBody();
 
     const encounter = await this.prisma.encounter.findFirst({
       where: {
@@ -67,6 +61,16 @@ export class DocumentsService {
       },
       include: {
         patient: true,
+        labPrep: true,
+        radPrep: true,
+        opdPrep: true,
+        bbPrep: true,
+        ipdPrep: true,
+        labMain: true,
+        radMain: true,
+        opdMain: true,
+        bbMain: true,
+        ipdMain: true,
       },
     });
 
@@ -81,7 +85,11 @@ export class DocumentsService {
       );
     }
 
-    const payload = this.buildEncounterSummaryPayload(encounter);
+    const builtPayload = buildPayloadForDocumentType({
+      encounter,
+      requestedDocumentType,
+    });
+    const payload = builtPayload.payload;
     const payloadCanonicalJson = canonicalizeJson(payload);
     const payloadHash = sha256HexFromText(payloadCanonicalJson);
 
@@ -92,8 +100,8 @@ export class DocumentsService {
         where: {
           tenantId,
           encounterId,
-          documentType: DocumentType.ENCOUNTER_SUMMARY,
-          templateVersion: DEFAULT_TEMPLATE_VERSION,
+          documentType: builtPayload.storedDocumentType,
+          templateVersion: builtPayload.templateVersion,
           payloadHash,
         },
       });
@@ -105,11 +113,11 @@ export class DocumentsService {
             data: {
               tenantId,
               encounterId,
-              documentType: DocumentType.ENCOUNTER_SUMMARY,
+              documentType: builtPayload.storedDocumentType,
               status: DocumentStatus.QUEUED,
-              payloadVersion: DEFAULT_PAYLOAD_VERSION,
-              templateVersion: DEFAULT_TEMPLATE_VERSION,
-              payloadJson: payload,
+              payloadVersion: builtPayload.payloadVersion,
+              templateVersion: builtPayload.templateVersion,
+              payloadJson: payload as Prisma.InputJsonValue,
               payloadHash,
               storageBackend: StorageBackend.LOCAL,
             },
@@ -123,8 +131,8 @@ export class DocumentsService {
               where: {
                 tenantId,
                 encounterId,
-                documentType: DocumentType.ENCOUNTER_SUMMARY,
-                templateVersion: DEFAULT_TEMPLATE_VERSION,
+                documentType: builtPayload.storedDocumentType,
+                templateVersion: builtPayload.templateVersion,
                 payloadHash,
               },
             });
@@ -146,10 +154,10 @@ export class DocumentsService {
           },
           data: {
             status: DocumentStatus.QUEUED,
-            payloadJson: payload,
+            payloadJson: payload as Prisma.InputJsonValue,
             payloadHash,
-            payloadVersion: DEFAULT_PAYLOAD_VERSION,
-            templateVersion: DEFAULT_TEMPLATE_VERSION,
+            payloadVersion: builtPayload.payloadVersion,
+            templateVersion: builtPayload.templateVersion,
             errorCode: null,
             errorMessage: null,
             renderedAt: null,
@@ -209,21 +217,26 @@ export class DocumentsService {
     return document;
   }
 
-  private buildEncounterSummaryPayload(encounter: {
-    id: string;
-    encounterCode: string;
-    type: string;
-    patient: { id: string; regNo: string; name: string };
-  }): EncounterSummaryPayload {
-    return {
-      encounterId: encounter.id,
-      encounterCode: encounter.encounterCode,
-      encounterType: encounter.type,
-      // Normalized to keep payload stable after encounter transitions to DOCUMENTED.
-      encounterStatus: 'FINALIZED',
-      patientId: encounter.patient.id,
-      patientRegNo: encounter.patient.regNo,
-      patientName: encounter.patient.name,
-    };
+  private getRequestedDocumentTypeFromBody(): RequestedDocumentType {
+    const bodyValue = this.request.body as unknown;
+
+    if (typeof bodyValue !== 'object' || bodyValue === null) {
+      return DEFAULT_REQUESTED_DOCUMENT_TYPE;
+    }
+
+    const body = bodyValue as Record<string, unknown>;
+    const rawDocumentType = body.documentType;
+
+    if (rawDocumentType === undefined || rawDocumentType === null) {
+      return DEFAULT_REQUESTED_DOCUMENT_TYPE;
+    }
+
+    if (!isRequestedDocumentType(rawDocumentType)) {
+      throw new BadRequestException(
+        'documentType must be a supported document type',
+      );
+    }
+
+    return rawDocumentType;
   }
 }

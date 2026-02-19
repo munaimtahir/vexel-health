@@ -66,10 +66,14 @@ Observed:
 
 ## Generate document
 ```bash
-curl -sS -X POST "http://127.0.0.1:3000/encounters/<ENCOUNTER_ID>:document" -H 'Host: tenant-a.test'
+curl -sS -X POST "http://127.0.0.1:3000/encounters/<ENCOUNTER_ID>:document" \
+  -H 'Host: tenant-a.test' \
+  -H 'Content-Type: application/json' \
+  -d '{"documentType":"LAB_REPORT"}'
 ```
 Observed:
 - Returns `DocumentResponse` with `status=QUEUED`
+- Returns `type=LAB_REPORT`
 - Example document id: `5539107c-84c5-4313-83c5-baf5abaa5705`
 
 Poll until rendered:
@@ -94,7 +98,10 @@ Observed:
 
 ## Idempotency and determinism check
 ```bash
-curl -sS -X POST "http://127.0.0.1:3000/encounters/<ENCOUNTER_ID>:document" -H 'Host: tenant-a.test'
+curl -sS -X POST "http://127.0.0.1:3000/encounters/<ENCOUNTER_ID>:document" \
+  -H 'Host: tenant-a.test' \
+  -H 'Content-Type: application/json' \
+  -d '{"documentType":"LAB_REPORT"}'
 ```
 Observed:
 - Same `documentId` returned
@@ -139,7 +146,10 @@ Observed:
 
 Generate and fetch document:
 ```bash
-curl -sS -X POST "http://127.0.0.1:3000/encounters/<RAD_ENCOUNTER_ID>:document" -H 'Host: tenant-a.test'
+curl -sS -X POST "http://127.0.0.1:3000/encounters/<RAD_ENCOUNTER_ID>:document" \
+  -H 'Host: tenant-a.test' \
+  -H 'Content-Type: application/json' \
+  -d '{"documentType":"RAD_REPORT"}'
 curl -sS "http://127.0.0.1:3000/documents/<RAD_DOCUMENT_ID>" -H 'Host: tenant-a.test'
 curl -sS -D /tmp/rad-doc-headers.txt \
   "http://127.0.0.1:3000/documents/<RAD_DOCUMENT_ID>/file" \

@@ -979,6 +979,92 @@ describe('Document pipeline (e2e)', () => {
       });
   });
 
+  it('supports typed document requests and enforces encounter/document-type matching', async () => {
+    const patientResponse = await request(app.getHttpServer())
+      .post('/patients')
+      .set('Host', 'tenant-a.test')
+      .send({
+        name: 'Typed Document Patient',
+      })
+      .expect(201);
+
+    const encounterResponse = await request(app.getHttpServer())
+      .post('/encounters')
+      .set('Host', 'tenant-a.test')
+      .send({
+        patientId: patientResponse.body.id,
+        type: 'LAB',
+      })
+      .expect(201);
+
+    const labEncounterId = encounterResponse.body.id as string;
+
+    await request(app.getHttpServer())
+      .post(`/encounters/${labEncounterId}:start-prep`)
+      .set('Host', 'tenant-a.test')
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .post(`/encounters/${labEncounterId}:save-prep`)
+      .set('Host', 'tenant-a.test')
+      .send({
+        specimenType: 'Blood',
+      })
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .post(`/encounters/${labEncounterId}:start-main`)
+      .set('Host', 'tenant-a.test')
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .post(`/encounters/${labEncounterId}:finalize`)
+      .set('Host', 'tenant-a.test')
+      .expect(200);
+
+    const typedDocumentResponse = await request(app.getHttpServer())
+      .post(`/encounters/${labEncounterId}:document`)
+      .set('Host', 'tenant-a.test')
+      .send({
+        documentType: 'LAB_REPORT',
+      })
+      .expect(200);
+
+    expect(typedDocumentResponse.body.type).toBe('LAB_REPORT');
+
+    const typedDocumentId = typedDocumentResponse.body.id as string;
+
+    await request(app.getHttpServer())
+      .get(`/documents/${typedDocumentId}`)
+      .set('Host', 'tenant-a.test')
+      .expect(200)
+      .expect((response) => {
+        expect(response.body.type).toBe('LAB_REPORT');
+      });
+
+    const secondTypedResponse = await request(app.getHttpServer())
+      .post(`/encounters/${labEncounterId}:document`)
+      .set('Host', 'tenant-a.test')
+      .send({
+        documentType: 'LAB_REPORT',
+      })
+      .expect(200);
+
+    expect(secondTypedResponse.body.id).toBe(typedDocumentId);
+
+    await request(app.getHttpServer())
+      .post(`/encounters/${labEncounterId}:document`)
+      .set('Host', 'tenant-a.test')
+      .send({
+        documentType: 'RAD_REPORT',
+      })
+      .expect(409)
+      .expect((response) => {
+        expect(response.body.error.type).toBe('domain_error');
+        expect(response.body.error.code).toBe('INVALID_DOCUMENT_TYPE');
+      });
+  });
+
   it('rejects save-main while encounter is still PREP', async () => {
     const patientResponse = await request(app.getHttpServer())
       .post('/patients')

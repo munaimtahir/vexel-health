@@ -1,8 +1,12 @@
-import type { Document, DocumentStatus, DocumentType } from '@prisma/client';
+import type { Document, DocumentStatus } from '@prisma/client';
+import {
+  type RequestedDocumentType,
+  requestedTypeFromPayloadJson,
+} from './document-types';
 
 export type DocumentResponse = {
   id: string;
-  type: DocumentType;
+  type: RequestedDocumentType;
   status: DocumentStatus;
   encounterId: string;
   payloadHash: string;
@@ -18,7 +22,7 @@ export type DocumentResponse = {
 export function toDocumentResponse(document: Document): DocumentResponse {
   return {
     id: document.id,
-    type: document.documentType,
+    type: requestedTypeFromPayloadJson(document.payloadJson, document.documentType),
     status: document.status,
     encounterId: document.encounterId,
     payloadHash: document.payloadHash,
