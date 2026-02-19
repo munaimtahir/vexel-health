@@ -25,6 +25,10 @@ type CreatedEncounter = paths['/encounters']['post']['responses'][201]['content'
 type ListLabTestsResponse = paths['/lab/tests']['get']['responses'][200]['content']['application/json'];
 type ListEncounterLabTestsResponse =
     paths['/encounters/{id}/lab-tests']['get']['responses'][200]['content']['application/json'];
+type RecordPaymentRequest =
+    NonNullable<paths['/encounters/{id}/payments']['post']['requestBody']>['content']['application/json'];
+type RecordPaymentResponse =
+    paths['/encounters/{id}/payments']['post']['responses'][200]['content']['application/json'];
 
 const MOBILE_INPUT_ID = 'register-mobile';
 
@@ -59,6 +63,15 @@ function ageToDob(ageStr: string): string {
     return d.toISOString().slice(0, 10);
 }
 
+function escapeHtml(value: string): string {
+    return value
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 export default function RegisterPatientPage() {
     const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<PatientForm>();
     const [error, setError] = useState('');
@@ -78,6 +91,19 @@ export default function RegisterPatientPage() {
 
     const [selectedLabTestId, setSelectedLabTestId] = useState('');
     const [isAddingLabTest, setIsAddingLabTest] = useState(false);
+    const [isRecordingPayment, setIsRecordingPayment] = useState(false);
+    const [paymentError, setPaymentError] = useState('');
+    const [paymentSuccess, setPaymentSuccess] = useState('');
+    const [billingSnapshot, setBillingSnapshot] = useState<RecordPaymentResponse | null>(null);
+    const [paymentForm, setPaymentForm] = useState<{
+        amount: string;
+        method: RecordPaymentRequest['method'];
+        reference: string;
+    }>({
+        amount: '',
+        method: 'CASH',
+        reference: '',
+    });
 
     const mobileContainerRef = useRef<HTMLDivElement>(null);
     const mobileInputRef = useRef<HTMLInputElement>(null);
@@ -239,6 +265,10 @@ export default function RegisterPatientPage() {
     const createEncounter = async () => {
         if (!registeredPatient?.id) return;
         setCreateEncounterError('');
+        setPaymentError('');
+        setPaymentSuccess('');
+        setBillingSnapshot(null);
+        setPaymentForm({ amount: '', method: 'CASH', reference: '' });
         setIsCreatingEncounter(true);
 
         const { data: enc, error: apiError } = await client.POST('/encounters', {
@@ -301,6 +331,116 @@ export default function RegisterPatientPage() {
     };
 
     const orderedTests = encounterLabTests?.data ?? [];
+    const latestPayment =
+        billingSnapshot?.payments && billingSnapshot.payments.length > 0
+            ? billingSnapshot.payments[billingSnapshot.payments.length - 1]
+            : null;
+
+    const recordPayment = async () => {
+        if (!createdEncounter?.id) return;
+        setPaymentError('');
+        setPaymentSuccess('');
+
+        if (orderedTests.length === 0) {
+            setPaymentError('Add at least one test before recording payment.');
+            return;
+        }
+
+        const amount = Number(paymentForm.amount);
+        if (!Number.isFinite(amount) || amount <= 0) {
+            setPaymentError('Enter a valid payment amount.');
+            return;
+        }
+
+        setIsRecordingPayment(true);
+        const { data, error: apiError } = await client.POST('/encounters/{id}/payments', {
+            params: { path: { id: createdEncounter.id } },
+            body: {
+                amount,
+                method: paymentForm.method,
+                reference: paymentForm.reference.trim() || undefined,
+            },
+        });
+        setIsRecordingPayment(false);
+
+        if (apiError) {
+            setPaymentError(parseApiError(apiError, 'Failed to record payment').message);
+            return;
+        }
+
+        if (!data) {
+            setPaymentError('Failed to record payment');
+            return;
+        }
+
+        setBillingSnapshot(data);
+        setPaymentForm((previous) => ({ ...previous, amount: '', reference: '' }));
+        setPaymentSuccess('Payment recorded. Receipt is ready to print.');
+    };
+
+    const printLatestReceipt = () => {
+        if (!createdEncounter || !registeredPatient || !billingSnapshot || !latestPayment) {
+            setPaymentError('Record a payment before printing receipt.');
+            return;
+        }
+
+        const orderedItems = orderedTests.map((item) => `${item.test.name} (${item.test.code})`);
+        const issuedAt =
+            latestPayment.receivedAt && !Number.isNaN(new Date(latestPayment.receivedAt).getTime())
+                ? new Date(latestPayment.receivedAt).toLocaleString()
+                : new Date().toLocaleString();
+
+        const receiptWindow = window.open('', '_blank', 'width=800,height=900,noopener,noreferrer');
+        if (!receiptWindow) {
+            setPaymentError('Pop-up blocked. Allow pop-ups to print receipt.');
+            return;
+        }
+
+        const html = `<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Receipt ${escapeHtml(createdEncounter.encounterCode ?? createdEncounter.id)}</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 24px; color: #0f172a; }
+      .row { display: flex; justify-content: space-between; margin: 6px 0; }
+      .card { border: 1px solid #cbd5e1; border-radius: 8px; padding: 14px; margin-top: 14px; }
+      h1 { margin: 0 0 4px 0; font-size: 22px; }
+      h2 { margin: 0 0 8px 0; font-size: 16px; }
+      ul { margin: 6px 0 0 18px; padding: 0; }
+      .muted { color: #475569; font-size: 12px; }
+      .total { font-weight: 700; font-size: 16px; }
+    </style>
+  </head>
+  <body>
+    <h1>Payment Receipt</h1>
+    <div class="muted">Generated at ${escapeHtml(new Date().toLocaleString())}</div>
+    <div class="card">
+      <div class="row"><strong>Patient</strong><span>${escapeHtml(registeredPatient.name ?? '—')}</span></div>
+      <div class="row"><strong>Reg #</strong><span>${escapeHtml(registeredPatient.regNo ?? '—')}</span></div>
+      <div class="row"><strong>Encounter</strong><span>${escapeHtml(createdEncounter.encounterCode ?? createdEncounter.id)}</span></div>
+      <div class="row"><strong>Payment Time</strong><span>${escapeHtml(issuedAt)}</span></div>
+      <div class="row"><strong>Method</strong><span>${escapeHtml(latestPayment.method ?? '—')}</span></div>
+      <div class="row"><strong>Reference</strong><span>${escapeHtml(latestPayment.reference ?? '—')}</span></div>
+    </div>
+    <div class="card">
+      <h2>Ordered Tests</h2>
+      ${orderedItems.length === 0 ? '<div>—</div>' : `<ul>${orderedItems.map((t) => `<li>${escapeHtml(t)}</li>`).join('')}</ul>`}
+    </div>
+    <div class="card">
+      <div class="row total"><span>Amount Received</span><span>${escapeHtml(String(latestPayment.amount ?? 0))}</span></div>
+      <div class="row"><span>Invoice Status</span><span>${escapeHtml(billingSnapshot.invoice.status)}</span></div>
+      <div class="row"><span>Total Paid</span><span>${escapeHtml(String(billingSnapshot.invoice.paid_amount))}</span></div>
+    </div>
+  </body>
+</html>`;
+
+        receiptWindow.document.open();
+        receiptWindow.document.write(html);
+        receiptWindow.document.close();
+        receiptWindow.focus();
+        receiptWindow.print();
+    };
 
     return (
         <div className="p-6 lg:p-8">
@@ -566,11 +706,104 @@ export default function RegisterPatientPage() {
                                         </ul>
                                     )}
                                 </div>
+                                <div className="border-t pt-4 mt-4 space-y-3">
+                                    <h3 className="text-sm font-semibold text-gray-800">Billing and receipt</h3>
+                                    <p className="text-xs text-gray-600">
+                                        After selecting tests, record payment and print receipt. Sample collection continues in the Samples stage.
+                                    </p>
+                                    {paymentError && (
+                                        <div className="rounded border border-red-200 bg-red-50 p-2 text-sm text-red-700">
+                                            {paymentError}
+                                        </div>
+                                    )}
+                                    {paymentSuccess && (
+                                        <div className="rounded border border-green-200 bg-green-50 p-2 text-sm text-green-700">
+                                            {paymentSuccess}
+                                        </div>
+                                    )}
+                                    <div className="grid grid-cols-1 gap-3">
+                                        <div>
+                                            <label className="block text-sm font-medium mb-1">Amount</label>
+                                            <input
+                                                type="number"
+                                                min="0.01"
+                                                step="0.01"
+                                                value={paymentForm.amount}
+                                                onChange={(e) => setPaymentForm((prev) => ({ ...prev, amount: e.target.value }))}
+                                                className="block w-full rounded border border-gray-300 p-2 text-sm"
+                                                placeholder="0.00"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium mb-1">Method</label>
+                                            <select
+                                                value={paymentForm.method}
+                                                onChange={(e) => setPaymentForm((prev) => ({
+                                                    ...prev,
+                                                    method: e.target.value as RecordPaymentRequest['method'],
+                                                }))}
+                                                className="block w-full rounded border border-gray-300 p-2 text-sm"
+                                            >
+                                                <option value="CASH">CASH</option>
+                                                <option value="CARD">CARD</option>
+                                                <option value="ONLINE">ONLINE</option>
+                                                <option value="OTHER">OTHER</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium mb-1">Reference (optional)</label>
+                                            <input
+                                                type="text"
+                                                value={paymentForm.reference}
+                                                onChange={(e) => setPaymentForm((prev) => ({ ...prev, reference: e.target.value }))}
+                                                className="block w-full rounded border border-gray-300 p-2 text-sm"
+                                                placeholder="Receipt or reference"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-wrap gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={recordPayment}
+                                            disabled={isRecordingPayment}
+                                            className="rounded bg-blue-600 px-4 py-2 text-white text-sm hover:bg-blue-700 disabled:opacity-60"
+                                        >
+                                            {isRecordingPayment ? 'Recording…' : 'Record payment'}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={printLatestReceipt}
+                                            disabled={!latestPayment}
+                                            className="rounded bg-gray-900 px-4 py-2 text-white text-sm hover:bg-gray-700 disabled:opacity-60"
+                                        >
+                                            Print latest receipt
+                                        </button>
+                                    </div>
+                                    {billingSnapshot && (
+                                        <div className="rounded border border-gray-200 bg-gray-50 p-3 text-sm text-gray-700">
+                                            <p>
+                                                <span className="font-semibold">Invoice:</span> {billingSnapshot.invoice.invoice_id}
+                                            </p>
+                                            <p>
+                                                <span className="font-semibold">Status:</span> {billingSnapshot.invoice.status}
+                                            </p>
+                                            <p>
+                                                <span className="font-semibold">Paid:</span> {billingSnapshot.invoice.paid_amount}
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
                                 <Link
                                     href={`/encounters/${createdEncounter.id}`}
                                     className="mt-4 inline-block text-sm text-blue-600 underline"
                                 >
                                     Open full encounter →
+                                </Link>
+                                <Link
+                                    href="/operator/samples"
+                                    className="mt-2 inline-block text-sm text-blue-600 underline"
+                                >
+                                    Continue to Samples queue →
                                 </Link>
                             </>
                         )}

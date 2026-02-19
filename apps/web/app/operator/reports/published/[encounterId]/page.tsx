@@ -109,7 +109,7 @@ export default function OperatorPublishedReportDetailPage() {
       <div className="rounded border bg-white p-6 shadow space-y-4">
         <h2 className="text-lg font-semibold">PDF viewer / download</h2>
         <p className="text-sm text-gray-600">
-          Report time, signatories: placeholder when available from contract. Download uses /documents/{'{documentId}'}/file when document exists.
+          Download the already published LAB report PDF for this encounter.
         </p>
         <button
           type="button"

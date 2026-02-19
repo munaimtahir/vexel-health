@@ -26,6 +26,7 @@ This is the canonical checklist.
 - [x] Verification command + UI
 - [x] Publish report command
 - [x] Encounter preparation command (`/lims/commands/updateEncounterPrep`) for LAB sample capture (ordering allowed before prep)
+- [x] Operator LAB pathway polish: register -> select tests -> print receipt -> samples(collected=received) -> verify -> published queues with patient context
 
 ## Phase 3 — PDF Service
 - [ ] Implement /render in QuestPDF service

@@ -13,6 +13,9 @@ import type { paths } from '@vexel/contracts';
 
 type Encounter = paths['/encounters/{id}']['get']['responses'][200]['content']['application/json'];
 type Patient = paths['/patients/{id}']['get']['responses'][200]['content']['application/json'];
+type ListEncounterLabTestsResponse =
+  paths['/encounters/{id}/lab-tests']['get']['responses'][200]['content']['application/json'];
+type OrderedTest = ListEncounterLabTestsResponse['data'][number];
 
 export default function OperatorVerifyDetailPage() {
   const params = useParams<{ encounterId: string }>();
@@ -44,6 +47,18 @@ export default function OperatorVerifyDetailPage() {
     },
   });
 
+  const { data: labTests, isLoading: testsLoading, refetch: refetchLabTests } = useQuery({
+    queryKey: ['encounter-lab-tests', encounterId],
+    enabled: !!encounterId,
+    queryFn: async () => {
+      const { data, error } = await client.GET('/encounters/{id}/lab-tests', {
+        params: { path: { id: encounterId } },
+      });
+      if (error) throw new Error(parseApiError(error, 'Failed to load ordered tests').message);
+      return (data ?? { data: [], total: 0 }) as ListEncounterLabTestsResponse;
+    },
+  });
+
   const verifyMutation = useMutation({
     mutationFn: async (orderItemId: string) => {
       const { error } = await client.POST('/encounters/{id}:lab-verify', {
@@ -55,6 +70,7 @@ export default function OperatorVerifyDetailPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['encounter', encounterId] });
       queryClient.invalidateQueries({ queryKey: operatorKeys.verificationQueue() });
+      refetchLabTests();
     },
   });
 
@@ -75,6 +91,8 @@ export default function OperatorVerifyDetailPage() {
     encounter: encounter as unknown as Record<string, unknown>,
   });
   const status = encounter?.labEncounterStatus ?? encounter?.status ?? null;
+  const orderedTests = labTests?.data ?? [];
+  const allVerified = orderedTests.length > 0 && orderedTests.every((item) => item.orderItem.status === 'VERIFIED');
 
   if (encLoading || !encounterId) {
     return <div><p className="text-gray-500">Loading encounter…</p></div>;
@@ -101,24 +119,58 @@ export default function OperatorVerifyDetailPage() {
       </div>
       <div className="rounded border bg-white p-6 shadow space-y-4">
         <h2 className="text-lg font-semibold">Verification checklist</h2>
-        <p className="text-sm text-gray-600">TODO: List order items and per-item verify action. Command endpoints exist: lab-verify (per order item), lab-publish.</p>
-        <div className="flex flex-wrap gap-3">
-          <button
-            type="button"
-            disabled
-            className="rounded bg-gray-400 px-4 py-2 text-sm text-white cursor-not-allowed"
-            title="Use per–order-item verify on this page or encounter detail; Mark Verified here is a bulk placeholder."
-          >
-            Mark Verified (TODO: bulk or wire per item)
-          </button>
+        <p className="text-sm text-gray-600">
+          Verify each RESULTS_ENTERED test item. Publish is enabled once all ordered tests are verified.
+        </p>
+        {testsLoading ? (
+          <p className="text-sm text-gray-500">Loading ordered tests…</p>
+        ) : orderedTests.length === 0 ? (
+          <p className="text-sm text-gray-500">No ordered tests for this encounter.</p>
+        ) : (
+          <div className="space-y-3">
+            {orderedTests.map((orderedTest: OrderedTest) => (
+              <div key={orderedTest.orderItem.id} className="rounded border border-gray-200 p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="font-medium text-gray-900">
+                      {orderedTest.test.name} ({orderedTest.test.code})
+                    </p>
+                    <p className="text-xs text-gray-600">{orderedTest.test.department}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="rounded bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700">
+                      {orderedTest.orderItem.status}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => verifyMutation.mutate(orderedTest.orderItem.id)}
+                      disabled={
+                        verifyMutation.isPending || orderedTest.orderItem.status !== 'RESULTS_ENTERED'
+                      }
+                      className="rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                    >
+                      Verify
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        <div className="flex flex-wrap gap-3 pt-2">
           <button
             type="button"
             onClick={() => publishMutation.mutate()}
-            disabled={publishMutation.isPending}
+            disabled={publishMutation.isPending || !allVerified}
             className="rounded bg-emerald-600 px-4 py-2 text-sm text-white hover:bg-emerald-700 disabled:opacity-50"
           >
             {publishMutation.isPending ? 'Publishing…' : 'Publish report'}
           </button>
+          {!allVerified && (
+            <p className="self-center text-sm text-amber-700">
+              Publish is disabled until all ordered tests are verified.
+            </p>
+          )}
         </div>
         {verifyMutation.isError && (
           <p className="text-sm text-red-600">{verifyMutation.error instanceof Error ? verifyMutation.error.message : 'Verify failed'}</p>

@@ -5,6 +5,7 @@ import { client } from '@/lib/sdk/client';
 import { parseApiError } from '@/lib/api-errors';
 import { operatorRoutes } from '@/lib/operator/routes';
 import { WorklistTable, type WorklistRow } from '@/components/operator/WorklistTable';
+import { fetchPatientDisplayLookup } from '@/lib/operator/patient-lookup';
 import type { paths } from '@vexel/contracts';
 
 type EncountersResponse =
@@ -12,7 +13,7 @@ type EncountersResponse =
 type Encounter = NonNullable<NonNullable<EncountersResponse['data']>[number]>;
 
 export default function OperatorSamplesPage() {
-  const { data, isLoading, error } = useQuery({
+  const { data: rows, isLoading, error } = useQuery({
     queryKey: ['operator', 'samples', 'encounters'],
     queryFn: async () => {
       const { data: res, error: apiError } = await client.GET('/encounters', {
@@ -21,19 +22,28 @@ export default function OperatorSamplesPage() {
       if (apiError) {
         throw new Error(parseApiError(apiError, 'Failed to load samples list').message);
       }
-      return res as EncountersResponse;
+      const encounters = ((res as EncountersResponse)?.data ?? []) as Encounter[];
+      const sampleQueue = encounters.filter((enc) => {
+        const labStatus = (enc.labEncounterStatus ?? '').toUpperCase();
+        return labStatus === 'ORDERED' && enc.prep_complete !== true;
+      });
+      const patientLookup = await fetchPatientDisplayLookup(
+        sampleQueue.map((enc) => enc.patientId),
+      );
+
+      return sampleQueue.map((enc) => {
+        const patient = patientLookup[enc.patientId] ?? { name: '—', regNo: '—' };
+        return {
+          encounterId: enc.id,
+          regNo: patient.regNo,
+          patientName: patient.name,
+          encounterCode: enc.encounterCode ?? '—',
+          status: enc.labEncounterStatus ?? enc.status,
+          updated: enc.createdAt ? new Date(enc.createdAt).toLocaleString() : '—',
+        } satisfies WorklistRow;
+      });
     },
   });
-
-  const encounters = (data?.data ?? []) as Encounter[];
-  const rows: WorklistRow[] = encounters.map((enc) => ({
-    encounterId: enc.id,
-    regNo: '—',
-    patientName: '—',
-    encounterCode: enc.encounterCode ?? '—',
-    status: enc.labEncounterStatus ?? enc.status,
-    updated: enc.createdAt ? new Date(enc.createdAt).toLocaleString() : '—',
-  }));
 
   if (isLoading) {
     return (
@@ -57,12 +67,12 @@ export default function OperatorSamplesPage() {
     <div>
       <h1 className="text-2xl font-bold mb-4">Samples</h1>
       <p className="text-gray-600 mb-4">
-        Encounters requiring sample action. TODO: filter by backend when contract supports (e.g. sample received).
+        Phlebotomy stage. In this single-branch setup, collected and received are marked together.
       </p>
       <WorklistTable
-        rows={rows}
+        rows={rows ?? []}
         detailHref={operatorRoutes.samplesDetail}
-        emptyMessage="No encounters."
+        emptyMessage="No encounters pending sample handling."
       />
     </div>
   );

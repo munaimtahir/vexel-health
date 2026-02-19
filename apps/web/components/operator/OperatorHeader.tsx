@@ -24,17 +24,17 @@ export function OperatorHeader({ labName }: OperatorHeaderProps) {
   });
 
   return (
-    <header className="border-b border-[var(--border)] bg-[var(--surface)] px-4 py-3 shadow-sm">
+    <header className="relative z-20 border-b border-white/15 bg-slate-950/65 px-4 py-3 shadow-lg backdrop-blur">
       <div className="flex items-center justify-between">
         <div className="flex items-baseline gap-3">
-          <h1 className="text-xl font-bold tracking-tight text-[var(--text)]">
+          <h1 className="bg-gradient-to-r from-cyan-300 via-emerald-200 to-amber-200 bg-clip-text text-xl font-bold tracking-tight text-transparent">
             {labName}
           </h1>
-          <span className="text-xs font-medium uppercase tracking-wider text-[var(--muted)]">
+          <span className="rounded-full border border-cyan-300/35 bg-cyan-200/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-cyan-100">
             Operator
           </span>
         </div>
-        <div className="text-sm text-[var(--muted)]">
+        <div className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-sm text-slate-100">
           {data?.name ?? data?.email ?? 'User'}
         </div>
       </div>

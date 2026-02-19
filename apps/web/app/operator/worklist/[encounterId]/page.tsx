@@ -81,8 +81,21 @@ export default function OperatorWorklistDetailPage() {
       </div>
       {patientLoading && <p className="text-sm text-gray-500">Loading patient…</p>}
       <div className="rounded border bg-white p-6 shadow">
-        <h2 className="text-lg font-semibold mb-3">Sections (placeholder)</h2>
-        <p className="text-sm text-gray-600">Tabs/sections for order details, results, verification will be added here.</p>
+        <h2 className="text-lg font-semibold mb-3">Workflow shortcuts</h2>
+        <p className="text-sm text-gray-600 mb-3">
+          Open the relevant stage directly for this encounter.
+        </p>
+        <div className="flex flex-wrap gap-3 text-sm">
+          <Link href={operatorRoutes.samplesDetail(encounterId)} className="text-blue-600 hover:underline">
+            Go to Samples
+          </Link>
+          <Link href={operatorRoutes.verifyDetail(encounterId)} className="text-blue-600 hover:underline">
+            Go to Verify
+          </Link>
+          <Link href={operatorRoutes.publishedReportDetail(encounterId)} className="text-blue-600 hover:underline">
+            Go to Published Report
+          </Link>
+        </div>
       </div>
     </div>
   );
