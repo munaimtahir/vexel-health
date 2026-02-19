@@ -4,6 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "docker compose up",
+    "deploy:dev": "bash ./scripts/deploy-dev.sh",
+    "db:push:dev": "docker compose exec -T api npx prisma db push --schema prisma/schema.prisma --accept-data-loss",
+    "seed:dev": "docker compose exec -T api node prisma/seed-dev.js",
     "lint": "npm run lint --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "contracts:generate": "npm run generate --workspace=@vexel/contracts",

@@ -9,24 +9,41 @@ Date: 2026-02-18
 ## Local dev
 1. Copy env template:
    - `.env.example` → `.env`
-2. Start stack:
-   - `docker compose up --build`
-3. Apply migrations:
-   - API container runs migrations on startup (or run a command script)
-4. Seed:
-   - run `seed:dev` to load demo tenant + users + starter catalog
+2. Deploy/update stack (includes DB sync + admin bootstrap):
+   - `npm run deploy:dev`
+3. Manual equivalents (if needed):
+   - `docker compose up -d --build`
+   - `npm run db:push:dev`
+   - `npm run seed:dev`
+
+## Development admin bootstrap (persistent across deploys)
+- `seed:dev` is idempotent and re-runs on every `deploy:dev`.
+- It guarantees a tenant + domain mapping + admin account exist.
+- Default credentials:
+  - Host: `vexel.alshifalab.pk`
+  - Email: `admin@vexel.dev`
+  - Password: `Admin@123!`
+- Override via `.env`:
+  - `DEV_ADMIN_TENANT_ID`
+  - `DEV_ADMIN_DOMAINS`
+  - `DEV_ADMIN_EMAIL`
+  - `DEV_ADMIN_PASSWORD`
+  - `DEV_ADMIN_NAME`
+  - `DEV_ADMIN_ROLE_NAME`
 
 ## Environments
 - `dev`: local docker
 - `prod`: VPS docker
 
 ## Access
-- Web: http://localhost:3000
-- API: http://localhost:4000
-- PDF Service: http://localhost:4010/health
+- Web (direct): http://127.0.0.1:3001
+- API (direct): http://127.0.0.1:3000
+- PDF Service (direct): http://127.0.0.1:5000/health
+- Web (domain): https://vexel.alshifalab.pk
+- API (domain): https://vexel.alshifalab.pk/api/health
 
 ## Common commands
-- regenerate contracts
-- run unit tests
-- run E2E tests
-(Exact scripts to be added in package.json and documented as they are implemented.)
+- `npm run contracts:generate`
+- `npm run test`
+- `npm run test:e2e --workspace=api`
+- `npm run deploy:dev`

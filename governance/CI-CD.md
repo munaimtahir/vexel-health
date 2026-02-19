@@ -20,6 +20,7 @@ Use path-based builds to deploy only what changed:
 - VPS via Docker Compose
 - Build and pull tagged images
 - Run migrations (API) safely
+- Run idempotent admin bootstrap seed (`seed:dev` or equivalent)
 - Restart services
 - Verify health endpoints
 

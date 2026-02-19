@@ -4,10 +4,21 @@ Date: 2026-02-19
 ## Preconditions
 - Stack up: `docker compose up -d --build`
 - DB synced: `docker compose exec -T api npx prisma db push --schema prisma/schema.prisma --accept-data-loss`
-- Tenant/domain/user seeded:
+- Tenant/domain/admin seeded (idempotent):
+  - `docker compose exec -T api node prisma/seed-dev.js`
   - tenant A domain: `tenant-a.test`
   - tenant B domain: `tenant-b.test`
-  - tenant A user: `demo@vexel.dev` / `demo123`
+  - admin user: `admin@vexel.dev` / `Admin@123!`
+
+## Login
+```bash
+curl -sS -X POST http://127.0.0.1:3000/auth/login \
+  -H 'Host: vexel.alshifalab.pk' \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"admin@vexel.dev","password":"Admin@123!"}'
+```
+Expected:
+- `accessToken` present.
 
 ## Health checks
 ```bash
