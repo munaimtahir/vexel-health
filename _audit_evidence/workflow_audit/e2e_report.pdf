@@ -1,0 +1,92 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Count 1 /Kids [3 0 R] >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+5 0 obj
+<< /Length 1192 >>
+stream
+BT
+/F1 12 Tf
+50 780 Td
+(Vexel Health - Lab Report) Tj
+0 -14 Td
+(Template Key: LAB_REPORT_V1) Tj
+0 -14 Td
+(Template Version: 1) Tj
+0 -14 Td
+(Payload Version: 1) Tj
+0 -14 Td
+(--- Patient ---) Tj
+0 -14 Td
+(dob: 1990-01-01T00:00:00.000Z) Tj
+0 -14 Td
+(gender: male) Tj
+0 -14 Td
+(id: 5d1c7a75-adc7-47c7-b032-29549d8390ba) Tj
+0 -14 Td
+(name: Workflow Audit Patient) Tj
+0 -14 Td
+(phone: 5551230000) Tj
+0 -14 Td
+(regNo: REG-00000003) Tj
+0 -14 Td
+(--- Encounter ---) Tj
+0 -14 Td
+(createdAt: 2026-02-19T01:45:37.015Z) Tj
+0 -14 Td
+(encounterCode: LAB-2026-000004) Tj
+0 -14 Td
+(endedAt: 2026-02-19T01:45:37.744Z) Tj
+0 -14 Td
+(id: 50a46c14-eef4-447c-bca8-d46c8844de9a) Tj
+0 -14 Td
+(startedAt: 2026-02-19T01:45:37.009Z) Tj
+0 -14 Td
+(status: FINALIZED) Tj
+0 -14 Td
+(type: LAB) Tj
+0 -14 Td
+(--- Prep ---) Tj
+0 -14 Td
+(collectedAt: 2026-02-19T01:45:00.000Z) Tj
+0 -14 Td
+(collectorName: Nurse A) Tj
+0 -14 Td
+(receivedAt: 2026-02-19T01:47:00.000Z) Tj
+0 -14 Td
+(specimenType: Blood) Tj
+0 -14 Td
+(--- Main ---) Tj
+0 -14 Td
+(resultSummary: Albumin: 4.5 g/dL) Tj
+0 -14 Td
+(verifiedAt: 2026-02-19T01:48:00.000Z) Tj
+0 -14 Td
+(verifiedBy: Dr Workflow) Tj
+0 -14 Td
+(Footer: Vexel Health Deterministic PDF Renderer) Tj
+ET
+endstream
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000241 00000 n 
+0000000311 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+1555
+%%EOF

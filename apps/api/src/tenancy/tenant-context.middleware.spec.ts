@@ -44,7 +44,7 @@ describe('TenantContextMiddleware', () => {
 
   it('should resolve tenant from hostname (production path)', async () => {
     const req: any = { headers: { host: 'customer.com' } };
-    const res: any = {};
+    const res: any = { setHeader: jest.fn() };
 
     (prisma.tenantDomain.findUnique as jest.Mock).mockResolvedValue({
       tenantId: 'tenant-123',
@@ -63,13 +63,13 @@ describe('TenantContextMiddleware', () => {
 
   it('should throw if hostname not found and dev mode disabled', async () => {
     const req: any = { headers: { host: 'unknown.com' } };
-    const res: any = {};
+    const res: any = { setHeader: jest.fn() };
     (prisma.tenantDomain.findUnique as jest.Mock).mockResolvedValue(null);
 
     await expect(middleware.use(req, res, mockNext)).rejects.toThrow(
       UnauthorizedException,
     );
-    expect(cls.set).not.toHaveBeenCalled();
+    expect(cls.set).not.toHaveBeenCalledWith('TENANT_ID', expect.any(String));
   });
 
   it('should use header if localhost + env enabled (dev path)', async () => {
@@ -77,7 +77,7 @@ describe('TenantContextMiddleware', () => {
     const req: any = {
       headers: { host: 'localhost:3000', 'x-tenant-id': 'dev-tenant-id' },
     };
-    const res: any = {};
+    const res: any = { setHeader: jest.fn() };
 
     // DB returns null for localhost
     (prisma.tenantDomain.findUnique as jest.Mock).mockResolvedValue(null);
@@ -94,7 +94,7 @@ describe('TenantContextMiddleware', () => {
     const req: any = {
       headers: { host: 'localhost:3000', 'x-tenant-id': 'dev-tenant-id' },
     };
-    const res: any = {};
+    const res: any = { setHeader: jest.fn() };
     (prisma.tenantDomain.findUnique as jest.Mock).mockResolvedValue(null);
 
     await expect(middleware.use(req, res, mockNext)).rejects.toThrow(

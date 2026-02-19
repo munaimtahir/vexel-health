@@ -7,6 +7,10 @@ import {
 import { Request, Response, NextFunction } from 'express';
 import { PrismaService } from '../prisma/prisma.service';
 import { ClsService } from 'nestjs-cls';
+import { randomUUID } from 'node:crypto';
+import { writeWorkflowTrace } from '../common/observability/workflow-trace';
+
+type TraceRequest = Request & { tenantId?: string; requestId?: string };
 
 @Injectable()
 export class TenantContextMiddleware implements NestMiddleware {
@@ -18,7 +22,25 @@ export class TenantContextMiddleware implements NestMiddleware {
   ) {}
 
   async use(req: Request, res: Response, next: NextFunction) {
+    const traceReq = req as TraceRequest;
+    const requestId = this.getRequestId(req);
+    this.cls.set('REQUEST_ID', requestId);
+    traceReq.requestId = requestId;
+    res.setHeader('x-request-id', requestId);
+    res.setHeader('x-correlation-id', requestId);
+    (req.headers as Record<string, string | string[]>)['x-correlation-id'] =
+      requestId;
+
     if (req.path === '/health') {
+      writeWorkflowTrace({
+        event: 'http.request.received',
+        requestId,
+        tenantId: null,
+        userId: null,
+        endpoint: `${req.method} ${req.originalUrl ?? req.url}`,
+        method: req.method,
+        path: req.originalUrl ?? req.url,
+      });
       next();
       return;
     }
@@ -80,14 +102,62 @@ export class TenantContextMiddleware implements NestMiddleware {
     }
 
     if (!tenantId) {
+      writeWorkflowTrace({
+        event: 'http.request.received',
+        requestId,
+        tenantId: null,
+        userId: null,
+        endpoint: `${req.method} ${req.originalUrl ?? req.url}`,
+        method: req.method,
+        path: req.originalUrl ?? req.url,
+        host: hostname,
+        tenantResolved: false,
+      });
       throw new UnauthorizedException(
         'Tenant context required (hostname not mapped)',
       );
     }
 
     this.cls.set('TENANT_ID', tenantId);
-    (req as { tenantId?: string }).tenantId = tenantId;
+    traceReq.tenantId = tenantId;
+
+    writeWorkflowTrace({
+      event: 'http.request.received',
+      requestId,
+      tenantId,
+      userId: null,
+      endpoint: `${req.method} ${req.originalUrl ?? req.url}`,
+      method: req.method,
+      path: req.originalUrl ?? req.url,
+      host: hostname,
+      tenantResolved: true,
+    });
 
     next();
+  }
+
+  private getRequestId(req: Request): string {
+    const xRequestId = req.headers['x-request-id'];
+    if (typeof xRequestId === 'string' && xRequestId.trim().length > 0) {
+      return xRequestId.trim();
+    }
+
+    if (Array.isArray(xRequestId) && xRequestId[0]?.trim()) {
+      return xRequestId[0].trim();
+    }
+
+    const xCorrelationId = req.headers['x-correlation-id'];
+    if (
+      typeof xCorrelationId === 'string' &&
+      xCorrelationId.trim().length > 0
+    ) {
+      return xCorrelationId.trim();
+    }
+
+    if (Array.isArray(xCorrelationId) && xCorrelationId[0]?.trim()) {
+      return xCorrelationId[0].trim();
+    }
+
+    return randomUUID();
   }
 }

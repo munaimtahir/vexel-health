@@ -3,6 +3,7 @@ import { dirname, join, normalize, resolve, sep } from 'node:path';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { Worker } from 'bullmq';
 import { DocumentStatus, DocumentType, PrismaClient, StorageBackend } from '@prisma/client';
+import { traceSpan, writeWorkflowTrace } from './workflow-trace';
 
 type DocumentRenderJobPayload = {
   tenantId: string;
@@ -122,92 +123,134 @@ async function markFailed(input: DocumentRenderJobPayload, error: unknown): Prom
       errorMessage: sanitizeErrorMessage(error),
     },
   });
+  writeWorkflowTrace({
+    event: 'publish_report.render_failed',
+    requestId: null,
+    tenantId: input.tenantId,
+    userId: null,
+    documentId: input.documentId,
+    errorMessage: sanitizeErrorMessage(error),
+  });
 }
 
 async function processDocumentRender(input: DocumentRenderJobPayload): Promise<void> {
-  const document = await prisma.document.findFirst({
-    where: {
-      id: input.documentId,
+  await traceSpan(
+    {
+      span: 'publish_report.render_worker',
+      requestId: null,
       tenantId: input.tenantId,
+      metadata: {
+        documentId: input.documentId,
+      },
     },
-  });
-
-  if (!document || document.status !== DocumentStatus.QUEUED) {
-    return;
-  }
-
-  try {
-    const pdfBytes = await renderPdf({
-      templateKey: toTemplateKey(document.documentType, document.payloadJson),
-      templateVersion: document.templateVersion,
-      payloadVersion: document.payloadVersion,
-      payload: document.payloadJson,
-    });
-
-    const pdfHash = sha256HexFromBytes(pdfBytes);
-    const { storageKey } = await writePdfLocally({
-      tenantId: input.tenantId,
-      documentId: input.documentId,
-      bytes: pdfBytes,
-    });
-
-    await prisma.$transaction(async (tx) => {
-      const current = await tx.document.findFirst({
+    async () => {
+      const document = await prisma.document.findFirst({
         where: {
           id: input.documentId,
           tenantId: input.tenantId,
         },
       });
 
-      if (!current || current.status !== DocumentStatus.QUEUED) {
+      if (!document || document.status !== DocumentStatus.QUEUED) {
         return;
       }
 
-      await tx.document.update({
-        where: {
-          id: current.id,
-        },
-        data: {
-          status: DocumentStatus.RENDERED,
-          storageBackend: StorageBackend.LOCAL,
-          storageKey,
-          pdfHash,
-          renderedAt: new Date(),
-          errorCode: null,
-          errorMessage: null,
-        },
-      });
-
-      const encounter = await tx.encounter.findFirst({
-        where: {
-          id: current.encounterId,
-          tenantId: input.tenantId,
-        },
-      });
-
-      if (!encounter) {
-        throw new Error('encounter not found for rendered document');
-      }
-
-      if (encounter.status === 'FINALIZED') {
-        await tx.encounter.update({
-          where: {
-            id: encounter.id,
-          },
-          data: {
-            status: 'DOCUMENTED',
-          },
+      try {
+        const pdfBytes = await renderPdf({
+          templateKey: toTemplateKey(document.documentType, document.payloadJson),
+          templateVersion: document.templateVersion,
+          payloadVersion: document.payloadVersion,
+          payload: document.payloadJson,
         });
-      } else if (encounter.status !== 'DOCUMENTED') {
-        throw new Error(
-          `encounter is in invalid state for documentation: ${encounter.status}`,
-        );
+
+        const pdfHash = sha256HexFromBytes(pdfBytes);
+        const { storageKey } = await writePdfLocally({
+          tenantId: input.tenantId,
+          documentId: input.documentId,
+          bytes: pdfBytes,
+        });
+
+        await prisma.$transaction(async (tx) => {
+          const current = await tx.document.findFirst({
+            where: {
+              id: input.documentId,
+              tenantId: input.tenantId,
+            },
+          });
+
+          if (!current || current.status !== DocumentStatus.QUEUED) {
+            return;
+          }
+
+          await tx.document.update({
+            where: {
+              id: current.id,
+            },
+            data: {
+              status: DocumentStatus.RENDERED,
+              storageBackend: StorageBackend.LOCAL,
+              storageKey,
+              pdfHash,
+              renderedAt: new Date(),
+              errorCode: null,
+              errorMessage: null,
+            },
+          });
+
+          writeWorkflowTrace({
+            event: 'publish_report.document_rendered',
+            requestId: null,
+            tenantId: input.tenantId,
+            userId: null,
+            documentId: current.id,
+            encounterId: current.encounterId,
+            status: DocumentStatus.RENDERED,
+            pdfHash,
+            storageKey,
+          });
+
+          const encounter = await tx.encounter.findFirst({
+            where: {
+              id: current.encounterId,
+              tenantId: input.tenantId,
+            },
+          });
+
+          if (!encounter) {
+            throw new Error('encounter not found for rendered document');
+          }
+
+          if (encounter.status === 'FINALIZED') {
+            await tx.encounter.update({
+              where: {
+                id: encounter.id,
+              },
+              data: {
+                status: 'DOCUMENTED',
+              },
+            });
+
+            writeWorkflowTrace({
+              event: 'publish_report.encounter_status_transition',
+              requestId: null,
+              tenantId: input.tenantId,
+              userId: null,
+              encounterId: encounter.id,
+              fromStatus: 'FINALIZED',
+              toStatus: 'DOCUMENTED',
+            });
+          } else if (encounter.status !== 'DOCUMENTED') {
+            throw new Error(
+              `encounter is in invalid state for documentation: ${encounter.status}`,
+            );
+          }
+        });
+      } catch (error) {
+        await markFailed(input, error);
+        throw error;
       }
-    });
-  } catch (error) {
-    await markFailed(input, error);
-    throw error;
-  }
+    },
+  );
 }
 
 const worker = new Worker<DocumentRenderJobPayload>(
@@ -216,6 +259,15 @@ const worker = new Worker<DocumentRenderJobPayload>(
     if (job.name !== 'DOCUMENT_RENDER') {
       return;
     }
+
+    writeWorkflowTrace({
+      event: 'publish_report.job_received',
+      requestId: null,
+      tenantId: job.data.tenantId,
+      userId: null,
+      documentId: job.data.documentId,
+      jobId: job.id ?? null,
+    });
 
     await processDocumentRender(job.data);
   },
