@@ -41,3 +41,42 @@ A modular monolith platform with shared core services and pluggable modules, plu
 - Strict tenant isolation
 - Feature toggle governance
 - Versioned documents and payloads
+
+## Next.js App Router Discipline (Permanent Rules)
+
+1. **App Router only**
+   - `apps/web` MUST use the `/app` router exclusively.
+   - The `/pages` directory is forbidden (remove if present), except if explicitly approved for a temporary migration window.
+
+2. **No legacy data fetching**
+   - `getServerSideProps` / `getStaticProps` / `getInitialProps` are forbidden.
+   - Use Server Components, Route Handlers, and client components where appropriate.
+
+3. **Routing APIs**
+   - Use `next/navigation` in the App Router.
+   - `next/router` is forbidden.
+
+4. **API routes**
+   - Use `app/api/**/route.ts` only.
+   - `pages/api` is forbidden.
+
+5. **Layout boundaries**
+   - `/operator` and `/admin` MUST each have their own `layout.tsx` boundary.
+   - Authentication/authorization checks happen at the layout boundary (or middleware), not scattered.
+
+6. **Contract-first API consumption**
+   - UI must call the backend ONLY via the `@vexel/contracts` generated SDK.
+   - Direct `fetch()` to backend endpoints is forbidden unless the SDK cannot support it and an explicit exception is documented.
+
+7. **Tenant isolation**
+   - Never pass `tenant_id` via URL params or query strings.
+   - Tenant context must come from auth/session only.
+
+8. **No UI-derived workflow truth**
+   - Workflow status shown in the UI must come from backend fields (derived status from backend allowed).
+
+9. **Upgrade discipline**
+   - Next major upgrades must be done via a dedicated migration PR with documented before/after build and smoke-test evidence.
+
+10. **Enforcement**
+    - CI checks MUST fail if `/pages` exists or if forbidden imports/usages are present (e.g. `npm run guardrails:next`).

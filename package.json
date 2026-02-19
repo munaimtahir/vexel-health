@@ -11,7 +11,8 @@
     "test": "npm run test --workspaces --if-present",
     "contracts:generate": "npm run generate --workspace=@vexel/contracts",
     "postinstall": "npx prisma generate --schema apps/api/prisma/schema.prisma",
-    "check:size": "bash ./scripts/check-repo-size.sh"
+    "check:size": "bash ./scripts/check-repo-size.sh",
+    "guardrails:next": "node scripts/guardrails/check-next-router.mjs"
   },
   "devDependencies": {
     "typescript": "^5.7.3",

@@ -94,7 +94,26 @@
 
 ## 7. Quality Gates (Verified)
 
-- TypeScript: types from `@vexel/contracts` only; no ad-hoc payloads.
+- TypeScript: types from `@vexel/contracts` only; no ad-hoc payloads. `npx tsc --noEmit` passes for `apps/web`.
 - No `fetch()`; all API access via SDK client from `lib/sdk/client.ts` (re-exports `lib/api.ts` createVexelClient with auth middleware).
-- Lint: run `npm run lint` in workspace.
+- Lint: web workspace has lint skipped; admin code does not introduce new lint/TS errors.
 - Routes render without crash when data is empty or endpoint missing (NoticeBanner + empty states).
+
+---
+
+## 8. TODO Checklist (Scaffold Completion)
+
+| Done | Item |
+|------|------|
+| ✅ | Admin layout root `/admin` with AuthGuard |
+| ✅ | Theme tokens (--bg, --surface, --border, --text, --muted, --accent) + dark-ready |
+| ✅ | AdminNav sidebar with Dashboard, Business, Users, Catalog sections |
+| ✅ | PageHeader, AdminCard, DataTableShell, FieldRow, StatusPill, FeatureGate, NoticeBanner, SectionTitle, Divider |
+| ✅ | Business overview + Branding pages (local state + Preview placeholder) |
+| ✅ | Users list, Invite, User detail (placeholders + /me where no users API) |
+| ✅ | Catalog overview, Tests list/detail, Parameters list/detail, Panels list/detail, Linking, Import/Export |
+| ✅ | SDK-only usage; NoticeBanner where endpoints missing |
+| ✅ | docs/_audit/UI_SCAFFOLD_ADMIN_PANEL.md |
+| ⏳ | Backend: branding, users, panels, linking, import/export endpoints (see §6 above) |
+| ⏳ | FeatureGate: wire to real /me/features when ready |
+| ⏳ | PDF/Report preview in Branding page (placeholder only for now) |

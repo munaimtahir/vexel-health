@@ -2,6 +2,8 @@ export const adminRoutes = {
   dashboard: '/admin',
   businessOverview: '/admin/business',
   businessBranding: '/admin/business/branding',
+  businessReportDesign: '/admin/business/report-design',
+  businessReceiptDesign: '/admin/business/receipt-design',
   usersList: '/admin/users',
   usersInvite: '/admin/users/invite',
   userDetail: (userId: string) => `/admin/users/${userId}`,
@@ -36,6 +38,8 @@ export const adminNavSections: AdminNavSection[] = [
     items: [
       { label: 'Business Overview', href: adminRoutes.businessOverview },
       { label: 'Branding', href: adminRoutes.businessBranding },
+      { label: 'Report Design', href: adminRoutes.businessReportDesign },
+      { label: 'Receipt Design', href: adminRoutes.businessReceiptDesign },
     ],
   },
   {
