@@ -4,9 +4,9 @@
  */
 
 export const operatorRoutes = {
-  /** Operator registration route, which forwards into the shared patient registration form. */
+  /** Operator registration route; renders registration form in operator shell (sidebar + theme). Use this for workflow navigation. */
   register: '/operator/register',
-  /** Shared registration form used by operator registration flow. */
+  /** Standalone registration form URL (patients area, no operator shell). Use for direct/back links from patients section. */
   sharedRegisterForm: '/patients/register',
   worklist: '/operator/worklist',
   worklistDetail: (encounterId: string) => `/operator/worklist/${encounterId}`,

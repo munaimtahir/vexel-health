@@ -1,23 +1,19 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { PatientRegistrationForm } from '@/components/registration/PatientRegistrationForm';
 import { operatorRoutes } from '@/lib/operator/routes';
 
 /**
- * Operator registration path. Redirects to the shared patient registration form
- * (mobile-first, 03xx-1234567, create encounter + order tests + receipt print).
+ * Operator registration page. Renders the shared patient registration form
+ * inside the operator shell (sidebar + theme) so navigation from workflow
+ * to registration keeps the same layout.
  */
 export default function OperatorRegisterPage() {
-  const router = useRouter();
-
-  useEffect(() => {
-    router.replace(operatorRoutes.sharedRegisterForm);
-  }, [router]);
-
   return (
-    <div className="flex items-center justify-center p-8">
-      <p className="text-sm text-[var(--muted)]">Redirecting to registration…</p>
-    </div>
+    <PatientRegistrationForm
+      backHref={operatorRoutes.worklist}
+      backLabel="Back to worklist"
+      registerAnotherHref={operatorRoutes.register}
+    />
   );
 }

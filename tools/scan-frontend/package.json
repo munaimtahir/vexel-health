@@ -1,0 +1,6 @@
+{
+  "name": "scan-frontend",
+  "private": true,
+  "type": "module",
+  "description": "Static scan of apps/web for routes, nav links, and API usage."
+}
