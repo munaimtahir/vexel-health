@@ -3,36 +3,54 @@ import type { RequestedDocumentType } from './document-types';
 type JsonRecord = Record<string, unknown>;
 
 export const DOCUMENT_PAYLOAD_SAMPLES: Record<RequestedDocumentType, JsonRecord> = {
-  ENCOUNTER_SUMMARY: {
-    encounterCode: 'LAB-2026-000001',
-    encounterType: 'LAB',
-    patientRegNo: 'REG-00000001',
-    patientName: 'Demo Patient',
+  ENCOUNTER_SUMMARY_V1: {
+    patient: {
+      regNo: 'REG-00000001',
+      name: 'Demo Patient',
+    },
+    encounter: {
+      encounterCode: 'LAB-2026-000001',
+      type: 'LAB',
+      status: 'FINALIZED',
+    },
   },
-  LAB_REPORT: {
-    specimenType: 'Blood',
-    resultSummary: 'Hemoglobin in expected range.',
-    verifiedBy: 'Lab Specialist',
+  LAB_REPORT_V1: {
+    prep: {
+      specimenType: 'Blood',
+    },
+    main: {
+      resultSummary: 'Hemoglobin in expected range.',
+      verifiedBy: 'Lab Specialist',
+    },
   },
-  RAD_REPORT: {
-    reportText: 'No acute cardiopulmonary abnormality.',
-    impression: 'Stable chest radiograph.',
-    radiologistName: 'Dr. Ray',
+  OPD_SUMMARY_V1: {
+    main: {
+      chiefComplaint: 'Fever and cough for 3 days',
+      assessment: 'Likely viral URI',
+      plan: 'Hydration and rest',
+    },
   },
-  OPD_CLINICAL_NOTE: {
-    chiefComplaint: 'Fever and cough for 3 days',
-    assessment: 'Likely viral URI',
-    plan: 'Hydration, rest, follow-up in 48 hours',
+  RAD_REPORT_V1: {
+    main: {
+      reportText: 'No acute cardiopulmonary abnormality.',
+      impression: 'Stable chest radiograph.',
+      radiologistName: 'Dr. Ray',
+    },
   },
-  BB_TRANSFUSION_NOTE: {
-    crossmatchResult: 'COMPATIBLE',
-    componentIssued: 'PRBC',
-    unitsIssued: 1,
+  BB_ISSUE_SLIP_V1: {
+    main: {
+      crossmatchResult: 'COMPATIBLE',
+      componentIssued: 'PRBC',
+      unitsIssued: 1,
+    },
   },
-  IPD_DISCHARGE_SUMMARY: {
-    admissionReason: 'Community acquired pneumonia',
-    dailyNote: 'Improving with antibiotics',
-    orders: 'Discharge with oral medication and review in 1 week',
+  IPD_SUMMARY_V1: {
+    prep: {
+      admissionReason: 'Community acquired pneumonia',
+    },
+    main: {
+      dailyNote: 'Improving with antibiotics',
+      orders: 'Discharge in 24 hours if stable',
+    },
   },
 };
-

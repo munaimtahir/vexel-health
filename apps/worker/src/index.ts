@@ -31,12 +31,28 @@ function sanitizeErrorMessage(value: unknown): string {
   return message.slice(0, 500);
 }
 
-function toTemplateKey(documentType: DocumentType): string {
-  if (documentType === DocumentType.ENCOUNTER_SUMMARY) {
-    return 'ENCOUNTER_SUMMARY';
+function toTemplateKey(documentType: DocumentType, payloadJson: unknown): string {
+  if (
+    typeof payloadJson === 'object' &&
+    payloadJson !== null &&
+    typeof (payloadJson as Record<string, unknown>).meta === 'object' &&
+    (payloadJson as Record<string, unknown>).meta !== null
+  ) {
+    const meta = (payloadJson as Record<string, unknown>).meta as Record<
+      string,
+      unknown
+    >;
+    const templateKey = meta.templateKey;
+    if (typeof templateKey === 'string' && templateKey.length > 0) {
+      return templateKey;
+    }
   }
 
-  return 'ENCOUNTER_SUMMARY';
+  if (documentType === DocumentType.ENCOUNTER_SUMMARY) {
+    return 'ENCOUNTER_SUMMARY_V1';
+  }
+
+  return 'ENCOUNTER_SUMMARY_V1';
 }
 
 function buildStorageKey(tenantId: string, documentId: string): string {
@@ -122,7 +138,7 @@ async function processDocumentRender(input: DocumentRenderJobPayload): Promise<v
 
   try {
     const pdfBytes = await renderPdf({
-      templateKey: toTemplateKey(document.documentType),
+      templateKey: toTemplateKey(document.documentType, document.payloadJson),
       templateVersion: document.templateVersion,
       payloadVersion: document.payloadVersion,
       payload: document.payloadJson,

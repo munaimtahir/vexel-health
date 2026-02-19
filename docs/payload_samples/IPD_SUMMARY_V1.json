@@ -1,0 +1,39 @@
+{
+  "meta": {
+    "documentType": "IPD_SUMMARY_V1",
+    "templateKey": "IPD_SUMMARY_V1",
+    "templateVersion": 1,
+    "payloadVersion": 1,
+    "schemaVersion": 1
+  },
+  "tenant": {
+    "id": "tenant-a"
+  },
+  "patient": {
+    "id": "patient-5",
+    "regNo": "REG-00000005",
+    "name": "Demo IPD Patient",
+    "dob": null,
+    "gender": "male",
+    "phone": null
+  },
+  "encounter": {
+    "id": "encounter-5",
+    "encounterCode": "IPD-2026-000001",
+    "type": "IPD",
+    "status": "FINALIZED",
+    "startedAt": "2026-02-19T14:00:00.000Z",
+    "endedAt": "2026-02-19T16:00:00.000Z",
+    "createdAt": "2026-02-19T14:00:00.000Z"
+  },
+  "prep": {
+    "admissionReason": "Pneumonia",
+    "ward": "Ward-2",
+    "bed": "B-14",
+    "admittingNotes": "Monitor respiratory status"
+  },
+  "main": {
+    "dailyNote": "Improving with antibiotics",
+    "orders": "Discharge if stable after 24 hours"
+  }
+}

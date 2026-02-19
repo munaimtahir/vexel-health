@@ -2,11 +2,13 @@ import type { Document, DocumentStatus } from '@prisma/client';
 import {
   type RequestedDocumentType,
   requestedTypeFromPayloadJson,
+  templateKeyFromPayloadJson,
 } from './document-types';
 
 export type DocumentResponse = {
   id: string;
   type: RequestedDocumentType;
+  templateKey: string;
   status: DocumentStatus;
   encounterId: string;
   payloadHash: string;
@@ -20,9 +22,15 @@ export type DocumentResponse = {
 };
 
 export function toDocumentResponse(document: Document): DocumentResponse {
+  const requestedType = requestedTypeFromPayloadJson(
+    document.payloadJson,
+    document.documentType,
+  );
+
   return {
     id: document.id,
-    type: requestedTypeFromPayloadJson(document.payloadJson, document.documentType),
+    type: requestedType,
+    templateKey: templateKeyFromPayloadJson(document.payloadJson, requestedType),
     status: document.status,
     encounterId: document.encounterId,
     payloadHash: document.payloadHash,

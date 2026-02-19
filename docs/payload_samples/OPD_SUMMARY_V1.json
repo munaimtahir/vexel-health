@@ -1,0 +1,45 @@
+{
+  "meta": {
+    "documentType": "OPD_SUMMARY_V1",
+    "templateKey": "OPD_SUMMARY_V1",
+    "templateVersion": 1,
+    "payloadVersion": 1,
+    "schemaVersion": 1
+  },
+  "tenant": {
+    "id": "tenant-a"
+  },
+  "patient": {
+    "id": "patient-3",
+    "regNo": "REG-00000003",
+    "name": "Demo OPD Patient",
+    "dob": null,
+    "gender": "male",
+    "phone": null
+  },
+  "encounter": {
+    "id": "encounter-3",
+    "encounterCode": "OPD-2026-000001",
+    "type": "OPD",
+    "status": "FINALIZED",
+    "startedAt": "2026-02-19T12:00:00.000Z",
+    "endedAt": "2026-02-19T12:20:00.000Z",
+    "createdAt": "2026-02-19T12:00:00.000Z"
+  },
+  "prep": {
+    "systolicBp": 120,
+    "diastolicBp": 80,
+    "pulse": 76,
+    "temperatureC": 37.2,
+    "respiratoryRate": 16,
+    "weightKg": 68,
+    "spo2": 98,
+    "triageNotes": "Clinically stable"
+  },
+  "main": {
+    "chiefComplaint": "Headache",
+    "assessment": "Tension headache",
+    "plan": "Hydration and rest",
+    "prescriptionText": null
+  }
+}

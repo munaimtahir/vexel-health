@@ -7,16 +7,35 @@ using System.Text.Json;
 var builder = WebApplication.CreateBuilder(args);
 var app = builder.Build();
 
+var supportedTemplates = new Dictionary<string, string>(StringComparer.Ordinal)
+{
+    ["ENCOUNTER_SUMMARY_V1"] = "Encounter Summary",
+    ["LAB_REPORT_V1"] = "Lab Report",
+    ["OPD_SUMMARY_V1"] = "OPD Summary",
+    ["RAD_REPORT_V1"] = "Radiology Report",
+    ["BB_ISSUE_SLIP_V1"] = "Blood Bank Issue Slip",
+    ["IPD_SUMMARY_V1"] = "IPD Summary",
+};
+
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 
 app.MapPost("/render", (RenderRequest req) =>
 {
-    if (!string.Equals(req.TemplateKey, "ENCOUNTER_SUMMARY", StringComparison.Ordinal))
+    if (!supportedTemplates.ContainsKey(req.TemplateKey))
     {
         return Results.BadRequest(new
         {
             error = "unsupported_template",
-            message = "Only ENCOUNTER_SUMMARY is supported in Phase 3A"
+            message = "Unsupported templateKey"
+        });
+    }
+
+    if (req.TemplateVersion != 1)
+    {
+        return Results.BadRequest(new
+        {
+            error = "unsupported_template_version",
+            message = "Only templateVersion=1 is supported"
         });
     }
 
@@ -31,15 +50,18 @@ app.MapPost("/render", (RenderRequest req) =>
 
     var lines = new List<string>
     {
-        "Vexel Health - Encounter Summary",
+        $"Vexel Health - {supportedTemplates[req.TemplateKey]}",
+        $"Template Key: {req.TemplateKey}",
         $"Template Version: {req.TemplateVersion}",
         $"Payload Version: {req.PayloadVersion}",
-        $"Encounter Code: {GetPayloadString(req.Payload, "encounterCode")}",
-        $"Encounter Type: {GetPayloadString(req.Payload, "encounterType")}",
-        $"Patient RegNo: {GetPayloadString(req.Payload, "patientRegNo")}",
-        $"Patient Name: {GetPayloadString(req.Payload, "patientName")}",
-        $"Status: {GetPayloadString(req.Payload, "encounterStatus")}",
     };
+
+    AddSection(lines, "Patient", req.Payload, "patient");
+    AddSection(lines, "Encounter", req.Payload, "encounter");
+    AddSection(lines, "Prep", req.Payload, "prep");
+    AddSection(lines, "Main", req.Payload, "main");
+
+    lines.Add("Footer: Vexel Health Deterministic PDF Renderer");
 
     var pdfBytes = BuildDeterministicPdf(lines);
     return Results.File(pdfBytes, "application/pdf");
@@ -47,20 +69,89 @@ app.MapPost("/render", (RenderRequest req) =>
 
 app.Run();
 
-static string GetPayloadString(JsonElement payload, string key)
+static void AddSection(
+    IList<string> lines,
+    string title,
+    JsonElement payload,
+    string key)
 {
-    if (!payload.TryGetProperty(key, out var value))
+    lines.Add($"--- {title} ---");
+
+    if (!payload.TryGetProperty(key, out var section))
     {
-        return "-";
+        lines.Add("(missing)");
+        return;
     }
 
+    if (section.ValueKind == JsonValueKind.Null)
+    {
+        lines.Add("(null)");
+        return;
+    }
+
+    if (section.ValueKind != JsonValueKind.Object)
+    {
+        lines.Add(ToAscii(section.GetRawText()));
+        return;
+    }
+
+    var sectionLines = new List<string>();
+    FlattenObject(section, string.Empty, sectionLines);
+
+    if (sectionLines.Count == 0)
+    {
+        lines.Add("(empty)");
+        return;
+    }
+
+    foreach (var line in sectionLines)
+    {
+        lines.Add(line);
+    }
+}
+
+static void FlattenObject(JsonElement element, string prefix, IList<string> lines)
+{
+    if (element.ValueKind != JsonValueKind.Object)
+    {
+        return;
+    }
+
+    var properties = element.EnumerateObject().ToList();
+    properties.Sort((a, b) => string.CompareOrdinal(a.Name, b.Name));
+
+    foreach (var property in properties)
+    {
+        var propertyKey = string.IsNullOrEmpty(prefix)
+            ? property.Name
+            : $"{prefix}.{property.Name}";
+
+        if (property.Value.ValueKind == JsonValueKind.Object)
+        {
+            FlattenObject(property.Value, propertyKey, lines);
+            continue;
+        }
+
+        if (property.Value.ValueKind == JsonValueKind.Array)
+        {
+            lines.Add($"{propertyKey}: {ToAscii(property.Value.GetRawText())}");
+            continue;
+        }
+
+        lines.Add($"{propertyKey}: {JsonScalarToString(property.Value)}");
+    }
+}
+
+static string JsonScalarToString(JsonElement value)
+{
     return value.ValueKind switch
     {
         JsonValueKind.String => ToAscii(value.GetString() ?? "-"),
         JsonValueKind.Number => ToAscii(value.GetRawText()),
         JsonValueKind.True => "true",
         JsonValueKind.False => "false",
-        _ => "-",
+        JsonValueKind.Null => "null",
+        _ => ToAscii(value.GetRawText()),
     };
 }
 
@@ -97,7 +188,7 @@ static byte[] BuildDeterministicPdf(IReadOnlyList<string> lines)
     {
         if (i > 0)
         {
-            contentBuilder.Append("0 -18 Td\n");
+            contentBuilder.Append("0 -14 Td\n");
         }
 
         contentBuilder.Append('(')

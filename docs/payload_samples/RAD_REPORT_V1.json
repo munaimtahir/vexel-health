@@ -1,0 +1,43 @@
+{
+  "meta": {
+    "documentType": "RAD_REPORT_V1",
+    "templateKey": "RAD_REPORT_V1",
+    "templateVersion": 1,
+    "payloadVersion": 1,
+    "schemaVersion": 1
+  },
+  "tenant": {
+    "id": "tenant-a"
+  },
+  "patient": {
+    "id": "patient-2",
+    "regNo": "REG-00000002",
+    "name": "Demo RAD Patient",
+    "dob": null,
+    "gender": "female",
+    "phone": null
+  },
+  "encounter": {
+    "id": "encounter-2",
+    "encounterCode": "RAD-2026-000001",
+    "type": "RAD",
+    "status": "FINALIZED",
+    "startedAt": "2026-02-19T11:00:00.000Z",
+    "endedAt": "2026-02-19T11:40:00.000Z",
+    "createdAt": "2026-02-19T11:00:00.000Z"
+  },
+  "prep": {
+    "fastingRequired": false,
+    "fastingConfirmed": false,
+    "contrastPlanned": false,
+    "creatinineChecked": null,
+    "pregnancyScreenDone": null,
+    "notes": null
+  },
+  "main": {
+    "reportText": "No acute cardiopulmonary abnormality.",
+    "impression": "Stable chest radiograph.",
+    "radiologistName": "Dr. Ray",
+    "reportedAt": "2026-02-19T11:25:00.000Z"
+  }
+}

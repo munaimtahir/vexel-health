@@ -467,31 +467,33 @@ export interface components {
             ipdMain: components["schemas"]["IpdMainSaveRequest"] | null;
         };
         /** @enum {string} */
-        DocumentType: "ENCOUNTER_SUMMARY" | "LAB_REPORT" | "RAD_REPORT" | "OPD_CLINICAL_NOTE" | "BB_TRANSFUSION_NOTE" | "IPD_DISCHARGE_SUMMARY";
+        DocumentType: "ENCOUNTER_SUMMARY_V1" | "LAB_REPORT_V1" | "OPD_SUMMARY_V1" | "RAD_REPORT_V1" | "BB_ISSUE_SLIP_V1" | "IPD_SUMMARY_V1";
         /**
          * @example {
-         *       "documentType": "LAB_REPORT"
+         *       "documentType": "LAB_REPORT_V1"
          *     }
          */
         DocumentCommandRequest: {
-            documentType?: components["schemas"]["DocumentType"];
+            documentType: components["schemas"]["DocumentType"];
         };
         DocumentPayloadSample: {
             [key: string]: unknown;
         };
         DocumentPayloadSampleFixtures: {
-            ENCOUNTER_SUMMARY: components["schemas"]["DocumentPayloadSample"];
-            LAB_REPORT: components["schemas"]["DocumentPayloadSample"];
-            RAD_REPORT: components["schemas"]["DocumentPayloadSample"];
-            OPD_CLINICAL_NOTE: components["schemas"]["DocumentPayloadSample"];
-            BB_TRANSFUSION_NOTE: components["schemas"]["DocumentPayloadSample"];
-            IPD_DISCHARGE_SUMMARY: components["schemas"]["DocumentPayloadSample"];
+            ENCOUNTER_SUMMARY_V1: components["schemas"]["DocumentPayloadSample"];
+            LAB_REPORT_V1: components["schemas"]["DocumentPayloadSample"];
+            OPD_SUMMARY_V1: components["schemas"]["DocumentPayloadSample"];
+            RAD_REPORT_V1: components["schemas"]["DocumentPayloadSample"];
+            BB_ISSUE_SLIP_V1: components["schemas"]["DocumentPayloadSample"];
+            IPD_SUMMARY_V1: components["schemas"]["DocumentPayloadSample"];
         };
         /** @enum {string} */
         DocumentStatus: "QUEUED" | "RENDERED" | "FAILED";
         DocumentResponse: {
             id: string;
             type: components["schemas"]["DocumentType"];
+            /** @example RAD_REPORT_V1 */
+            templateKey: string;
             status: components["schemas"]["DocumentStatus"];
             encounterId: string;
             payloadHash: string;
@@ -1096,7 +1098,7 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
                 "application/json": components["schemas"]["DocumentCommandRequest"];
             };

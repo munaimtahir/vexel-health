@@ -23,7 +23,7 @@ import {
 } from './document-storage.adapter';
 import { canonicalizeJson, sha256HexFromText } from './document-hash.util';
 import {
-  DEFAULT_REQUESTED_DOCUMENT_TYPE,
+  type DocumentCommandRequest,
   isRequestedDocumentType,
   type RequestedDocumentType,
 } from './document-types';
@@ -52,7 +52,7 @@ export class DocumentsService {
 
   async queueEncounterDocument(encounterId: string): Promise<DocumentResponse> {
     const tenantId = this.tenantId;
-    const requestedDocumentType = this.getRequestedDocumentTypeFromBody();
+    const documentType = this.getRequestedDocumentTypeFromBody();
 
     const encounter = await this.prisma.encounter.findFirst({
       where: {
@@ -86,8 +86,9 @@ export class DocumentsService {
     }
 
     const builtPayload = buildPayloadForDocumentType({
+      tenantId,
       encounter,
-      requestedDocumentType,
+      documentType,
     });
     const payload = builtPayload.payload;
     const payloadCanonicalJson = canonicalizeJson(payload);
@@ -221,14 +222,14 @@ export class DocumentsService {
     const bodyValue = this.request.body as unknown;
 
     if (typeof bodyValue !== 'object' || bodyValue === null) {
-      return DEFAULT_REQUESTED_DOCUMENT_TYPE;
+      throw new BadRequestException('documentType is required');
     }
 
-    const body = bodyValue as Record<string, unknown>;
+    const body = bodyValue as DocumentCommandRequest;
     const rawDocumentType = body.documentType;
 
     if (rawDocumentType === undefined || rawDocumentType === null) {
-      return DEFAULT_REQUESTED_DOCUMENT_TYPE;
+      throw new BadRequestException('documentType is required');
     }
 
     if (!isRequestedDocumentType(rawDocumentType)) {

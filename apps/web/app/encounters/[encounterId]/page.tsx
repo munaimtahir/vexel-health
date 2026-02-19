@@ -408,18 +408,18 @@ function mainSummaryRows(main: EncounterMainResponse): Array<[string, string]> {
 }
 
 function documentTypeOptions(encounterType: Encounter['type']): RequestedDocumentType[] {
-  const options: RequestedDocumentType[] = ['ENCOUNTER_SUMMARY'];
+  const options: RequestedDocumentType[] = ['ENCOUNTER_SUMMARY_V1'];
 
   if (encounterType === 'LAB') {
-    options.push('LAB_REPORT');
+    options.push('LAB_REPORT_V1');
   } else if (encounterType === 'RAD') {
-    options.push('RAD_REPORT');
+    options.push('RAD_REPORT_V1');
   } else if (encounterType === 'OPD') {
-    options.push('OPD_CLINICAL_NOTE');
+    options.push('OPD_SUMMARY_V1');
   } else if (encounterType === 'BB') {
-    options.push('BB_TRANSFUSION_NOTE');
+    options.push('BB_ISSUE_SLIP_V1');
   } else if (encounterType === 'IPD') {
-    options.push('IPD_DISCHARGE_SUMMARY');
+    options.push('IPD_SUMMARY_V1');
   }
 
   return options;
@@ -447,7 +447,7 @@ export default function EncounterDetailPage() {
   const [mainForm, setMainForm] = useState<MainFormState>(defaultMainFormState);
   const [documentMeta, setDocumentMeta] = useState<DocumentResponse | null>(null);
   const [selectedDocumentType, setSelectedDocumentType] =
-    useState<RequestedDocumentType>('ENCOUNTER_SUMMARY');
+    useState<RequestedDocumentType>('ENCOUNTER_SUMMARY_V1');
 
   const {
     data: encounter,
@@ -730,7 +730,7 @@ export default function EncounterDetailPage() {
 
   const availableDocumentTypes = useMemo(() => {
     if (!encounter) {
-      return ['ENCOUNTER_SUMMARY'] as RequestedDocumentType[];
+      return ['ENCOUNTER_SUMMARY_V1'] as RequestedDocumentType[];
     }
 
     return documentTypeOptions(encounter.type);

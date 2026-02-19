@@ -93,239 +93,261 @@ type EncounterWithRelations = {
 };
 
 export type BuiltDocumentPayload = {
-  requestedDocumentType: RequestedDocumentType;
+  documentType: RequestedDocumentType;
+  templateKey: string;
   storedDocumentType: DocumentType;
   payloadVersion: number;
   templateVersion: number;
   payload: JsonRecord;
 };
 
-const PAYLOAD_VERSION_BY_TYPE: Record<RequestedDocumentType, number> = {
-  ENCOUNTER_SUMMARY: 1,
-  LAB_REPORT: 1,
-  RAD_REPORT: 1,
-  OPD_CLINICAL_NOTE: 1,
-  BB_TRANSFUSION_NOTE: 1,
-  IPD_DISCHARGE_SUMMARY: 1,
-};
-
-const TEMPLATE_VERSION_BY_TYPE: Record<RequestedDocumentType, number> = {
-  ENCOUNTER_SUMMARY: 1,
-  LAB_REPORT: 1,
-  RAD_REPORT: 1,
-  OPD_CLINICAL_NOTE: 1,
-  BB_TRANSFUSION_NOTE: 1,
-  IPD_DISCHARGE_SUMMARY: 1,
-};
+const PAYLOAD_VERSION = 1;
+const TEMPLATE_VERSION = 1;
 
 function iso(value: Date | null | undefined): string | null {
   return value ? value.toISOString() : null;
 }
 
-function buildPayloadBase(
-  encounter: EncounterWithRelations,
-  requestedDocumentType: RequestedDocumentType,
-): JsonRecord {
-  return {
-    meta: {
-      requestedDocumentType,
-      payloadVersion: PAYLOAD_VERSION_BY_TYPE[requestedDocumentType],
-      templateVersion: TEMPLATE_VERSION_BY_TYPE[requestedDocumentType],
-      schemaVersion: 1,
-    },
-    encounterId: encounter.id,
-    encounterCode: encounter.encounterCode,
-    encounterType: encounter.type,
-    encounterStatus: 'FINALIZED',
-    startedAt: iso(encounter.startedAt),
-    endedAt: iso(encounter.endedAt),
-    createdAt: iso(encounter.createdAt),
-    patientId: encounter.patient.id,
-    patientRegNo: encounter.patient.regNo,
-    patientName: encounter.patient.name,
-    patientDob: iso(encounter.patient.dob),
-    patientGender: encounter.patient.gender,
-    sampleFixture: DOCUMENT_PAYLOAD_SAMPLES[requestedDocumentType],
-  };
-}
-
-function assertEncounterType(
+function assertCompatibleType(
   encounterType: string,
-  expected: string,
   requestedDocumentType: RequestedDocumentType,
 ): void {
-  if (encounterType !== expected) {
+  if (requestedDocumentType === 'ENCOUNTER_SUMMARY_V1') {
+    return;
+  }
+
+  const map: Record<RequestedDocumentType, string> = {
+    ENCOUNTER_SUMMARY_V1: '',
+    LAB_REPORT_V1: 'LAB',
+    OPD_SUMMARY_V1: 'OPD',
+    RAD_REPORT_V1: 'RAD',
+    BB_ISSUE_SLIP_V1: 'BB',
+    IPD_SUMMARY_V1: 'IPD',
+  };
+
+  const expectedEncounterType = map[requestedDocumentType];
+  if (encounterType !== expectedEncounterType) {
     throw new DomainException(
       'INVALID_DOCUMENT_TYPE',
-      `${requestedDocumentType} is only valid for ${expected} encounters`,
+      `${requestedDocumentType} is only valid for ${expectedEncounterType} encounters`,
     );
   }
 }
 
-export function buildPayloadForDocumentType(input: {
+function buildBasePayload(input: {
+  tenantId: string;
   encounter: EncounterWithRelations;
-  requestedDocumentType: RequestedDocumentType;
-}): BuiltDocumentPayload {
-  const { encounter, requestedDocumentType } = input;
-  const payload = buildPayloadBase(encounter, requestedDocumentType);
+  documentType: RequestedDocumentType;
+}): JsonRecord {
+  const { tenantId, encounter, documentType } = input;
 
-  if (requestedDocumentType === 'ENCOUNTER_SUMMARY') {
-    return {
-      requestedDocumentType,
-      storedDocumentType: toStoredDocumentType(requestedDocumentType),
-      payloadVersion: PAYLOAD_VERSION_BY_TYPE[requestedDocumentType],
-      templateVersion: TEMPLATE_VERSION_BY_TYPE[requestedDocumentType],
-      payload,
-    };
-  }
-
-  if (requestedDocumentType === 'LAB_REPORT') {
-    assertEncounterType(encounter.type, 'LAB', requestedDocumentType);
-    return {
-      requestedDocumentType,
-      storedDocumentType: toStoredDocumentType(requestedDocumentType),
-      payloadVersion: PAYLOAD_VERSION_BY_TYPE[requestedDocumentType],
-      templateVersion: TEMPLATE_VERSION_BY_TYPE[requestedDocumentType],
-      payload: {
-        ...payload,
-        labPrep: encounter.labPrep
-          ? {
-              specimenType: encounter.labPrep.specimenType,
-              collectedAt: iso(encounter.labPrep.collectedAt),
-              collectorName: encounter.labPrep.collectorName,
-              receivedAt: iso(encounter.labPrep.receivedAt),
-            }
-          : null,
-        labMain: encounter.labMain
-          ? {
-              resultSummary: encounter.labMain.resultSummary,
-              verifiedBy: encounter.labMain.verifiedBy,
-              verifiedAt: iso(encounter.labMain.verifiedAt),
-            }
-          : null,
-      },
-    };
-  }
-
-  if (requestedDocumentType === 'RAD_REPORT') {
-    assertEncounterType(encounter.type, 'RAD', requestedDocumentType);
-    return {
-      requestedDocumentType,
-      storedDocumentType: toStoredDocumentType(requestedDocumentType),
-      payloadVersion: PAYLOAD_VERSION_BY_TYPE[requestedDocumentType],
-      templateVersion: TEMPLATE_VERSION_BY_TYPE[requestedDocumentType],
-      payload: {
-        ...payload,
-        radPrep: encounter.radPrep
-          ? {
-              fastingRequired: encounter.radPrep.fastingRequired,
-              fastingConfirmed: encounter.radPrep.fastingConfirmed,
-              contrastPlanned: encounter.radPrep.contrastPlanned,
-              creatinineChecked: encounter.radPrep.creatinineChecked,
-              pregnancyScreenDone: encounter.radPrep.pregnancyScreenDone,
-              notes: encounter.radPrep.notes,
-            }
-          : null,
-        radMain: encounter.radMain
-          ? {
-              reportText: encounter.radMain.reportText,
-              impression: encounter.radMain.impression,
-              radiologistName: encounter.radMain.radiologistName,
-              reportedAt: iso(encounter.radMain.reportedAt),
-            }
-          : null,
-      },
-    };
-  }
-
-  if (requestedDocumentType === 'OPD_CLINICAL_NOTE') {
-    assertEncounterType(encounter.type, 'OPD', requestedDocumentType);
-    return {
-      requestedDocumentType,
-      storedDocumentType: toStoredDocumentType(requestedDocumentType),
-      payloadVersion: PAYLOAD_VERSION_BY_TYPE[requestedDocumentType],
-      templateVersion: TEMPLATE_VERSION_BY_TYPE[requestedDocumentType],
-      payload: {
-        ...payload,
-        opdPrep: encounter.opdPrep
-          ? {
-              systolicBp: encounter.opdPrep.systolicBp,
-              diastolicBp: encounter.opdPrep.diastolicBp,
-              pulse: encounter.opdPrep.pulse,
-              temperatureC: encounter.opdPrep.temperatureC,
-              respiratoryRate: encounter.opdPrep.respiratoryRate,
-              weightKg: encounter.opdPrep.weightKg,
-              spo2: encounter.opdPrep.spo2,
-              triageNotes: encounter.opdPrep.triageNotes,
-            }
-          : null,
-        opdMain: encounter.opdMain
-          ? {
-              chiefComplaint: encounter.opdMain.chiefComplaint,
-              assessment: encounter.opdMain.assessment,
-              plan: encounter.opdMain.plan,
-              prescriptionText: encounter.opdMain.prescriptionText,
-            }
-          : null,
-      },
-    };
-  }
-
-  if (requestedDocumentType === 'BB_TRANSFUSION_NOTE') {
-    assertEncounterType(encounter.type, 'BB', requestedDocumentType);
-    return {
-      requestedDocumentType,
-      storedDocumentType: toStoredDocumentType(requestedDocumentType),
-      payloadVersion: PAYLOAD_VERSION_BY_TYPE[requestedDocumentType],
-      templateVersion: TEMPLATE_VERSION_BY_TYPE[requestedDocumentType],
-      payload: {
-        ...payload,
-        bbPrep: encounter.bbPrep
-          ? {
-              sampleReceivedAt: iso(encounter.bbPrep.sampleReceivedAt),
-              aboGroup: encounter.bbPrep.aboGroup,
-              rhType: encounter.bbPrep.rhType,
-              componentRequested: encounter.bbPrep.componentRequested,
-              unitsRequested: encounter.bbPrep.unitsRequested,
-              urgency: encounter.bbPrep.urgency,
-            }
-          : null,
-        bbMain: encounter.bbMain
-          ? {
-              crossmatchResult: encounter.bbMain.crossmatchResult,
-              componentIssued: encounter.bbMain.componentIssued,
-              unitsIssued: encounter.bbMain.unitsIssued,
-              issuedAt: iso(encounter.bbMain.issuedAt),
-              issueNotes: encounter.bbMain.issueNotes,
-            }
-          : null,
-      },
-    };
-  }
-
-  assertEncounterType(encounter.type, 'IPD', requestedDocumentType);
   return {
-    requestedDocumentType,
-    storedDocumentType: toStoredDocumentType(requestedDocumentType),
-    payloadVersion: PAYLOAD_VERSION_BY_TYPE[requestedDocumentType],
-    templateVersion: TEMPLATE_VERSION_BY_TYPE[requestedDocumentType],
-    payload: {
-      ...payload,
-      ipdPrep: encounter.ipdPrep
-        ? {
-            admissionReason: encounter.ipdPrep.admissionReason,
-            ward: encounter.ipdPrep.ward,
-            bed: encounter.ipdPrep.bed,
-            admittingNotes: encounter.ipdPrep.admittingNotes,
-          }
-        : null,
-      ipdMain: encounter.ipdMain
-        ? {
-            dailyNote: encounter.ipdMain.dailyNote,
-            orders: encounter.ipdMain.orders,
-          }
-        : null,
+    meta: {
+      documentType,
+      templateKey: documentType,
+      templateVersion: TEMPLATE_VERSION,
+      payloadVersion: PAYLOAD_VERSION,
+      schemaVersion: 1,
+      sampleFixture: DOCUMENT_PAYLOAD_SAMPLES[documentType],
+    },
+    tenant: {
+      id: tenantId,
+    },
+    patient: {
+      id: encounter.patient.id,
+      regNo: encounter.patient.regNo,
+      name: encounter.patient.name,
+      dob: iso(encounter.patient.dob),
+      gender: encounter.patient.gender,
+      phone: encounter.patient.phone,
+    },
+    encounter: {
+      id: encounter.id,
+      encounterCode: encounter.encounterCode,
+      type: encounter.type,
+      status: 'FINALIZED',
+      startedAt: iso(encounter.startedAt),
+      endedAt: iso(encounter.endedAt),
+      createdAt: iso(encounter.createdAt),
     },
   };
 }
 
+function buildPrepPayload(encounter: EncounterWithRelations): JsonRecord {
+  return {
+    lab: encounter.labPrep
+      ? {
+          specimenType: encounter.labPrep.specimenType,
+          collectedAt: iso(encounter.labPrep.collectedAt),
+          collectorName: encounter.labPrep.collectorName,
+          receivedAt: iso(encounter.labPrep.receivedAt),
+        }
+      : null,
+    rad: encounter.radPrep
+      ? {
+          fastingRequired: encounter.radPrep.fastingRequired,
+          fastingConfirmed: encounter.radPrep.fastingConfirmed,
+          contrastPlanned: encounter.radPrep.contrastPlanned,
+          creatinineChecked: encounter.radPrep.creatinineChecked,
+          pregnancyScreenDone: encounter.radPrep.pregnancyScreenDone,
+          notes: encounter.radPrep.notes,
+        }
+      : null,
+    opd: encounter.opdPrep
+      ? {
+          systolicBp: encounter.opdPrep.systolicBp,
+          diastolicBp: encounter.opdPrep.diastolicBp,
+          pulse: encounter.opdPrep.pulse,
+          temperatureC: encounter.opdPrep.temperatureC,
+          respiratoryRate: encounter.opdPrep.respiratoryRate,
+          weightKg: encounter.opdPrep.weightKg,
+          spo2: encounter.opdPrep.spo2,
+          triageNotes: encounter.opdPrep.triageNotes,
+        }
+      : null,
+    bb: encounter.bbPrep
+      ? {
+          sampleReceivedAt: iso(encounter.bbPrep.sampleReceivedAt),
+          aboGroup: encounter.bbPrep.aboGroup,
+          rhType: encounter.bbPrep.rhType,
+          componentRequested: encounter.bbPrep.componentRequested,
+          unitsRequested: encounter.bbPrep.unitsRequested,
+          urgency: encounter.bbPrep.urgency,
+        }
+      : null,
+    ipd: encounter.ipdPrep
+      ? {
+          admissionReason: encounter.ipdPrep.admissionReason,
+          ward: encounter.ipdPrep.ward,
+          bed: encounter.ipdPrep.bed,
+          admittingNotes: encounter.ipdPrep.admittingNotes,
+        }
+      : null,
+  };
+}
+
+function buildMainPayload(encounter: EncounterWithRelations): JsonRecord {
+  return {
+    lab: encounter.labMain
+      ? {
+          resultSummary: encounter.labMain.resultSummary,
+          verifiedBy: encounter.labMain.verifiedBy,
+          verifiedAt: iso(encounter.labMain.verifiedAt),
+        }
+      : null,
+    rad: encounter.radMain
+      ? {
+          reportText: encounter.radMain.reportText,
+          impression: encounter.radMain.impression,
+          radiologistName: encounter.radMain.radiologistName,
+          reportedAt: iso(encounter.radMain.reportedAt),
+        }
+      : null,
+    opd: encounter.opdMain
+      ? {
+          chiefComplaint: encounter.opdMain.chiefComplaint,
+          assessment: encounter.opdMain.assessment,
+          plan: encounter.opdMain.plan,
+          prescriptionText: encounter.opdMain.prescriptionText,
+        }
+      : null,
+    bb: encounter.bbMain
+      ? {
+          crossmatchResult: encounter.bbMain.crossmatchResult,
+          componentIssued: encounter.bbMain.componentIssued,
+          unitsIssued: encounter.bbMain.unitsIssued,
+          issuedAt: iso(encounter.bbMain.issuedAt),
+          issueNotes: encounter.bbMain.issueNotes,
+        }
+      : null,
+    ipd: encounter.ipdMain
+      ? {
+          dailyNote: encounter.ipdMain.dailyNote,
+          orders: encounter.ipdMain.orders,
+        }
+      : null,
+  };
+}
+
+function pickModulePrep(
+  documentType: RequestedDocumentType,
+  prep: JsonRecord,
+): JsonRecord | null {
+  if (documentType === 'LAB_REPORT_V1') {
+    return prep.lab as JsonRecord | null;
+  }
+  if (documentType === 'RAD_REPORT_V1') {
+    return prep.rad as JsonRecord | null;
+  }
+  if (documentType === 'OPD_SUMMARY_V1') {
+    return prep.opd as JsonRecord | null;
+  }
+  if (documentType === 'BB_ISSUE_SLIP_V1') {
+    return prep.bb as JsonRecord | null;
+  }
+  if (documentType === 'IPD_SUMMARY_V1') {
+    return prep.ipd as JsonRecord | null;
+  }
+  return null;
+}
+
+function pickModuleMain(
+  documentType: RequestedDocumentType,
+  main: JsonRecord,
+): JsonRecord | null {
+  if (documentType === 'LAB_REPORT_V1') {
+    return main.lab as JsonRecord | null;
+  }
+  if (documentType === 'RAD_REPORT_V1') {
+    return main.rad as JsonRecord | null;
+  }
+  if (documentType === 'OPD_SUMMARY_V1') {
+    return main.opd as JsonRecord | null;
+  }
+  if (documentType === 'BB_ISSUE_SLIP_V1') {
+    return main.bb as JsonRecord | null;
+  }
+  if (documentType === 'IPD_SUMMARY_V1') {
+    return main.ipd as JsonRecord | null;
+  }
+  return null;
+}
+
+export function buildPayloadForDocumentType(input: {
+  tenantId: string;
+  encounter: EncounterWithRelations;
+  documentType: RequestedDocumentType;
+}): BuiltDocumentPayload {
+  const { tenantId, encounter, documentType } = input;
+
+  assertCompatibleType(encounter.type, documentType);
+
+  const basePayload = buildBasePayload({
+    tenantId,
+    encounter,
+    documentType,
+  });
+  const prepPayload = buildPrepPayload(encounter);
+  const mainPayload = buildMainPayload(encounter);
+
+  const payload: JsonRecord = {
+    ...basePayload,
+    prep:
+      documentType === 'ENCOUNTER_SUMMARY_V1'
+        ? prepPayload
+        : pickModulePrep(documentType, prepPayload),
+    main:
+      documentType === 'ENCOUNTER_SUMMARY_V1'
+        ? mainPayload
+        : pickModuleMain(documentType, mainPayload),
+  };
+
+  return {
+    documentType,
+    templateKey: documentType,
+    storedDocumentType: toStoredDocumentType(documentType),
+    payloadVersion: PAYLOAD_VERSION,
+    templateVersion: TEMPLATE_VERSION,
+    payload,
+  };
+}
