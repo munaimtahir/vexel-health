@@ -23,7 +23,15 @@ const prisma = new PrismaClient();
 const TENANT_ID = process.env.TENANT_ID || '11111111-1111-4111-8111-111111111111';
 
 async function addTestCatalogItems() {
+  if (!process.env.DATABASE_URL) {
+    console.error('❌ Error: DATABASE_URL environment variable is not set.');
+    console.error('   Please set it in your .env file or environment.');
+    console.error('   Example: DATABASE_URL=postgresql://user:password@localhost:5432/dbname');
+    process.exit(1);
+  }
+
   console.log(`Adding test catalog items for tenant: ${TENANT_ID}`);
+  console.log('Note: Make sure this tenant exists in your database.\n');
 
   try {
     // Test 1: Blood Glucose (simple test)
