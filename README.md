@@ -11,3 +11,10 @@ This repository includes a centralized governance pack for building the platform
 
 ## Next step
 Start with `governance/README.md`, then use `governance/FINAL_AI_DEVELOPER_PROMPT.md`.
+
+## Repository Size Management
+This repository implements strict size controls. Before committing, run:
+```bash
+npm run check:size
+```
+See `REPOSITORY_SIZE_SUMMARY.md` for details.

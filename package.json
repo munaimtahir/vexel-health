@@ -10,7 +10,8 @@
     "lint": "npm run lint --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "contracts:generate": "npm run generate --workspace=@vexel/contracts",
-    "postinstall": "npx prisma generate --schema apps/api/prisma/schema.prisma"
+    "postinstall": "npx prisma generate --schema apps/api/prisma/schema.prisma",
+    "check:size": "bash ./scripts/check-repo-size.sh"
   },
   "devDependencies": {
     "typescript": "^5.7.3",
