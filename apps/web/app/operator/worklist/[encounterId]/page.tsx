@@ -51,7 +51,7 @@ export default function OperatorWorklistDetailPage() {
   if (encLoading || !encounterId) {
     return (
       <div>
-        <p className="text-gray-500">Loading encounter…</p>
+        <p className="text-[var(--muted)]">Loading encounter…</p>
       </div>
     );
   }
@@ -59,9 +59,9 @@ export default function OperatorWorklistDetailPage() {
   if (encError || !encounter) {
     return (
       <div>
-        <h1 className="text-2xl font-bold mb-4">Encounter not found</h1>
-        <p className="text-red-600">{encError instanceof Error ? encError.message : 'Not found'}</p>
-        <Link href={operatorRoutes.worklist} className="mt-4 inline-block text-blue-600 hover:underline">
+        <h1 className="text-2xl font-bold mb-4 text-[var(--text)]">Encounter not found</h1>
+        <p className="text-[var(--error)]">{encError instanceof Error ? encError.message : 'Not found'}</p>
+        <Link href={operatorRoutes.worklist} className="mt-4 inline-block text-[var(--accent)] hover:underline">
           Back to worklist
         </Link>
       </div>
@@ -71,36 +71,36 @@ export default function OperatorWorklistDetailPage() {
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Worklist · Encounter</h1>
-        <Link href={operatorRoutes.worklist} className="text-blue-600 hover:underline">
+        <h1 className="text-2xl font-bold text-[var(--text)]">Worklist · Encounter</h1>
+        <Link href={operatorRoutes.worklist} className="text-[var(--accent)] hover:underline">
           Back to worklist
         </Link>
       </div>
       <div className="mb-6">
         <EncounterHeader {...identityProps} status={status} />
       </div>
-      {patientLoading && <p className="text-sm text-gray-500">Loading patient…</p>}
-      <div className="rounded border bg-white p-6 shadow">
-        <h2 className="text-lg font-semibold mb-3">Workflow shortcuts</h2>
-        <p className="text-sm text-gray-600 mb-3">
+      {patientLoading && <p className="text-sm text-[var(--muted)]">Loading patient…</p>}
+      <div className="rounded border border-[var(--border)] bg-[var(--surface)] p-6 shadow">
+        <h2 className="text-lg font-semibold mb-3 text-[var(--text)]">Workflow shortcuts</h2>
+        <p className="text-sm text-[var(--muted)] mb-3">
           Open the relevant stage directly for this encounter.
         </p>
         <div className="flex flex-wrap gap-3 text-sm">
           {encounter.type === 'LAB' && (
-            <Link href={operatorRoutes.ordersDetail(encounterId)} className="text-blue-600 hover:underline">
+            <Link href={operatorRoutes.ordersDetail(encounterId)} className="text-[var(--accent)] hover:underline">
               Go to Orders
             </Link>
           )}
-          <Link href={operatorRoutes.samplesDetail(encounterId)} className="text-blue-600 hover:underline">
+          <Link href={operatorRoutes.samplesDetail(encounterId)} className="text-[var(--accent)] hover:underline">
             Go to Samples
           </Link>
-          <Link href={operatorRoutes.resultsEntryDetail(encounterId)} className="text-blue-600 hover:underline">
+          <Link href={operatorRoutes.resultsEntryDetail(encounterId)} className="text-[var(--accent)] hover:underline">
             Go to Result Entry
           </Link>
-          <Link href={operatorRoutes.verifyDetail(encounterId)} className="text-blue-600 hover:underline">
+          <Link href={operatorRoutes.verifyDetail(encounterId)} className="text-[var(--accent)] hover:underline">
             Go to Verify
           </Link>
-          <Link href={operatorRoutes.publishedReportDetail(encounterId)} className="text-blue-600 hover:underline">
+          <Link href={operatorRoutes.publishedReportDetail(encounterId)} className="text-[var(--accent)] hover:underline">
             Go to Published Report
           </Link>
         </div>

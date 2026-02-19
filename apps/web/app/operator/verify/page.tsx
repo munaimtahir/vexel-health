@@ -42,8 +42,8 @@ export default function OperatorVerifyPage() {
   if (isLoading) {
     return (
       <div>
-        <h1 className="text-2xl font-bold mb-4">Verification queue</h1>
-        <p className="text-gray-500">Loading…</p>
+        <h1 className="text-2xl font-bold mb-4 text-[var(--text)]">Verification queue</h1>
+        <p className="text-[var(--muted)]">Loading…</p>
       </div>
     );
   }
@@ -51,16 +51,16 @@ export default function OperatorVerifyPage() {
   if (error) {
     return (
       <div>
-        <h1 className="text-2xl font-bold mb-4">Verification queue</h1>
-        <p className="text-red-600">{error instanceof Error ? error.message : 'Error loading queue'}</p>
+        <h1 className="text-2xl font-bold mb-4 text-[var(--text)]">Verification queue</h1>
+        <p className="text-[var(--error)]">{error instanceof Error ? error.message : 'Error loading queue'}</p>
       </div>
     );
   }
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-4">Verification queue</h1>
-      <p className="text-gray-600 mb-4">Encounters awaiting verification. Open detail to verify or publish.</p>
+      <h1 className="text-2xl font-bold mb-4 text-[var(--text)]">Verification queue</h1>
+      <p className="text-[var(--muted)] mb-4">Encounters awaiting verification. Open detail to verify or publish.</p>
       <WorklistTable
         rows={rows}
         detailHref={operatorRoutes.verifyDetail}

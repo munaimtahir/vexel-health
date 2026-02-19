@@ -75,7 +75,7 @@ export default function OperatorWorklistPage() {
     return (
       <div>
         <h2 className="text-xl font-bold mb-2 text-[var(--text)]">Worklist</h2>
-        <p className="text-red-600">{error instanceof Error ? error.message : 'Error loading worklist'}</p>
+        <p className="text-[var(--error)]">{error instanceof Error ? error.message : 'Error loading worklist'}</p>
       </div>
     );
   }

@@ -121,7 +121,7 @@ export default function OperatorOrdersDetailPage() {
   if (encLoading || !encounterId) {
     return (
       <div>
-        <p className="text-gray-500">Loading encounter…</p>
+        <p className="text-[var(--muted)]">Loading encounter…</p>
       </div>
     );
   }
@@ -129,9 +129,9 @@ export default function OperatorOrdersDetailPage() {
   if (encError || !encounter) {
     return (
       <div>
-        <h1 className="text-2xl font-bold mb-4">Encounter not found</h1>
-        <p className="text-red-600">{encError instanceof Error ? encError.message : 'Not found'}</p>
-        <Link href={operatorRoutes.worklist} className="mt-4 inline-block text-blue-600 hover:underline">
+        <h1 className="text-2xl font-bold mb-4 text-[var(--text)]">Encounter not found</h1>
+        <p className="text-[var(--error)]">{encError instanceof Error ? encError.message : 'Not found'}</p>
+        <Link href={operatorRoutes.worklist} className="mt-4 inline-block text-[var(--accent)] hover:underline">
           Back to worklist
         </Link>
       </div>
@@ -141,9 +141,9 @@ export default function OperatorOrdersDetailPage() {
   if (encounter.type !== 'LAB') {
     return (
       <div>
-        <h1 className="text-2xl font-bold mb-4">Invalid Encounter Type</h1>
-        <p className="text-red-600">This page is only for LAB encounters.</p>
-        <Link href={operatorRoutes.worklist} className="mt-4 inline-block text-blue-600 hover:underline">
+        <h1 className="text-2xl font-bold mb-4 text-[var(--text)]">Invalid Encounter Type</h1>
+        <p className="text-[var(--error)]">This page is only for LAB encounters.</p>
+        <Link href={operatorRoutes.worklist} className="mt-4 inline-block text-[var(--accent)] hover:underline">
           Back to worklist
         </Link>
       </div>
@@ -153,40 +153,40 @@ export default function OperatorOrdersDetailPage() {
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Orders · Add Tests</h1>
-        <Link href={operatorRoutes.worklist} className="text-blue-600 hover:underline">
+        <h1 className="text-2xl font-bold text-[var(--text)]">Orders · Add Tests</h1>
+        <Link href={operatorRoutes.worklist} className="text-[var(--accent)] hover:underline">
           Back to worklist
         </Link>
       </div>
       <div className="mb-6">
         <EncounterHeader {...identityProps} status={status} />
       </div>
-      <div className="rounded border bg-white p-6 shadow">
-        <h2 className="text-lg font-semibold mb-4">Add LAB Tests to Order</h2>
-        <p className="text-sm text-gray-600 mb-4">
+      <div className="rounded border border-[var(--border)] bg-[var(--surface)] p-6 shadow">
+        <h2 className="text-lg font-semibold mb-4 text-[var(--text)]">Add LAB Tests to Order</h2>
+        <p className="text-sm text-[var(--muted)] mb-4">
           Select tests from the catalog and add them to this encounter. After adding tests, proceed to sample collection.
         </p>
 
         {addTestError && (
-          <div className="mb-4 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          <div className="mb-4 rounded border border-[var(--error-border)] bg-[var(--error-bg)] p-3 text-sm text-[var(--error)]">
             {addTestError}
           </div>
         )}
 
         {labCatalogLoading ? (
-          <p className="text-sm text-gray-600">Loading LAB catalog…</p>
+          <p className="text-sm text-[var(--muted)]">Loading LAB catalog…</p>
         ) : (
           <>
             <div className="mb-4 flex flex-wrap items-end gap-3">
               <div className="min-w-0 flex-1">
-                <label className="block text-sm font-medium mb-1">Catalog test</label>
+                <label className="block text-sm font-medium mb-1 text-[var(--text)]">Catalog test</label>
                 <select
                   value={selectedLabTestId}
                   onChange={(e) => {
                     setSelectedLabTestId(e.target.value);
                     setAddTestError('');
                   }}
-                  className="block w-full rounded border border-gray-300 p-2 text-sm"
+                  className="block w-full rounded border border-[var(--border)] p-2 text-sm text-[var(--text)] bg-[var(--surface)]"
                 >
                   {(labCatalog?.data ?? []).map((test) => (
                     <option key={test.id} value={test.id}>
@@ -199,18 +199,18 @@ export default function OperatorOrdersDetailPage() {
                 type="button"
                 onClick={() => addLabTest.mutate()}
                 disabled={addLabTest.isPending || !selectedLabTestId}
-                className="rounded bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700 disabled:opacity-60"
+                className="rounded bg-[var(--accent)] px-4 py-2 text-sm text-[var(--accent-foreground)] hover:opacity-90 disabled:opacity-60"
               >
                 {addLabTest.isPending ? 'Adding…' : 'Add to order'}
               </button>
             </div>
 
-            <div className="border-t pt-4">
-              <p className="text-sm font-medium text-gray-700 mb-2">Ordered tests ({orderedTests.length})</p>
+            <div className="border-t border-[var(--border)] pt-4">
+              <p className="text-sm font-medium text-[var(--text)] mb-2">Ordered tests ({orderedTests.length})</p>
               {orderedTests.length === 0 ? (
-                <p className="text-sm text-gray-500">No tests added yet. Add at least one test before proceeding to sample collection.</p>
+                <p className="text-sm text-[var(--muted)]">No tests added yet. Add at least one test before proceeding to sample collection.</p>
               ) : (
-                <ul className="space-y-1 text-sm">
+                <ul className="space-y-1 text-sm text-[var(--text)]">
                   {orderedTests.map((item) => (
                     <li key={item.orderItem.id}>
                       {item.test.name} ({item.test.code})
@@ -221,20 +221,20 @@ export default function OperatorOrdersDetailPage() {
             </div>
 
             {orderedTests.length > 0 && (
-              <div className="mt-6 border-t pt-4">
-                <p className="text-sm text-gray-600 mb-3">
+              <div className="mt-6 border-t border-[var(--border)] pt-4">
+                <p className="text-sm text-[var(--muted)] mb-3">
                   Tests have been added to the order. You can now proceed to sample collection.
                 </p>
                 <div className="flex flex-wrap gap-3">
                   <Link
                     href={operatorRoutes.samplesDetail(encounterId)}
-                    className="rounded bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700"
+                    className="rounded bg-[var(--accent)] px-4 py-2 text-sm text-[var(--accent-foreground)] hover:opacity-90"
                   >
                     Continue to Sample Collection →
                   </Link>
                   <Link
                     href={`/encounters/${encounterId}`}
-                    className="rounded bg-gray-200 px-4 py-2 text-sm text-gray-700 hover:bg-gray-300"
+                    className="rounded bg-[var(--bg)] px-4 py-2 text-sm text-[var(--text)] hover:opacity-80"
                   >
                     View Full Encounter
                   </Link>

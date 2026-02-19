@@ -17,7 +17,7 @@ export default function OperatorRegisterPage() {
 
   return (
     <div className="flex items-center justify-center p-8">
-      <p className="text-sm text-gray-500">Redirecting to registration…</p>
+      <p className="text-sm text-[var(--muted)]">Redirecting to registration…</p>
     </div>
   );
 }

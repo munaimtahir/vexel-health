@@ -85,8 +85,8 @@ export default function OperatorResultsEntryPage() {
   if (isLoading) {
     return (
       <div>
-        <h1 className="text-2xl font-bold mb-4">Result entry</h1>
-        <p className="text-gray-500">Loading…</p>
+        <h1 className="text-2xl font-bold mb-4 text-[var(--text)]">Result entry</h1>
+        <p className="text-[var(--muted)]">Loading…</p>
       </div>
     );
   }
@@ -94,8 +94,8 @@ export default function OperatorResultsEntryPage() {
   if (error) {
     return (
       <div>
-        <h1 className="text-2xl font-bold mb-4">Result entry</h1>
-        <p className="text-red-600">
+        <h1 className="text-2xl font-bold mb-4 text-[var(--text)]">Result entry</h1>
+        <p className="text-[var(--error)]">
           {error instanceof Error ? error.message : 'Error loading queue'}
         </p>
       </div>
@@ -104,8 +104,8 @@ export default function OperatorResultsEntryPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-4">Result entry</h1>
-      <p className="text-gray-600 mb-4">
+      <h1 className="text-2xl font-bold mb-4 text-[var(--text)]">Result entry</h1>
+      <p className="text-[var(--muted)] mb-4">
         Sample received encounters pending results submission for verification.
       </p>
       <WorklistTable

@@ -183,17 +183,17 @@ export default function OperatorResultsEntryDetailPage() {
     );
 
   if (encLoading || !encounterId) {
-    return <div><p className="text-gray-500">Loading encounter…</p></div>;
+    return <div><p className="text-[var(--muted)]">Loading encounter…</p></div>;
   }
 
   if (encError || !encounter) {
     return (
       <div>
-        <h1 className="text-2xl font-bold mb-4">Encounter not found</h1>
-        <p className="text-red-600">
+        <h1 className="text-2xl font-bold mb-4 text-[var(--text)]">Encounter not found</h1>
+        <p className="text-[var(--error)]">
           {encError instanceof Error ? encError.message : 'Not found'}
         </p>
-        <Link href={operatorRoutes.resultsEntry} className="mt-4 inline-block text-blue-600 hover:underline">
+        <Link href={operatorRoutes.resultsEntry} className="mt-4 inline-block text-[var(--accent)] hover:underline">
           Back to result entry
         </Link>
       </div>
@@ -203,11 +203,11 @@ export default function OperatorResultsEntryDetailPage() {
   if (testsError) {
     return (
       <div>
-        <h1 className="text-2xl font-bold mb-4">Result entry · Encounter</h1>
-        <p className="text-red-600">
+        <h1 className="text-2xl font-bold mb-4 text-[var(--text)]">Result entry · Encounter</h1>
+        <p className="text-[var(--error)]">
           {testsError instanceof Error ? testsError.message : 'Failed to load ordered tests'}
         </p>
-        <Link href={operatorRoutes.resultsEntry} className="mt-4 inline-block text-blue-600 hover:underline">
+        <Link href={operatorRoutes.resultsEntry} className="mt-4 inline-block text-[var(--accent)] hover:underline">
           Back to result entry
         </Link>
       </div>
@@ -328,8 +328,8 @@ export default function OperatorResultsEntryDetailPage() {
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Result Entry · Encounter</h1>
-        <Link href={operatorRoutes.resultsEntry} className="text-blue-600 hover:underline">
+        <h1 className="text-2xl font-bold text-[var(--text)]">Result Entry · Encounter</h1>
+        <Link href={operatorRoutes.resultsEntry} className="text-[var(--accent)] hover:underline">
           Back to result entry
         </Link>
       </div>
@@ -338,37 +338,37 @@ export default function OperatorResultsEntryDetailPage() {
       </div>
 
       {actionError && (
-        <div className="mb-4 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+        <div className="mb-4 rounded border border-[var(--error-border)] bg-[var(--error-bg)] p-3 text-sm text-[var(--error)]">
           {actionError}
         </div>
       )}
       {actionSuccess && (
-        <div className="mb-4 rounded border border-green-200 bg-green-50 p-3 text-sm text-green-700">
+        <div className="mb-4 rounded border border-[var(--success-border)] bg-[var(--success-bg)] p-3 text-sm text-[var(--success)]">
           {actionSuccess}
         </div>
       )}
 
-      <div className="rounded border bg-white p-6 shadow space-y-4">
-        <h2 className="text-lg font-semibold">Result entry table</h2>
-        <p className="text-sm text-gray-600">
+      <div className="rounded border border-[var(--border)] bg-[var(--surface)] p-6 shadow space-y-4">
+        <h2 className="text-lg font-semibold text-[var(--text)]">Result entry table</h2>
+        <p className="text-sm text-[var(--muted)]">
           Save Draft stores partial values. Submit for Verification requires all parameters and moves
           test status to RESULTS_ENTERED.
         </p>
 
         {testsLoading ? (
-          <p className="text-sm text-gray-500">Loading ordered tests…</p>
+          <p className="text-sm text-[var(--muted)]">Loading ordered tests…</p>
         ) : orderedTests.length === 0 ? (
-          <p className="text-sm text-gray-500">No ordered tests found for this encounter.</p>
+          <p className="text-sm text-[var(--muted)]">No ordered tests found for this encounter.</p>
         ) : (
           <div className="space-y-5">
             {orderedTests.map((orderedTest) => (
-              <div key={orderedTest.orderItem.id} className="rounded-lg border border-gray-200 p-4">
+              <div key={orderedTest.orderItem.id} className="rounded-lg border border-[var(--border)] p-4">
                 <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
                   <div>
-                    <p className="font-semibold text-gray-900">
+                    <p className="font-semibold text-[var(--text)]">
                       {orderedTest.test.name} ({orderedTest.test.code})
                     </p>
-                    <p className="text-xs text-gray-600">{orderedTest.test.department}</p>
+                    <p className="text-xs text-[var(--muted)]">{orderedTest.test.department}</p>
                   </div>
                   <StatusPill status={orderedTest.orderItem.status} />
                 </div>
@@ -376,22 +376,22 @@ export default function OperatorResultsEntryDetailPage() {
                 <div className="overflow-x-auto">
                   <table className="min-w-full border-collapse text-sm">
                     <thead>
-                      <tr className="bg-gray-50">
-                        <th className="border px-3 py-2 text-left font-semibold text-gray-700">Parameter</th>
-                        <th className="border px-3 py-2 text-left font-semibold text-gray-700">Unit</th>
-                        <th className="border px-3 py-2 text-left font-semibold text-gray-700">Reference</th>
-                        <th className="border px-3 py-2 text-left font-semibold text-gray-700">Value</th>
+                      <tr className="bg-[var(--bg)]">
+                        <th className="border border-[var(--border)] px-3 py-2 text-left font-semibold text-[var(--text)]">Parameter</th>
+                        <th className="border border-[var(--border)] px-3 py-2 text-left font-semibold text-[var(--text)]">Unit</th>
+                        <th className="border border-[var(--border)] px-3 py-2 text-left font-semibold text-[var(--text)]">Reference</th>
+                        <th className="border border-[var(--border)] px-3 py-2 text-left font-semibold text-[var(--text)]">Value</th>
                       </tr>
                     </thead>
                     <tbody>
                       {orderedTest.parameters.map((parameter) => (
-                        <tr key={parameter.id} className="bg-white">
-                          <td className="border px-3 py-2 text-gray-700">{parameter.name}</td>
-                          <td className="border px-3 py-2 text-gray-700">{parameter.unit ?? '—'}</td>
-                          <td className="border px-3 py-2 text-gray-700">
+                        <tr key={parameter.id} className="bg-[var(--surface)]">
+                          <td className="border border-[var(--border)] px-3 py-2 text-[var(--text)]">{parameter.name}</td>
+                          <td className="border border-[var(--border)] px-3 py-2 text-[var(--text)]">{parameter.unit ?? '—'}</td>
+                          <td className="border border-[var(--border)] px-3 py-2 text-[var(--text)]">
                             {formatReferenceRange(orderedTest, parameter.id)}
                           </td>
-                          <td className="border px-3 py-2">
+                          <td className="border border-[var(--border)] px-3 py-2">
                             <input
                               type="text"
                               value={resultDrafts[orderedTest.orderItem.id]?.[parameter.id] ?? ''}
@@ -403,7 +403,7 @@ export default function OperatorResultsEntryDetailPage() {
                                 )
                               }
                               disabled={orderedTest.orderItem.status === 'VERIFIED'}
-                              className="w-full rounded border border-gray-300 px-2 py-1.5 text-sm disabled:bg-gray-100"
+                              className="w-full rounded border border-[var(--border)] px-2 py-1.5 text-sm text-[var(--text)] bg-[var(--surface)] disabled:bg-[var(--bg)] disabled:opacity-50"
                               placeholder="Enter value"
                             />
                           </td>
@@ -424,7 +424,7 @@ export default function OperatorResultsEntryDetailPage() {
                       submittingOrderItemId === orderedTest.orderItem.id ||
                       orderedTest.orderItem.status === 'VERIFIED'
                     }
-                    className="rounded bg-slate-700 px-3 py-2 text-xs font-medium text-white hover:bg-slate-800 disabled:opacity-50"
+                    className="rounded bg-[var(--muted)] px-3 py-2 text-xs font-medium text-[var(--surface)] hover:opacity-80 disabled:opacity-50"
                   >
                     {savingDraftOrderItemId === orderedTest.orderItem.id
                       ? 'Saving Draft…'
@@ -440,7 +440,7 @@ export default function OperatorResultsEntryDetailPage() {
                       submittingOrderItemId === orderedTest.orderItem.id ||
                       orderedTest.orderItem.status === 'VERIFIED'
                     }
-                    className="rounded bg-blue-600 px-3 py-2 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                    className="rounded bg-[var(--accent)] px-3 py-2 text-xs font-medium text-[var(--accent-foreground)] hover:opacity-90 disabled:opacity-50"
                   >
                     {submittingOrderItemId === orderedTest.orderItem.id
                       ? 'Submitting…'
@@ -456,12 +456,12 @@ export default function OperatorResultsEntryDetailPage() {
           {readyForVerification ? (
             <Link
               href={operatorRoutes.verifyDetail(encounterId)}
-              className="inline-block rounded bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+              className="inline-block rounded bg-[var(--success)] px-4 py-2 text-sm font-medium text-white hover:opacity-90"
             >
               Continue to verification
             </Link>
           ) : (
-            <p className="text-sm text-amber-700">
+            <p className="text-sm text-[var(--warning)]">
               Complete result entry for all ordered tests before moving to verification.
             </p>
           )}

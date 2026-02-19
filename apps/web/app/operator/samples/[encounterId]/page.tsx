@@ -121,15 +121,15 @@ export default function OperatorSamplesDetailPage() {
   const prepUpdatedAt = prep?.updatedAt ? new Date(prep.updatedAt).toLocaleString() : '—';
 
   if (encLoading || !encounterId) {
-    return <div><p className="text-gray-500">Loading encounter…</p></div>;
+    return <div><p className="text-[var(--muted)]">Loading encounter…</p></div>;
   }
 
   if (encError || !encounter) {
     return (
       <div>
-        <h1 className="text-2xl font-bold mb-4">Encounter not found</h1>
-        <p className="text-red-600">{encError instanceof Error ? encError.message : 'Not found'}</p>
-        <Link href={operatorRoutes.samples} className="mt-4 inline-block text-blue-600 hover:underline">Back to samples</Link>
+        <h1 className="text-2xl font-bold mb-4 text-[var(--text)]">Encounter not found</h1>
+        <p className="text-[var(--error)]">{encError instanceof Error ? encError.message : 'Not found'}</p>
+        <Link href={operatorRoutes.samples} className="mt-4 inline-block text-[var(--accent)] hover:underline">Back to samples</Link>
       </div>
     );
   }
@@ -137,32 +137,32 @@ export default function OperatorSamplesDetailPage() {
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Samples · Encounter</h1>
-        <Link href={operatorRoutes.samples} className="text-blue-600 hover:underline">Back to samples</Link>
+        <h1 className="text-2xl font-bold text-[var(--text)]">Samples · Encounter</h1>
+        <Link href={operatorRoutes.samples} className="text-[var(--accent)] hover:underline">Back to samples</Link>
       </div>
       <div className="mb-6">
         <EncounterHeader {...identityProps} status={status} />
       </div>
-      <div className="rounded border bg-white p-6 shadow">
-        <h2 className="text-lg font-semibold mb-3">Sample collection / receiving controls</h2>
-        <p className="text-sm text-gray-600 mb-4">
+      <div className="rounded border border-[var(--border)] bg-[var(--surface)] p-6 shadow">
+        <h2 className="text-lg font-semibold mb-3 text-[var(--text)]">Sample collection / receiving controls</h2>
+        <p className="text-sm text-[var(--muted)] mb-4">
           Single-branch flow: when phlebotomist marks sample, collected and received are set together.
         </p>
 
         {encounterLabTests && encounterLabTests.data.length === 0 && (
-          <div className="mb-4 rounded border border-yellow-200 bg-yellow-50 p-3 text-sm text-yellow-800">
+          <div className="mb-4 rounded border border-[var(--warning-border)] bg-[var(--warning-bg)] p-3 text-sm text-[var(--warning)]">
             <p className="font-semibold mb-1">No tests ordered yet</p>
             <p className="mb-2">You must add at least one test to the order before marking samples as collected.</p>
             <Link
               href={operatorRoutes.ordersDetail(encounterId)}
-              className="inline-block rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700"
+              className="inline-block rounded bg-[var(--accent)] px-3 py-1.5 text-sm text-[var(--accent-foreground)] hover:opacity-90"
             >
               Go to Orders to Add Tests →
             </Link>
           </div>
         )}
 
-        <div className="mb-4 grid grid-cols-1 gap-2 text-sm text-gray-700">
+        <div className="mb-4 grid grid-cols-1 gap-2 text-sm text-[var(--text)]">
           <p><span className="font-semibold">Collected At:</span> {prepLoading ? 'Loading…' : collectedAt}</p>
           <p><span className="font-semibold">Received At:</span> {prepLoading ? 'Loading…' : receivedAt}</p>
           <p><span className="font-semibold">Prep Updated:</span> {prepLoading ? 'Loading…' : prepUpdatedAt}</p>
@@ -174,17 +174,17 @@ export default function OperatorSamplesDetailPage() {
           type="button"
           onClick={() => markCollectedReceived.mutate()}
           disabled={markCollectedReceived.isPending || encounter.type !== 'LAB' || (encounterLabTests?.data.length ?? 0) === 0}
-          className="rounded bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
+          className="rounded bg-[var(--accent)] px-4 py-2 text-sm text-[var(--accent-foreground)] hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed"
         >
           {markCollectedReceived.isPending ? 'Marking…' : 'Mark Collected = Received'}
         </button>
         {markCollectedReceived.isSuccess && (
-          <p className="mt-3 text-sm text-green-700">
+          <p className="mt-3 text-sm text-[var(--success)]">
             Sample marked as collected and received.
           </p>
         )}
         {markCollectedReceived.isError && (
-          <p className="mt-3 text-sm text-red-600">
+          <p className="mt-3 text-sm text-[var(--error)]">
             {markCollectedReceived.error instanceof Error
               ? markCollectedReceived.error.message
               : 'Failed to mark sample'}
@@ -193,7 +193,7 @@ export default function OperatorSamplesDetailPage() {
         {(encounterLabTests?.data.length ?? 0) > 0 && (
           <Link
             href={operatorRoutes.resultsEntryDetail(encounterId)}
-            className="mt-4 inline-block text-sm text-blue-600 hover:underline"
+            className="mt-4 inline-block text-sm text-[var(--accent)] hover:underline"
           >
             Continue to Result Entry →
           </Link>

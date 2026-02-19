@@ -84,15 +84,15 @@ export default function OperatorPublishedReportDetailPage() {
   };
 
   if (encLoading || !encounterId) {
-    return <div><p className="text-gray-500">Loading…</p></div>;
+    return <div><p className="text-[var(--muted)]">Loading…</p></div>;
   }
 
   if (encError || !encounter) {
     return (
       <div>
-        <h1 className="text-2xl font-bold mb-4">Report not found</h1>
-        <p className="text-red-600">{encError instanceof Error ? encError.message : 'Not found'}</p>
-        <Link href={operatorRoutes.publishedReports} className="mt-4 inline-block text-blue-600 hover:underline">Back to published reports</Link>
+        <h1 className="text-2xl font-bold mb-4 text-[var(--text)]">Report not found</h1>
+        <p className="text-[var(--error)]">{encError instanceof Error ? encError.message : 'Not found'}</p>
+        <Link href={operatorRoutes.publishedReports} className="mt-4 inline-block text-[var(--accent)] hover:underline">Back to published reports</Link>
       </div>
     );
   }
@@ -100,25 +100,25 @@ export default function OperatorPublishedReportDetailPage() {
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Published report</h1>
-        <Link href={operatorRoutes.publishedReports} className="text-blue-600 hover:underline">Back to list</Link>
+        <h1 className="text-2xl font-bold text-[var(--text)]">Published report</h1>
+        <Link href={operatorRoutes.publishedReports} className="text-[var(--accent)] hover:underline">Back to list</Link>
       </div>
       <div className="mb-6">
         <EncounterHeader {...identityProps} status={status} />
       </div>
-      <div className="rounded border bg-white p-6 shadow space-y-4">
-        <h2 className="text-lg font-semibold">PDF viewer / download</h2>
-        <p className="text-sm text-gray-600">
+      <div className="rounded border border-[var(--border)] bg-[var(--surface)] p-6 shadow space-y-4">
+        <h2 className="text-lg font-semibold text-[var(--text)]">PDF viewer / download</h2>
+        <p className="text-sm text-[var(--muted)]">
           Download the already published LAB report PDF for this encounter.
         </p>
         <button
           type="button"
           onClick={() => void handleDownload()}
-          className="rounded bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700"
+          className="rounded bg-[var(--accent)] px-4 py-2 text-sm text-[var(--accent-foreground)] hover:opacity-90"
         >
           View / Download PDF
         </button>
-        {downloadError && <p className="text-sm text-red-600">{downloadError}</p>}
+        {downloadError && <p className="text-sm text-[var(--error)]">{downloadError}</p>}
       </div>
     </div>
   );

@@ -95,15 +95,15 @@ export default function OperatorVerifyDetailPage() {
   const allVerified = orderedTests.length > 0 && orderedTests.every((item) => item.orderItem.status === 'VERIFIED');
 
   if (encLoading || !encounterId) {
-    return <div><p className="text-gray-500">Loading encounter…</p></div>;
+    return <div><p className="text-[var(--muted)]">Loading encounter…</p></div>;
   }
 
   if (encError || !encounter) {
     return (
       <div>
-        <h1 className="text-2xl font-bold mb-4">Encounter not found</h1>
-        <p className="text-red-600">{encError instanceof Error ? encError.message : 'Not found'}</p>
-        <Link href={operatorRoutes.verify} className="mt-4 inline-block text-blue-600 hover:underline">Back to verify</Link>
+        <h1 className="text-2xl font-bold mb-4 text-[var(--text)]">Encounter not found</h1>
+        <p className="text-[var(--error)]">{encError instanceof Error ? encError.message : 'Not found'}</p>
+        <Link href={operatorRoutes.verify} className="mt-4 inline-block text-[var(--accent)] hover:underline">Back to verify</Link>
       </div>
     );
   }
@@ -111,34 +111,34 @@ export default function OperatorVerifyDetailPage() {
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Verify · Encounter</h1>
-        <Link href={operatorRoutes.verify} className="text-blue-600 hover:underline">Back to verify</Link>
+        <h1 className="text-2xl font-bold text-[var(--text)]">Verify · Encounter</h1>
+        <Link href={operatorRoutes.verify} className="text-[var(--accent)] hover:underline">Back to verify</Link>
       </div>
       <div className="mb-6">
         <EncounterHeader {...identityProps} status={status} />
       </div>
-      <div className="rounded border bg-white p-6 shadow space-y-4">
-        <h2 className="text-lg font-semibold">Verification checklist</h2>
-        <p className="text-sm text-gray-600">
+      <div className="rounded border border-[var(--border)] bg-[var(--surface)] p-6 shadow space-y-4">
+        <h2 className="text-lg font-semibold text-[var(--text)]">Verification checklist</h2>
+        <p className="text-sm text-[var(--muted)]">
           Verify each RESULTS_ENTERED test item. Publish is enabled once all ordered tests are verified.
         </p>
         {testsLoading ? (
-          <p className="text-sm text-gray-500">Loading ordered tests…</p>
+          <p className="text-sm text-[var(--muted)]">Loading ordered tests…</p>
         ) : orderedTests.length === 0 ? (
-          <p className="text-sm text-gray-500">No ordered tests for this encounter.</p>
+          <p className="text-sm text-[var(--muted)]">No ordered tests for this encounter.</p>
         ) : (
           <div className="space-y-3">
             {orderedTests.map((orderedTest: OrderedTest) => (
-              <div key={orderedTest.orderItem.id} className="rounded border border-gray-200 p-3">
+              <div key={orderedTest.orderItem.id} className="rounded border border-[var(--border)] p-3">
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <p className="font-medium text-gray-900">
+                    <p className="font-medium text-[var(--text)]">
                       {orderedTest.test.name} ({orderedTest.test.code})
                     </p>
-                    <p className="text-xs text-gray-600">{orderedTest.test.department}</p>
+                    <p className="text-xs text-[var(--muted)]">{orderedTest.test.department}</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="rounded bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700">
+                    <span className="rounded bg-[var(--bg)] px-2 py-1 text-xs font-medium text-[var(--text)]">
                       {orderedTest.orderItem.status}
                     </span>
                     <button
@@ -147,7 +147,7 @@ export default function OperatorVerifyDetailPage() {
                       disabled={
                         verifyMutation.isPending || orderedTest.orderItem.status !== 'RESULTS_ENTERED'
                       }
-                      className="rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                      className="rounded bg-[var(--accent)] px-3 py-1.5 text-xs font-medium text-[var(--accent-foreground)] hover:opacity-90 disabled:opacity-50"
                     >
                       Verify
                     </button>
@@ -162,21 +162,21 @@ export default function OperatorVerifyDetailPage() {
             type="button"
             onClick={() => publishMutation.mutate()}
             disabled={publishMutation.isPending || !allVerified}
-            className="rounded bg-emerald-600 px-4 py-2 text-sm text-white hover:bg-emerald-700 disabled:opacity-50"
+            className="rounded bg-[var(--success)] px-4 py-2 text-sm text-white hover:opacity-90 disabled:opacity-50"
           >
             {publishMutation.isPending ? 'Publishing…' : 'Publish report'}
           </button>
           {!allVerified && (
-            <p className="self-center text-sm text-amber-700">
+            <p className="self-center text-sm text-[var(--warning)]">
               Publish is disabled until all ordered tests are verified.
             </p>
           )}
         </div>
         {verifyMutation.isError && (
-          <p className="text-sm text-red-600">{verifyMutation.error instanceof Error ? verifyMutation.error.message : 'Verify failed'}</p>
+          <p className="text-sm text-[var(--error)]">{verifyMutation.error instanceof Error ? verifyMutation.error.message : 'Verify failed'}</p>
         )}
         {publishMutation.isError && (
-          <p className="text-sm text-red-600">{publishMutation.error instanceof Error ? publishMutation.error.message : 'Publish failed'}</p>
+          <p className="text-sm text-[var(--error)]">{publishMutation.error instanceof Error ? publishMutation.error.message : 'Publish failed'}</p>
         )}
       </div>
     </div>

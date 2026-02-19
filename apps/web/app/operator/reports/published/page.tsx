@@ -47,8 +47,8 @@ export default function OperatorPublishedReportsPage() {
   if (isLoading) {
     return (
       <div>
-        <h1 className="text-2xl font-bold mb-4">Published reports</h1>
-        <p className="text-gray-500">Loading…</p>
+        <h1 className="text-2xl font-bold mb-4 text-[var(--text)]">Published reports</h1>
+        <p className="text-[var(--muted)]">Loading…</p>
       </div>
     );
   }
@@ -56,16 +56,16 @@ export default function OperatorPublishedReportsPage() {
   if (error) {
     return (
       <div>
-        <h1 className="text-2xl font-bold mb-4">Published reports</h1>
-        <p className="text-red-600">{error instanceof Error ? error.message : 'Error loading list'}</p>
+        <h1 className="text-2xl font-bold mb-4 text-[var(--text)]">Published reports</h1>
+        <p className="text-[var(--error)]">{error instanceof Error ? error.message : 'Error loading list'}</p>
       </div>
     );
   }
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-4">Published reports</h1>
-      <p className="text-gray-600 mb-4">
+      <h1 className="text-2xl font-bold mb-4 text-[var(--text)]">Published reports</h1>
+      <p className="text-[var(--muted)] mb-4">
         Final stage queue. Contains only encounters with published LAB reports.
       </p>
       <WorklistTable
