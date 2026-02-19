@@ -872,13 +872,16 @@ export class EncountersService {
     );
   }
 
-  private async withLabEncounterStatus(
+  private async withEncounterSnapshot(
     encounter: Encounter,
-  ): Promise<Encounter & { labEncounterStatus?: LabEncounterStatus }> {
+  ): Promise<EncounterSnapshot> {
     if (encounter.type !== 'LAB') {
-      return encounter;
+      return {
+        ...encounter,
+        prep_complete: true,
+      };
     }
-    const [items, publishedDoc] = await Promise.all([
+    const [items, publishedDoc, prep] = await Promise.all([
       this.prisma.labOrderItem.findMany({
         where: { tenantId: this.tenantId, encounterId: encounter.id },
         select: { status: true },
@@ -890,22 +893,35 @@ export class EncountersService {
           status: DocumentStatus.RENDERED,
         },
       }),
+      this.prisma.labEncounterPrep.findFirst({
+        where: {
+          tenantId: this.tenantId,
+          encounterId: encounter.id,
+        },
+        select: {
+          collectedAt: true,
+        },
+      }),
     ]);
-    const labEncounterStatus = deriveLabEncounterStatus(
-      items,
-      !!publishedDoc,
-    );
-    return { ...encounter, labEncounterStatus };
+    const labEncounterStatus = deriveLabEncounterStatus(items, !!publishedDoc);
+    return {
+      ...encounter,
+      labEncounterStatus,
+      prep_complete: Boolean(prep?.collectedAt),
+    };
   }
 
   private async withLabEncounterStatusForList(
     encounters: Encounter[],
-  ): Promise<(Encounter & { labEncounterStatus?: LabEncounterStatus })[]> {
+  ): Promise<EncounterSnapshot[]> {
     const labIds = encounters.filter((e) => e.type === 'LAB').map((e) => e.id);
     if (labIds.length === 0) {
-      return encounters;
+      return encounters.map((encounter) => ({
+        ...encounter,
+        prep_complete: true,
+      }));
     }
-    const [itemsByEncounter, publishedEncounterIds] = await Promise.all([
+    const [itemsByEncounter, publishedEncounterIds, preps] = await Promise.all([
       this.prisma.labOrderItem.findMany({
         where: {
           tenantId: this.tenantId,
@@ -924,19 +940,41 @@ export class EncountersService {
           distinct: ['encounterId'],
         })
         .then((docs) => new Set(docs.map((d) => d.encounterId))),
+      this.prisma.labEncounterPrep.findMany({
+        where: {
+          tenantId: this.tenantId,
+          encounterId: { in: labIds },
+        },
+        select: {
+          encounterId: true,
+          collectedAt: true,
+        },
+      }),
     ]);
     const itemsByEncounterId = new Map<string, { status: LabOrderItemStatus }[]>();
+    const prepByEncounterId = new Map<string, boolean>(
+      preps.map((prep) => [prep.encounterId, Boolean(prep.collectedAt)]),
+    );
     for (const item of itemsByEncounter) {
       const list = itemsByEncounterId.get(item.encounterId) ?? [];
       list.push({ status: item.status });
       itemsByEncounterId.set(item.encounterId, list);
     }
     return encounters.map((e) => {
-      if (e.type !== 'LAB') return e;
+      if (e.type !== 'LAB') {
+        return {
+          ...e,
+          prep_complete: true,
+        };
+      }
       const items = itemsByEncounterId.get(e.id) ?? [];
       const hasPublishedReport = publishedEncounterIds.has(e.id);
       const labEncounterStatus = deriveLabEncounterStatus(items, hasPublishedReport);
-      return { ...e, labEncounterStatus };
+      return {
+        ...e,
+        labEncounterStatus,
+        prep_complete: prepByEncounterId.get(e.id) ?? false,
+      };
     });
   }
 
@@ -1602,6 +1640,52 @@ export class EncountersService {
     };
 
     return response;
+  }
+
+  private getActorIdentity(): string | null {
+    return (
+      this.cls.get<string>('USER_EMAIL') ??
+      this.cls.get<string>('USER_ID') ??
+      this.cls.get<string>('USER_SUB') ??
+      null
+    );
+  }
+
+  private getCorrelationId(): string | null {
+    return this.cls.get<string>('REQUEST_ID') ?? null;
+  }
+
+  private async writeAuditEvent(
+    source: Prisma.TransactionClient | PrismaService,
+    input: {
+      actorUserId: string | null;
+      eventType: string;
+      entityType: string;
+      entityId: string;
+      payload: Record<string, unknown>;
+    },
+  ): Promise<void> {
+    const auditModel = (source as unknown as {
+      auditEvent?: {
+        create?: (args: unknown) => Promise<unknown>;
+      };
+    }).auditEvent;
+
+    if (!auditModel?.create) {
+      return;
+    }
+
+    await auditModel.create({
+      data: {
+        tenantId: this.tenantId,
+        actorUserId: input.actorUserId,
+        eventType: input.eventType,
+        entityType: input.entityType,
+        entityId: input.entityId,
+        payloadJson: JSON.stringify(input.payload),
+        correlationId: this.getCorrelationId(),
+      },
+    });
   }
 
   private toEncounterType(type: string): EncounterType {

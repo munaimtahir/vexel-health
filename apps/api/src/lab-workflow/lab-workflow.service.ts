@@ -60,6 +60,7 @@ export class LabWorkflowService {
     try {
       return await this.prisma.$transaction(async (tx) => {
         const encounter = await this.assertLabEncounter(tx, encounterId);
+        await this.assertLabPrepComplete(tx, encounter.id);
 
         if (encounter.status === 'FINALIZED' || encounter.status === 'DOCUMENTED') {
           throw new DomainException(
@@ -623,6 +624,34 @@ export class LabWorkflowService {
     }
 
     return encounter;
+  }
+
+  private async assertLabPrepComplete(
+    tx: Prisma.TransactionClient,
+    encounterId: string,
+  ): Promise<void> {
+    const prep = await tx.labEncounterPrep.findFirst({
+      where: {
+        tenantId: this.tenantId,
+        encounterId,
+      },
+      select: {
+        collectedAt: true,
+      },
+    });
+
+    const missingFields: string[] = [];
+    if (!prep?.collectedAt) {
+      missingFields.push('sample_collected_at');
+    }
+
+    if (missingFields.length > 0) {
+      throw new DomainException(
+        'PREP_INCOMPLETE',
+        'Preparation data is incomplete. Save preparation before ordering tests.',
+        { missing_fields: missingFields },
+      );
+    }
   }
 
   private async buildOrderedTest(

@@ -280,6 +280,37 @@ paths:
           $ref: '#/components/responses/DomainError'
         '500':
           $ref: '#/components/responses/UnexpectedError'
+  /lims/commands/updateEncounterPrep:
+    post:
+      summary: Update LAB encounter preparation data
+      operationId: updateEncounterPrep
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateEncounterPrepCommandRequest'
+      responses:
+        '200':
+          description: Updated encounter snapshot with preparation status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Encounter'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '403':
+          $ref: '#/components/responses/AuthError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/DomainError'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
   /lab/tests:
     post:
       summary: Create LAB test definition
@@ -1003,6 +1034,9 @@ components:
               type: string
               description: Derived lab encounter status (present for LAB encounters only)
               enum: [DRAFT, ORDERED, RESULTS_ENTERED, VERIFIED, PUBLISHED]
+            prep_complete:
+              type: boolean
+              description: LAB preparation completion flag. True when required prep data is saved.
             endedAt:
               type: string
               format: date-time
@@ -1081,6 +1115,32 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/PaymentRecord'
+    UpdateEncounterPrepPayload:
+      type: object
+      additionalProperties: false
+      required:
+        - sample_collected_at
+      properties:
+        sample_collected_at:
+          type: string
+          format: date-time
+        sample_received_at:
+          type: string
+          format: date-time
+        notes:
+          type: string
+    UpdateEncounterPrepCommandRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - encounter_id
+        - prep
+      properties:
+        encounter_id:
+          type: string
+          format: uuid
+        prep:
+          $ref: '#/components/schemas/UpdateEncounterPrepPayload'
     VerificationQueueItemPatient:
       type: object
       properties:

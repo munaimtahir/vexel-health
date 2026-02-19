@@ -104,6 +104,14 @@ function formatDomainErrorMessage(envelope: DomainErrorEnvelope): string {
         }
     }
 
+    if (envelope.error.code === 'PREP_INCOMPLETE' && isRecord(details) && Array.isArray(details.missing_fields)) {
+        const missingFields = details.missing_fields
+            .filter((item): item is string => typeof item === 'string' && item.trim().length > 0);
+        if (missingFields.length > 0) {
+            return `${message} Missing: ${missingFields.join(', ')}`;
+        }
+    }
+
     return message;
 }
 

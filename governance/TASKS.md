@@ -25,6 +25,7 @@ This is the canonical checklist.
 - [x] Result entry command + UI
 - [x] Verification command + UI
 - [x] Publish report command
+- [x] Encounter preparation command (`/lims/commands/updateEncounterPrep`) and PREP gate for LAB ordering
 
 ## Phase 3 — PDF Service
 - [ ] Implement /render in QuestPDF service

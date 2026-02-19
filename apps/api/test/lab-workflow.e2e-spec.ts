@@ -515,6 +515,18 @@ function createPrismaMock(state: MemoryState) {
           ) ?? null
         );
       }),
+      findMany: jest.fn(async ({ where }: any) => {
+        const encounterIds: string[] | undefined = where.encounterId?.in;
+        return state.labPreps.filter((item) => {
+          if (item.tenantId !== where.tenantId) {
+            return false;
+          }
+          if (Array.isArray(encounterIds) && !encounterIds.includes(item.encounterId)) {
+            return false;
+          }
+          return true;
+        });
+      }),
     },
     labTestDefinition: {
       create: jest.fn(async ({ data }: any) => {
@@ -1148,6 +1160,67 @@ describe('LAB workflow (e2e)', () => {
       });
   });
 
+  it('returns PREP_INCOMPLETE when ordering LAB test without preparation data', async () => {
+    const createTestResponse = await request(app.getHttpServer())
+      .post('/lab/tests')
+      .set('Host', 'tenant-a.test')
+      .set('Authorization', `Bearer ${tenantAAllLabPermissionsToken}`)
+      .send({
+        code: 'PREP-BLOCK-ALB',
+        name: 'Prep Block Albumin',
+        department: 'Biochemistry',
+      })
+      .expect(201);
+
+    const testId = createTestResponse.body.id as string;
+
+    await request(app.getHttpServer())
+      .post(`/lab/tests/${testId}/parameters`)
+      .set('Host', 'tenant-a.test')
+      .set('Authorization', `Bearer ${tenantAAllLabPermissionsToken}`)
+      .send({
+        name: 'Albumin',
+        unit: 'g/dL',
+        refLow: 3.5,
+        refHigh: 5,
+        displayOrder: 1,
+      })
+      .expect(201);
+
+    const patientResponse = await request(app.getHttpServer())
+      .post('/patients')
+      .set('Host', 'tenant-a.test')
+      .send({
+        name: 'Prep Incomplete Patient',
+      })
+      .expect(201);
+
+    const encounterResponse = await request(app.getHttpServer())
+      .post('/encounters')
+      .set('Host', 'tenant-a.test')
+      .send({
+        patientId: patientResponse.body.id,
+        type: 'LAB',
+      })
+      .expect(201);
+
+    await request(app.getHttpServer())
+      .post(`/encounters/${encounterResponse.body.id}:lab-add-test`)
+      .set('Host', 'tenant-a.test')
+      .set('Authorization', `Bearer ${tenantAAllLabPermissionsToken}`)
+      .send({
+        testId,
+      })
+      .expect(409)
+      .expect((response) => {
+        expect(response.body.error.type).toBe('domain_error');
+        expect(response.body.error.code).toBe('PREP_INCOMPLETE');
+        expect(response.body.error.details.missing_fields).toEqual([
+          'sample_collected_at',
+        ]);
+      });
+  });
+
   it('runs LAB catalog -> order -> results -> verify -> finalize -> publish with tenant isolation', async () => {
     const patientResponse = await request(app.getHttpServer())
       .post('/patients')
@@ -1169,22 +1242,19 @@ describe('LAB workflow (e2e)', () => {
     const encounterId = encounterResponse.body.id as string;
 
     await request(app.getHttpServer())
-      .post(`/encounters/${encounterId}:start-prep`)
-      .set('Host', 'tenant-a.test')
-      .expect(200);
-
-    await request(app.getHttpServer())
-      .post(`/encounters/${encounterId}:save-prep`)
+      .post('/lims/commands/updateEncounterPrep')
       .set('Host', 'tenant-a.test')
       .send({
-        specimenType: 'Blood',
+        encounter_id: encounterId,
+        prep: {
+          sample_collected_at: new Date().toISOString(),
+        },
       })
-      .expect(200);
-
-    await request(app.getHttpServer())
-      .post(`/encounters/${encounterId}:start-main`)
-      .set('Host', 'tenant-a.test')
-      .expect(200);
+      .expect(200)
+      .expect((response) => {
+        expect(response.body.prep_complete).toBe(true);
+        expect(response.body.status).toBe('IN_PROGRESS');
+      });
 
     const createTestResponse = await request(app.getHttpServer())
       .post('/lab/tests')

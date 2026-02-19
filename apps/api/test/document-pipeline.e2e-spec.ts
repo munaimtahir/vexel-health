@@ -706,6 +706,18 @@ function createPrismaMock(state: MemoryState) {
           );
         },
       ),
+      findMany: jest.fn(async ({ where }: any) => {
+        const encounterIds: string[] | undefined = where.encounterId?.in;
+        return state.labPreps.filter((item) => {
+          if (item.tenantId !== where.tenantId) {
+            return false;
+          }
+          if (Array.isArray(encounterIds) && !encounterIds.includes(item.encounterId)) {
+            return false;
+          }
+          return true;
+        });
+      }),
     },
     radEncounterMain: {
       upsert: jest.fn(

@@ -162,6 +162,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/lims/commands/updateEncounterPrep": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Update LAB encounter preparation data */
+        post: operations["updateEncounterPrep"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/lab/tests": {
         parameters: {
             query?: never;
@@ -560,6 +577,8 @@ export interface components {
              * @enum {string}
              */
             labEncounterStatus?: "DRAFT" | "ORDERED" | "RESULTS_ENTERED" | "VERIFIED" | "PUBLISHED";
+            /** @description LAB preparation completion flag. True when required prep data is saved. */
+            prep_complete?: boolean;
             /** Format: date-time */
             endedAt?: string;
             /** Format: date-time */
@@ -595,6 +614,18 @@ export interface components {
         RecordPaymentResponse: {
             invoice: components["schemas"]["InvoiceSummary"];
             payments: components["schemas"]["PaymentRecord"][];
+        };
+        UpdateEncounterPrepPayload: {
+            /** Format: date-time */
+            sample_collected_at: string;
+            /** Format: date-time */
+            sample_received_at?: string;
+            notes?: string;
+        };
+        UpdateEncounterPrepCommandRequest: {
+            /** Format: uuid */
+            encounter_id: string;
+            prep: components["schemas"]["UpdateEncounterPrepPayload"];
         };
         VerificationQueueItemPatient: {
             patient_id?: string;
@@ -1310,6 +1341,38 @@ export interface operations {
                 };
             };
             400: components["responses"]["ValidationError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["DomainError"];
+            500: components["responses"]["UnexpectedError"];
+        };
+    };
+    updateEncounterPrep: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
+                "x-tenant-id"?: components["parameters"]["TenantIdHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateEncounterPrepCommandRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated encounter snapshot with preparation status */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Encounter"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            403: components["responses"]["AuthError"];
             404: components["responses"]["NotFoundError"];
             409: components["responses"]["DomainError"];
             500: components["responses"]["UnexpectedError"];

@@ -52,6 +52,10 @@ type RecordPaymentRequest =
   >['content']['application/json'];
 type RecordPaymentResponse =
   paths['/encounters/{id}/payments']['post']['responses'][200]['content']['application/json'];
+type UpdateEncounterPrepCommandRequest =
+  NonNullable<
+    paths['/lims/commands/updateEncounterPrep']['post']['requestBody']
+  >['content']['application/json'];
 
 type PrepFormState = {
   specimenType: string;
@@ -461,6 +465,7 @@ export default function EncounterDetailPage() {
 
   const [actionError, setActionError] = useState('');
   const [actionSuccess, setActionSuccess] = useState('');
+  const [prepFieldErrors, setPrepFieldErrors] = useState<Record<string, string[]>>({});
   const [isSavingPrep, setIsSavingPrep] = useState(false);
   const [isStartingMain, setIsStartingMain] = useState(false);
   const [isSavingMain, setIsSavingMain] = useState(false);
@@ -834,6 +839,18 @@ export default function EncounterDetailPage() {
   const allLabTestsVerified =
     hasOrderedLabTests &&
     orderedLabTests.every((item) => item.orderItem.status === 'VERIFIED');
+  const prepComplete = encounter?.prep_complete === true;
+  const canOrderLabTests =
+    prepComplete && (encounter?.status === 'PREP' || encounter?.status === 'IN_PROGRESS');
+  const prepFieldErrorFor = (field: string): string | null => {
+    const nested = prepFieldErrors[`prep.${field}`];
+    if (nested && nested.length > 0) {
+      return nested[0];
+    }
+
+    const root = prepFieldErrors[field];
+    return root && root.length > 0 ? root[0] : null;
+  };
 
   useEffect(() => {
     if (!encounter) {
@@ -918,7 +935,42 @@ export default function EncounterDetailPage() {
   const savePrep = async () => {
     setActionError('');
     setActionSuccess('');
+    setPrepFieldErrors({});
     setIsSavingPrep(true);
+    if (encounter.type === 'LAB') {
+      const body: UpdateEncounterPrepCommandRequest = {
+        encounter_id: encounter.id,
+        prep: {
+          sample_collected_at: prepForm.collectedAt
+            ? new Date(prepForm.collectedAt).toISOString()
+            : '',
+          sample_received_at: toIsoOrUndefined(prepForm.receivedAt),
+          notes: prepForm.notes.trim() ? prepForm.notes.trim() : undefined,
+        },
+      };
+
+      const { data, error } = await client.POST('/lims/commands/updateEncounterPrep', {
+        body,
+      });
+
+      setIsSavingPrep(false);
+
+      if (error) {
+        const parsedError = parseApiError(error, 'Failed to save preparation');
+        setActionError(parsedError.message);
+        setPrepFieldErrors(parsedError.fieldErrors);
+        return;
+      }
+
+      if (!data) {
+        setActionError('Failed to save preparation');
+        return;
+      }
+
+      setActionSuccess('Preparation saved');
+      await Promise.all([refetchEncounter(), refetchPrep(), refetchEncounterLabTests()]);
+      return;
+    }
 
     const payload = buildPrepPayload(encounter.type, prepForm);
 
@@ -932,7 +984,9 @@ export default function EncounterDetailPage() {
     setIsSavingPrep(false);
 
     if (error) {
-      setActionError(parseApiError(error, 'Failed to save prep').message);
+      const parsedError = parseApiError(error, 'Failed to save prep');
+      setActionError(parsedError.message);
+      setPrepFieldErrors(parsedError.fieldErrors);
       return;
     }
 
@@ -1485,7 +1539,9 @@ export default function EncounterDetailPage() {
         {encounter.status === 'CREATED' && (
           <div className="mb-4">
             <p className="text-sm text-gray-600 mb-3">
-              Start preparation to add lab tests and enter results.
+              {encounter.type === 'LAB'
+                ? 'Start preparation to add lab tests and enter results.'
+                : 'Start preparation to continue.'}
             </p>
             <button
               type="button"
@@ -1516,67 +1572,79 @@ export default function EncounterDetailPage() {
           </div>
         ) : null}
 
-        {(encounter.status === 'CREATED' || encounter.status === 'PREP') && (
+        {(encounter.status === 'CREATED' ||
+          encounter.status === 'PREP' ||
+          (encounter.type === 'LAB' && encounter.status === 'IN_PROGRESS')) && (
           <div className="space-y-4">
             {encounter.type === 'LAB' && (
               <>
-                <div>
-                  <label className="block text-sm font-medium">Specimen Type</label>
-                  <input
-                    value={prepForm.specimenType}
-                    onChange={(event) =>
-                      setPrepForm((previous) => ({
-                        ...previous,
-                        specimenType: event.target.value,
-                      }))
-                    }
-                    className="mt-1 block w-full rounded border border-gray-300 p-2"
-                    placeholder="Blood"
-                  />
-                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-sm font-medium">Collected At</label>
+                    <label className="block text-sm font-medium">
+                      Sample Collected At
+                    </label>
                     <input
                       type="datetime-local"
                       value={prepForm.collectedAt}
-                      onChange={(event) =>
+                      onChange={(event) => {
+                        setPrepFieldErrors({});
                         setPrepForm((previous) => ({
                           ...previous,
                           collectedAt: event.target.value,
-                        }))
-                      }
+                        }));
+                      }}
                       className="mt-1 block w-full rounded border border-gray-300 p-2"
                     />
+                    {prepFieldErrorFor('sample_collected_at') && (
+                      <p className="mt-1 text-sm text-red-600">
+                        {prepFieldErrorFor('sample_collected_at')}
+                      </p>
+                    )}
                   </div>
                   <div>
-                    <label className="block text-sm font-medium">Collector Name</label>
-                    <input
-                      value={prepForm.collectorName}
-                      onChange={(event) =>
-                        setPrepForm((previous) => ({
-                          ...previous,
-                          collectorName: event.target.value,
-                        }))
-                      }
-                      className="mt-1 block w-full rounded border border-gray-300 p-2"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium">Received At</label>
+                    <label className="block text-sm font-medium">
+                      Sample Received At (optional)
+                    </label>
                     <input
                       type="datetime-local"
                       value={prepForm.receivedAt}
-                      onChange={(event) =>
+                      onChange={(event) => {
+                        setPrepFieldErrors({});
                         setPrepForm((previous) => ({
                           ...previous,
                           receivedAt: event.target.value,
-                        }))
-                      }
+                        }));
+                      }}
                       className="mt-1 block w-full rounded border border-gray-300 p-2"
                     />
+                    {prepFieldErrorFor('sample_received_at') && (
+                      <p className="mt-1 text-sm text-red-600">
+                        {prepFieldErrorFor('sample_received_at')}
+                      </p>
+                    )}
                   </div>
                 </div>
+                <div>
+                  <label className="block text-sm font-medium">Notes (optional)</label>
+                  <textarea
+                    value={prepForm.notes}
+                    onChange={(event) => {
+                      setPrepFieldErrors({});
+                      setPrepForm((previous) => ({
+                        ...previous,
+                        notes: event.target.value,
+                      }));
+                    }}
+                    className="mt-1 block w-full rounded border border-gray-300 p-2"
+                    rows={3}
+                  />
+                  {prepFieldErrorFor('notes') && (
+                    <p className="mt-1 text-sm text-red-600">{prepFieldErrorFor('notes')}</p>
+                  )}
+                </div>
+                <p className="text-xs text-gray-500">
+                  `sample_collected_at` is required before ordering LAB tests.
+                </p>
               </>
             )}
 
@@ -2208,19 +2276,24 @@ export default function EncounterDetailPage() {
                     disabled={
                       isAddingLabTest ||
                       !selectedLabTestId ||
-                      (encounter.status !== 'PREP' && encounter.status !== 'IN_PROGRESS')
+                      !canOrderLabTests
                     }
                     className="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-60"
                   >
                     {isAddingLabTest ? 'Adding...' : 'Add to Encounter'}
                   </button>
                 </div>
-                {encounter.status !== 'PREP' && encounter.status !== 'IN_PROGRESS' && (
+                {!prepComplete && (
                   <p className="mt-3 text-sm text-amber-700">
-                    {encounter.status === 'CREATED'
-                      ? 'Start preparation first (see Preparation Data section).'
-                      : 'Ordering is allowed only while encounter is PREP or IN_PROGRESS.'}
+                    Complete and save Preparation Data first.
                   </p>
+                )}
+                {prepComplete &&
+                  encounter.status !== 'PREP' &&
+                  encounter.status !== 'IN_PROGRESS' && (
+                    <p className="mt-3 text-sm text-amber-700">
+                      Ordering is allowed only while encounter is PREP or IN_PROGRESS.
+                    </p>
                 )}
               </>
             )}
