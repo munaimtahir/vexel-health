@@ -49,7 +49,7 @@ export function AdminLayoutShell({ children }: AdminLayoutShellProps) {
       <div className="min-h-screen bg-[var(--bg)] text-[var(--text)]">
         {checkingAdminAccess ? (
           <div className="flex min-h-screen items-center justify-center px-6">
-            <p className="text-sm text-[var(--muted)]">Checking admin access…</p>
+            <p className="text-sm text-[var(--muted)]">Checking admin access...</p>
           </div>
         ) : null}
         {!checkingAdminAccess && adminAccessError ? (
@@ -68,23 +68,23 @@ export function AdminLayoutShell({ children }: AdminLayoutShellProps) {
           </main>
         ) : null}
         {!checkingAdminAccess && !adminAccessError ? (
-        <div className="flex min-h-screen flex-col lg:flex-row">
-          <AdminNav />
-          <div className="flex flex-1 flex-col">
-            <header className="border-b border-[var(--border)] bg-[var(--surface)] px-6 py-4">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-[var(--muted)]">Tenant-scoped</p>
-                  <h2 className="text-lg font-semibold">Administration</h2>
+          <div className="flex min-h-screen flex-col lg:flex-row">
+            <AdminNav />
+            <div className="flex flex-1 flex-col">
+              <header className="border-b border-[var(--border)] bg-[var(--surface)] px-6 py-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-[var(--muted)]">Tenant-scoped</p>
+                    <h2 className="text-lg font-semibold">Administration</h2>
+                  </div>
+                  <p className="text-sm text-[var(--muted)]">
+                    {data?.name ?? data?.email ?? 'Authenticated tenant user'}
+                  </p>
                 </div>
-                <p className="text-sm text-[var(--muted)]">
-                  {data?.name ?? data?.email ?? 'Authenticated tenant user'}
-                </p>
-              </div>
-            </header>
-            <main className="flex-1 p-6 lg:p-8">{children}</main>
+              </header>
+              <main className="flex-1 p-6 lg:p-8">{children}</main>
+            </div>
           </div>
-        </div>
         ) : null}
       </div>
     </AuthGuard>

@@ -42,6 +42,7 @@ This is the canonical checklist.
 - [ ] Plan presets + overrides
 - [ ] Admin monitoring (jobs, pdf failures)
 - [x] Web admin scaffold: Business & Users + Catalog Settings routes/navigation/theme placeholders (2026-02-19)
+- [x] Admin business design scaffold: Branding -> Report Design and Receipt Design metadata pages (2026-02-19)
 
 ## Phase 4C — LAB hardening
 - [x] Centralized LAB RBAC permissions and guarded LAB write endpoints

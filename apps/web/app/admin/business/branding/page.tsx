@@ -1,11 +1,13 @@
 'use client';
 
+import Link from 'next/link';
 import { useState, type ChangeEvent, type FormEvent } from 'react';
 import { AdminCard } from '@/components/admin/AdminCard';
 import { FieldRow } from '@/components/admin/FieldRow';
 import { NoticeBanner } from '@/components/admin/NoticeBanner';
 import { PageHeader } from '@/components/admin/PageHeader';
 import { SectionTitle } from '@/components/admin/SectionTitle';
+import { adminRoutes } from '@/lib/admin/routes';
 
 type BrandingDraft = {
   businessName: string;
@@ -47,6 +49,22 @@ export default function BrandingPage() {
       <PageHeader
         title="Branding"
         subtitle="Per-tenant report identity scaffold. Storage and upload APIs are contract-pending."
+        actions={
+          <>
+            <Link
+              href={adminRoutes.businessReportDesign}
+              className="rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm font-medium text-[var(--text)] hover:bg-[var(--bg)]"
+            >
+              Report Design
+            </Link>
+            <Link
+              href={adminRoutes.businessReceiptDesign}
+              className="rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm font-medium text-[var(--text)] hover:bg-[var(--bg)]"
+            >
+              Receipt Design
+            </Link>
+          </>
+        }
       />
 
       <NoticeBanner title="Requires backend contract endpoint" tone="warning">

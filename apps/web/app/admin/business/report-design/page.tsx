@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from 'react';
 import { AdminCard } from '@/components/admin/AdminCard';
-import { FeatureGate } from '@/components/admin/FeatureGate';
+import { FieldRow } from '@/components/admin/FieldRow';
 import { NoticeBanner } from '@/components/admin/NoticeBanner';
 import { PageHeader } from '@/components/admin/PageHeader';
 import { SectionTitle } from '@/components/admin/SectionTitle';
@@ -46,6 +46,8 @@ const SIGNATORY_STYLES = [
   { value: 'dual', label: 'Dual Column' },
 ] as const;
 
+const HAS_REPORT_DESIGN_ENDPOINT = false;
+
 type ReportDesignDraft = {
   showLogo: boolean;
   logoPosition: string;
@@ -71,7 +73,7 @@ const initialDraft: ReportDesignDraft = {
   headerText1: '',
   headerText2: '',
   headerDividerStyle: 'thin',
-  patientLayoutStyle: 'spacious',
+  patientLayoutStyle: 'compact',
   showRefNumber: true,
   showConsultant: true,
   showSampleTime: true,
@@ -84,35 +86,39 @@ const initialDraft: ReportDesignDraft = {
   signatoryBlockStyle: 'single',
 };
 
+function labelFor(options: readonly { value: string; label: string }[], value: string): string {
+  return options.find((option) => option.value === value)?.label ?? value;
+}
+
 export default function ReportDesignPage() {
   const [draft, setDraft] = useState<ReportDesignDraft>(initialDraft);
   const [savedAt, setSavedAt] = useState<string | null>(null);
 
-  const onSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+
+    if (!HAS_REPORT_DESIGN_ENDPOINT) {
+      setSavedAt(new Date().toLocaleString());
+      return;
+    }
+
+    // TODO(contract): Replace local save with @vexel/contracts SDK methods:
+    // getTenantReportDesign() / updateTenantReportDesign()
     setSavedAt(new Date().toLocaleString());
   };
 
   return (
-    <FeatureGate
-      featureKey="lims.report_design"
-      fallback={
-        <NoticeBanner title="Feature not enabled" tone="info">
-          Report Design is not enabled for your tenant. Contact your administrator to enable the{' '}
-          <code className="rounded bg-[var(--bg)] px-1">lims.report_design</code> feature flag.
-        </NoticeBanner>
-      }
-    >
-      <div className="space-y-6">
-        <PageHeader
-          title="Report Design"
-          subtitle="Configure layout metadata for the PDF report engine. Rendering is performed by the deterministic PDF service."
-        />
+    <div className="space-y-6">
+      <PageHeader
+        title="Report Design"
+        subtitle="Configure layout metadata for PDF report templates. Rendering remains backend-only via the deterministic PDF service."
+      />
 
+      {!HAS_REPORT_DESIGN_ENDPOINT ? (
         <NoticeBanner title="Requires backend contract endpoint: GET/PUT tenant report design" tone="warning">
-        Current OpenAPI contract does not expose getTenantReportDesign / updateTenantReportDesign. This form is
-        local-state scaffold only. Persistence requires backend contract alignment.
-      </NoticeBanner>
+          Backend contract endpoint required.
+        </NoticeBanner>
+      ) : null}
 
       <form onSubmit={onSubmit} className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         <div className="space-y-6 xl:col-span-2">
@@ -122,31 +128,31 @@ export default function ReportDesignPage() {
               <ToggleField
                 label="Show Logo"
                 checked={draft.showLogo}
-                onChange={(v) => setDraft((p) => ({ ...p, showLogo: v }))}
+                onChange={(value) => setDraft((prev) => ({ ...prev, showLogo: value }))}
               />
               <SelectField
                 label="Logo Position"
                 value={draft.logoPosition}
                 options={[...LOGO_POSITIONS]}
-                onChange={(v) => setDraft((p) => ({ ...p, logoPosition: v }))}
+                onChange={(value) => setDraft((prev) => ({ ...prev, logoPosition: value }))}
               />
               <TextField
                 label="Header Text Line 1"
                 value={draft.headerText1}
-                onChange={(v) => setDraft((p) => ({ ...p, headerText1: v }))}
-                placeholder="e.g. Lab name or title"
+                onChange={(value) => setDraft((prev) => ({ ...prev, headerText1: value }))}
+                placeholder="Primary report header line"
               />
               <TextField
                 label="Header Text Line 2"
                 value={draft.headerText2}
-                onChange={(v) => setDraft((p) => ({ ...p, headerText2: v }))}
-                placeholder="Optional subtitle"
+                onChange={(value) => setDraft((prev) => ({ ...prev, headerText2: value }))}
+                placeholder="Secondary report header line"
               />
               <SelectField
                 label="Header Divider Style"
                 value={draft.headerDividerStyle}
                 options={[...DIVIDER_STYLES]}
-                onChange={(v) => setDraft((p) => ({ ...p, headerDividerStyle: v }))}
+                onChange={(value) => setDraft((prev) => ({ ...prev, headerDividerStyle: value }))}
               />
             </div>
           </AdminCard>
@@ -158,22 +164,22 @@ export default function ReportDesignPage() {
                 label="Layout Style"
                 value={draft.patientLayoutStyle}
                 options={[...LAYOUT_STYLES]}
-                onChange={(v) => setDraft((p) => ({ ...p, patientLayoutStyle: v }))}
+                onChange={(value) => setDraft((prev) => ({ ...prev, patientLayoutStyle: value }))}
               />
               <ToggleField
                 label="Show Ref #"
                 checked={draft.showRefNumber}
-                onChange={(v) => setDraft((p) => ({ ...p, showRefNumber: v }))}
+                onChange={(value) => setDraft((prev) => ({ ...prev, showRefNumber: value }))}
               />
               <ToggleField
                 label="Show Consultant"
                 checked={draft.showConsultant}
-                onChange={(v) => setDraft((p) => ({ ...p, showConsultant: v }))}
+                onChange={(value) => setDraft((prev) => ({ ...prev, showConsultant: value }))}
               />
               <ToggleField
                 label="Show Sample Time"
                 checked={draft.showSampleTime}
-                onChange={(v) => setDraft((p) => ({ ...p, showSampleTime: v }))}
+                onChange={(value) => setDraft((prev) => ({ ...prev, showSampleTime: value }))}
               />
             </div>
           </AdminCard>
@@ -185,23 +191,23 @@ export default function ReportDesignPage() {
                 label="Font Size"
                 value={draft.resultsFontSize}
                 options={[...FONT_SIZES]}
-                onChange={(v) => setDraft((p) => ({ ...p, resultsFontSize: v }))}
+                onChange={(value) => setDraft((prev) => ({ ...prev, resultsFontSize: value }))}
               />
               <ToggleField
                 label="Show Units Column"
                 checked={draft.showUnitsColumn}
-                onChange={(v) => setDraft((p) => ({ ...p, showUnitsColumn: v }))}
+                onChange={(value) => setDraft((prev) => ({ ...prev, showUnitsColumn: value }))}
               />
               <ToggleField
                 label="Show Reference Range"
                 checked={draft.showReferenceRange}
-                onChange={(v) => setDraft((p) => ({ ...p, showReferenceRange: v }))}
+                onChange={(value) => setDraft((prev) => ({ ...prev, showReferenceRange: value }))}
               />
               <SelectField
                 label="Abnormal Highlight Style"
                 value={draft.abnormalHighlightStyle}
                 options={[...ABNORMAL_STYLES]}
-                onChange={(v) => setDraft((p) => ({ ...p, abnormalHighlightStyle: v }))}
+                onChange={(value) => setDraft((prev) => ({ ...prev, abnormalHighlightStyle: value }))}
               />
             </div>
           </AdminCard>
@@ -212,20 +218,20 @@ export default function ReportDesignPage() {
               <TextAreaField
                 label="Footer Text"
                 value={draft.footerText}
-                onChange={(v) => setDraft((p) => ({ ...p, footerText: v }))}
-                placeholder="Disclaimer or standard footer text"
+                onChange={(value) => setDraft((prev) => ({ ...prev, footerText: value }))}
+                placeholder="Footer disclaimer or notes"
                 rows={3}
               />
               <ToggleField
                 label="Show Signatories"
                 checked={draft.showSignatories}
-                onChange={(v) => setDraft((p) => ({ ...p, showSignatories: v }))}
+                onChange={(value) => setDraft((prev) => ({ ...prev, showSignatories: value }))}
               />
               <SelectField
                 label="Signatory Block Style"
                 value={draft.signatoryBlockStyle}
                 options={[...SIGNATORY_STYLES]}
-                onChange={(v) => setDraft((p) => ({ ...p, signatoryBlockStyle: v }))}
+                onChange={(value) => setDraft((prev) => ({ ...prev, signatoryBlockStyle: value }))}
               />
             </div>
           </AdminCard>
@@ -236,18 +242,37 @@ export default function ReportDesignPage() {
           >
             Save Draft
           </button>
-          {savedAt ? (
-            <p className="text-sm text-[var(--muted)]">Saved locally at {savedAt}</p>
-          ) : null}
         </div>
 
-        <div className="xl:col-span-1">
+        <div className="space-y-6 xl:col-span-1">
           <AdminCard title="Preview" subtitle="Backend service integration required">
             <PreviewPanel message="Deterministic PDF preview will render here (backend service integration required)" />
+          </AdminCard>
+
+          <AdminCard title="Current Design Snapshot">
+            <SectionTitle title="Tenant-scoped draft metadata" />
+            <dl>
+              <FieldRow
+                label="Header"
+                value={`${draft.showLogo ? 'Logo on' : 'Logo off'} | ${labelFor(LOGO_POSITIONS, draft.logoPosition)} | ${labelFor(DIVIDER_STYLES, draft.headerDividerStyle)}`}
+              />
+              <FieldRow
+                label="Patient Block"
+                value={`${labelFor(LAYOUT_STYLES, draft.patientLayoutStyle)} | Ref # ${draft.showRefNumber ? 'On' : 'Off'} | Consultant ${draft.showConsultant ? 'On' : 'Off'} | Sample Time ${draft.showSampleTime ? 'On' : 'Off'}`}
+              />
+              <FieldRow
+                label="Results Table"
+                value={`${labelFor(FONT_SIZES, draft.resultsFontSize)} | Units ${draft.showUnitsColumn ? 'On' : 'Off'} | Reference Range ${draft.showReferenceRange ? 'On' : 'Off'} | ${labelFor(ABNORMAL_STYLES, draft.abnormalHighlightStyle)}`}
+              />
+              <FieldRow
+                label="Footer"
+                value={`${draft.footerText || 'No footer text'} | Signatories ${draft.showSignatories ? 'On' : 'Off'} | ${labelFor(SIGNATORY_STYLES, draft.signatoryBlockStyle)}`}
+              />
+              <FieldRow label="Saved" value={savedAt ? `Saved locally at ${savedAt}` : 'Not saved yet'} />
+            </dl>
           </AdminCard>
         </div>
       </form>
     </div>
-    </FeatureGate>
   );
 }
