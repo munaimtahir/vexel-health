@@ -11,6 +11,12 @@ info:
 servers:
   - url: http://localhost:3000
     description: Local development server
+tags:
+  - name: AdminUsers
+  - name: CatalogPanels
+  - name: CatalogImportExport
+  - name: BusinessConfig
+  - name: Linking
 paths:
   /health:
     get:
@@ -896,6 +902,1637 @@ paths:
                 $ref: '#/components/schemas/AdminOverviewResponse'
         '500':
           $ref: '#/components/responses/UnexpectedError'
+  # --- Catalog (contract-first; tenant-scoped; deterministic) ---
+  /catalog/versions:
+    get:
+      summary: List catalog versions
+      operationId: listCatalogVersions
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [draft, published, archived]
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListCatalogVersionsResponse'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+    post:
+      summary: Create draft catalog version
+      operationId: createCatalogVersion
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCatalogVersionRequest'
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogVersion'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '409':
+          $ref: '#/components/responses/DomainError'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+  /catalog/versions/{versionId}/publish:
+    post:
+      summary: Publish a draft catalog version
+      operationId: publishCatalogVersion
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+        - name: versionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogVersion'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/DomainError'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+  /catalog/tests:
+    get:
+      summary: List catalog tests (TestDefinition)
+      operationId: listCatalogTests
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, inactive]
+        - name: section
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListCatalogTestsResponse'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+    post:
+      summary: Create catalog test
+      operationId: createCatalogTest
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCatalogTestRequest'
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogTestDefinition'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '409':
+          $ref: '#/components/responses/DomainError'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+  /catalog/tests/{testId}:
+    get:
+      summary: Get catalog test by id
+      operationId: getCatalogTestById
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+        - name: testId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogTestDefinition'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+    patch:
+      summary: Update catalog test
+      operationId: updateCatalogTest
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+        - name: testId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCatalogTestRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogTestDefinition'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/DomainError'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+  /catalog/parameters:
+    get:
+      summary: List catalog parameters (global dictionary)
+      operationId: listCatalogParameters
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, inactive]
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListCatalogParametersResponse'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+    post:
+      summary: Create catalog parameter
+      operationId: createCatalogParameter
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCatalogParameterRequest'
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogParameterDefinition'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '409':
+          $ref: '#/components/responses/DomainError'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+  /catalog/parameters/{parameterId}:
+    get:
+      summary: Get catalog parameter by id
+      operationId: getCatalogParameterById
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+        - name: parameterId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogParameterDefinition'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+    patch:
+      summary: Update catalog parameter
+      operationId: updateCatalogParameter
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+        - name: parameterId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCatalogParameterRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogParameterDefinition'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/DomainError'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+  /catalog/tests/{testId}/mapping:
+    get:
+      summary: List test-parameter mapping for a test
+      operationId: listCatalogTestMapping
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+        - name: testId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListCatalogTestMappingResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+    post:
+      summary: Add parameter to test (create mapping)
+      operationId: addCatalogTestMapping
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+        - name: testId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddCatalogTestMappingRequest'
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogTestParameterMap'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/DomainError'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+  /catalog/tests/{testId}/mapping/reorder:
+    post:
+      summary: Reorder parameters for a test
+      operationId: reorderCatalogTestMapping
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+        - name: testId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReorderCatalogTestMappingRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListCatalogTestMappingResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/DomainError'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+  /catalog/tests/{testId}/mapping/{mappingId}:
+    patch:
+      summary: Update test-parameter mapping
+      operationId: updateCatalogTestMapping
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+        - name: testId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: mappingId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCatalogTestMappingRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogTestParameterMap'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/DomainError'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+    delete:
+      summary: Remove parameter from test (delete mapping)
+      operationId: deleteCatalogTestMapping
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+        - name: testId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: mappingId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Mapping removed
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/DomainError'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+  /catalog/parameters/{parameterId}/reference-ranges:
+    get:
+      summary: List reference ranges for a parameter
+      operationId: listCatalogReferenceRanges
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+        - name: parameterId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListCatalogReferenceRangesResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+    post:
+      summary: Create reference range
+      operationId: createCatalogReferenceRange
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+        - name: parameterId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCatalogReferenceRangeRequest'
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogParameterReferenceRange'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/DomainError'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+  /catalog/parameters/{parameterId}/reference-ranges/{rangeId}:
+    patch:
+      summary: Update reference range
+      operationId: updateCatalogReferenceRange
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+        - name: parameterId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: rangeId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCatalogReferenceRangeRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogParameterReferenceRange'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/DomainError'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+    delete:
+      summary: Delete reference range
+      operationId: deleteCatalogReferenceRange
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+        - name: parameterId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: rangeId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Reference range deleted
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+  /catalog/layouts:
+    get:
+      summary: List report layout rules
+      operationId: listCatalogLayouts
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListCatalogLayoutsResponse'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+    post:
+      summary: Create report layout rule
+      operationId: createCatalogLayout
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCatalogLayoutRequest'
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogReportLayoutRule'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '409':
+          $ref: '#/components/responses/DomainError'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+  /catalog/layouts/{layoutId}:
+    get:
+      summary: Get layout rule by id
+      operationId: getCatalogLayoutById
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+        - name: layoutId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogReportLayoutRule'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+    patch:
+      summary: Update layout rule
+      operationId: updateCatalogLayout
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+        - name: layoutId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCatalogLayoutRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogReportLayoutRule'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/DomainError'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+  /catalog/annotations:
+    get:
+      summary: List test/parameter annotations
+      operationId: listCatalogAnnotations
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+        - name: testId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: parameterId
+          in: query
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListCatalogAnnotationsResponse'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+    post:
+      summary: Create annotation
+      operationId: createCatalogAnnotation
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCatalogAnnotationRequest'
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogTestAnnotation'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/DomainError'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+  /catalog/annotations/{annotationId}:
+    get:
+      summary: Get annotation by id
+      operationId: getCatalogAnnotationById
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+        - name: annotationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogTestAnnotation'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+    patch:
+      summary: Update annotation
+      operationId: updateCatalogAnnotation
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+        - name: annotationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCatalogAnnotationRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogTestAnnotation'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/DomainError'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+    delete:
+      summary: Delete annotation
+      operationId: deleteCatalogAnnotation
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+        - name: annotationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Annotation deleted
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+  /catalog/import:
+    post:
+      summary: Import catalog from XLSX (dry run or apply)
+      operationId: importCatalog
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                dryRun:
+                  type: boolean
+                  default: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogImportResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '409':
+          $ref: '#/components/responses/DomainError'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+  /catalog/export:
+    post:
+      summary: Export catalog to XLSX
+      operationId: exportCatalog
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExportCatalogRequest'
+      responses:
+        '200':
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/DomainError'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+  /catalog/audit:
+    post:
+      summary: Run catalog audit
+      operationId: runCatalogAudit
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RunCatalogAuditRequest'
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogAuditRun'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+    get:
+      summary: List catalog audit runs
+      operationId: listCatalogAudits
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+        - name: versionId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListCatalogAuditsResponse'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+  /catalog/audit/{auditId}:
+    get:
+      summary: Get catalog audit run by id
+      operationId: getCatalogAuditById
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+        - name: auditId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogAuditRun'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+  /admin/users:
+    get:
+      summary: List tenant users
+      operationId: listAdminUsers
+      tags: [AdminUsers]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: query
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Tenant users list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListAdminUsersResponse'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+  /admin/users/invite:
+    post:
+      summary: Invite tenant user
+      operationId: inviteAdminUser
+      tags: [AdminUsers]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InviteRequest'
+      responses:
+        '201':
+          description: Invite created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InviteResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '409':
+          $ref: '#/components/responses/DomainError'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+  /admin/users/{userId}:
+    get:
+      summary: Get tenant user by id
+      operationId: getAdminUserById
+      tags: [AdminUsers]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+        - $ref: '#/components/parameters/UserIdPathParam'
+      responses:
+        '200':
+          description: Tenant user detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserAdmin'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+    patch:
+      summary: Update tenant user status/roles
+      operationId: updateAdminUser
+      tags: [AdminUsers]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+        - $ref: '#/components/parameters/UserIdPathParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAdminUserRequest'
+      responses:
+        '200':
+          description: Updated tenant user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserAdmin'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/DomainError'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+  /lab/panels:
+    get:
+      summary: List LAB panels
+      operationId: listLabPanels
+      tags: [CatalogPanels]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+      responses:
+        '200':
+          description: LAB panel list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListPanelsResponse'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+    post:
+      summary: Create LAB panel
+      operationId: createLabPanel
+      tags: [CatalogPanels]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PanelCreateRequest'
+      responses:
+        '201':
+          description: LAB panel created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Panel'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '409':
+          $ref: '#/components/responses/DomainError'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+  /lab/panels/{panelId}:
+    get:
+      summary: Get LAB panel by id
+      operationId: getLabPanelById
+      tags: [CatalogPanels]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+        - $ref: '#/components/parameters/PanelIdPathParam'
+      responses:
+        '200':
+          description: LAB panel detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Panel'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+    patch:
+      summary: Update LAB panel
+      operationId: updateLabPanel
+      tags: [CatalogPanels]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+        - $ref: '#/components/parameters/PanelIdPathParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PanelUpdateRequest'
+      responses:
+        '200':
+          description: Updated panel
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Panel'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/DomainError'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+  /lab/panels/{panelId}:add-test:
+    post:
+      summary: Add test to panel
+      operationId: addTestToPanel
+      tags: [CatalogPanels]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+        - $ref: '#/components/parameters/PanelIdPathParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PanelAddTestRequest'
+      responses:
+        '200':
+          description: Updated panel
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Panel'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/DomainError'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+  /lab/panels/{panelId}:remove-test:
+    post:
+      summary: Remove test from panel
+      operationId: removeTestFromPanel
+      tags: [CatalogPanels]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+        - $ref: '#/components/parameters/PanelIdPathParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PanelRemoveTestRequest'
+      responses:
+        '200':
+          description: Updated panel
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Panel'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/DomainError'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+  /lab/parameters/{parameterId}:
+    get:
+      summary: Get LAB parameter detail by id
+      operationId: getLabParameterById
+      tags: [Linking]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+        - $ref: '#/components/parameters/ParameterIdPathParam'
+      responses:
+        '200':
+          description: Parameter detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParameterDetail'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+  /lab/linking/state:
+    get:
+      summary: Get linking state metrics
+      operationId: getLabLinkingState
+      tags: [Linking]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+      responses:
+        '200':
+          description: Linking state and metrics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LinkingState'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+  /lab/linking:link-test-parameter:
+    post:
+      summary: Link parameter to test
+      operationId: linkTestParameter
+      tags: [Linking]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LinkTestParameterRequest'
+      responses:
+        '200':
+          description: Updated parameter detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParameterDetail'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/DomainError'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+  /lab/linking:unlink-test-parameter:
+    post:
+      summary: Unlink parameter from test
+      operationId: unlinkTestParameter
+      tags: [Linking]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UnlinkTestParameterRequest'
+      responses:
+        '200':
+          description: Updated parameter detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParameterDetail'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/DomainError'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+  /lab/tests/{testId}/reference-ranges:
+    get:
+      summary: List reference ranges for test
+      operationId: listLabReferenceRanges
+      tags: [Linking]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+        - $ref: '#/components/parameters/LabTestIdPathParam'
+      responses:
+        '200':
+          description: Reference ranges for test
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListReferenceRangesResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+  /lab/tests/{testId}:upsert-reference-range:
+    post:
+      summary: Upsert reference range for a test parameter
+      operationId: upsertLabReferenceRange
+      tags: [Linking]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+        - $ref: '#/components/parameters/LabTestIdPathParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpsertReferenceRangeRequest'
+      responses:
+        '200':
+          description: Upserted reference range
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReferenceRange'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/DomainError'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+  /lab/catalog-imports:
+    post:
+      summary: Upload XLSX catalog import
+      operationId: createLabCatalogImportJob
+      tags: [CatalogImportExport]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                mode:
+                  type: string
+                  enum: [MERGE, REPLACE]
+      responses:
+        '201':
+          description: Import job created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogImportJob'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '409':
+          $ref: '#/components/responses/DomainError'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+    get:
+      summary: List catalog import jobs
+      operationId: listLabCatalogImportJobs
+      tags: [CatalogImportExport]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+      responses:
+        '200':
+          description: Catalog import jobs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListCatalogImportJobsResponse'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+  /lab/catalog-imports/{jobId}:
+    get:
+      summary: Get catalog import job detail
+      operationId: getLabCatalogImportJobById
+      tags: [CatalogImportExport]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+        - $ref: '#/components/parameters/JobIdPathParam'
+      responses:
+        '200':
+          description: Import job detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogImportJob'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+  /lab/catalog-exports:
+    post:
+      summary: Create catalog export job
+      operationId: createLabCatalogExportJob
+      tags: [CatalogImportExport]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCatalogExportRequest'
+      responses:
+        '201':
+          description: Export job created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogExportJob'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+    get:
+      summary: List catalog export jobs
+      operationId: listLabCatalogExportJobs
+      tags: [CatalogImportExport]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+      responses:
+        '200':
+          description: Catalog export jobs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListCatalogExportJobsResponse'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+  /lab/catalog-exports/{jobId}/file:
+    get:
+      summary: Download exported catalog XLSX file
+      operationId: getLabCatalogExportFile
+      tags: [CatalogImportExport]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+        - $ref: '#/components/parameters/JobIdPathParam'
+      responses:
+        '200':
+          description: Exported XLSX file
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/DomainError'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+  /admin/business/branding:
+    get:
+      summary: Get tenant branding config
+      operationId: getTenantBrandingConfig
+      tags: [BusinessConfig]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+      responses:
+        '200':
+          description: Branding config
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BusinessBrandingConfig'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+    put:
+      summary: Update tenant branding config
+      operationId: updateTenantBrandingConfig
+      tags: [BusinessConfig]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateBusinessBrandingConfigRequest'
+      responses:
+        '200':
+          description: Updated branding config
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BusinessBrandingConfig'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+  /admin/business/report-design:
+    get:
+      summary: Get tenant report design config
+      operationId: getTenantReportDesignConfig
+      tags: [BusinessConfig]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+      responses:
+        '200':
+          description: Report design config
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportDesignConfig'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+    put:
+      summary: Update tenant report design config
+      operationId: updateTenantReportDesignConfig
+      tags: [BusinessConfig]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateReportDesignConfigRequest'
+      responses:
+        '200':
+          description: Updated report design config
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportDesignConfig'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+  /admin/business/receipt-design:
+    get:
+      summary: Get tenant receipt design config
+      operationId: getTenantReceiptDesignConfig
+      tags: [BusinessConfig]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+      responses:
+        '200':
+          description: Receipt design config
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReceiptDesignConfig'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+    put:
+      summary: Update tenant receipt design config
+      operationId: updateTenantReceiptDesignConfig
+      tags: [BusinessConfig]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateReceiptDesignConfigRequest'
+      responses:
+        '200':
+          description: Updated receipt design config
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReceiptDesignConfig'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
 components:
   securitySchemes:
     bearerAuth:
@@ -925,6 +2562,34 @@ components:
         type: string
     LabTestIdPathParam:
       name: testId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    UserIdPathParam:
+      name: userId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    PanelIdPathParam:
+      name: panelId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    ParameterIdPathParam:
+      name: parameterId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    JobIdPathParam:
+      name: jobId
       in: path
       required: true
       schema:
@@ -1231,6 +2896,12 @@ components:
           type: integer
         published_last_24h_count:
           type: integer
+        users_count:
+          type: integer
+        panels_count:
+          type: integer
+        pending_imports_count:
+          type: integer
     AdminOverviewSystem:
       type: object
       properties:
@@ -1249,6 +2920,8 @@ components:
         tests_count:
           type: integer
         parameters_count:
+          type: integer
+        panels_count:
           type: integer
     AdminOverviewResponse:
       type: object
@@ -1269,6 +2942,782 @@ components:
           additionalProperties:
             type: boolean
           description: Enabled feature flags for tenant
+    UserAdmin:
+      type: object
+      required:
+        - id
+        - email
+        - status
+        - roles
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [active, inactive]
+        roles:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+          format: date-time
+    ListAdminUsersResponse:
+      type: object
+      required:
+        - data
+        - total
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserAdmin'
+        total:
+          type: integer
+    InviteRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - email
+        - name
+        - roleNames
+      properties:
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+          minLength: 1
+        roleNames:
+          type: array
+          minItems: 1
+          items:
+            type: string
+        expiresInHours:
+          type: integer
+          minimum: 1
+          maximum: 720
+          default: 168
+    InviteResponse:
+      type: object
+      required:
+        - inviteId
+        - email
+        - status
+        - expiresAt
+        - roleNames
+      properties:
+        inviteId:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [PENDING, ACCEPTED, REVOKED, EXPIRED]
+        expiresAt:
+          type: string
+          format: date-time
+        roleNames:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+          format: date-time
+    UpdateAdminUserRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        status:
+          type: string
+          enum: [active, inactive]
+        roleNames:
+          type: array
+          items:
+            type: string
+    PanelTest:
+      type: object
+      required:
+        - id
+        - panelId
+        - testId
+        - sortOrder
+      properties:
+        id:
+          type: string
+          format: uuid
+        panelId:
+          type: string
+          format: uuid
+        testId:
+          type: string
+          format: uuid
+        sortOrder:
+          type: integer
+        testCode:
+          type: string
+        testName:
+          type: string
+    Panel:
+      type: object
+      required:
+        - id
+        - code
+        - name
+        - active
+        - tests
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        name:
+          type: string
+        active:
+          type: boolean
+        description:
+          type: string
+          nullable: true
+        tests:
+          type: array
+          items:
+            $ref: '#/components/schemas/PanelTest'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    ListPanelsResponse:
+      type: object
+      required:
+        - data
+        - total
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Panel'
+        total:
+          type: integer
+    PanelCreateRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - code
+        - name
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        active:
+          type: boolean
+        description:
+          type: string
+    PanelUpdateRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+        active:
+          type: boolean
+        description:
+          type: string
+    PanelAddTestRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - testId
+      properties:
+        testId:
+          type: string
+          format: uuid
+        sortOrder:
+          type: integer
+          minimum: 0
+    PanelRemoveTestRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - testId
+      properties:
+        testId:
+          type: string
+          format: uuid
+    ParameterDetail:
+      allOf:
+        - $ref: '#/components/schemas/LabTestParameter'
+        - type: object
+          properties:
+            testCode:
+              type: string
+            testName:
+              type: string
+            dataType:
+              type: string
+              enum: [NUMERIC, TEXT]
+            referenceDefaults:
+              type: object
+              properties:
+                low:
+                  type: number
+                  nullable: true
+                high:
+                  type: number
+                  nullable: true
+                text:
+                  type: string
+                  nullable: true
+    ReferenceRange:
+      type: object
+      required:
+        - id
+        - testId
+        - parameterId
+      properties:
+        id:
+          type: string
+          format: uuid
+        testId:
+          type: string
+          format: uuid
+        parameterId:
+          type: string
+          format: uuid
+        sex:
+          type: string
+          enum: [MALE, FEMALE, OTHER]
+          nullable: true
+        ageMinDays:
+          type: integer
+          nullable: true
+        ageMaxDays:
+          type: integer
+          nullable: true
+        low:
+          type: number
+          nullable: true
+        high:
+          type: number
+          nullable: true
+        textRange:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    ListReferenceRangesResponse:
+      type: object
+      required:
+        - data
+        - total
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReferenceRange'
+        total:
+          type: integer
+    UpsertReferenceRangeRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - parameterId
+      properties:
+        parameterId:
+          type: string
+          format: uuid
+        sex:
+          type: string
+          enum: [MALE, FEMALE, OTHER]
+        ageMinDays:
+          type: integer
+          minimum: 0
+        ageMaxDays:
+          type: integer
+          minimum: 0
+        low:
+          type: number
+        high:
+          type: number
+        textRange:
+          type: string
+    LinkingState:
+      type: object
+      required:
+        - tests_count
+        - parameters_count
+        - linked_parameters_count
+        - ranges_count
+      properties:
+        tests_count:
+          type: integer
+        parameters_count:
+          type: integer
+        linked_parameters_count:
+          type: integer
+        ranges_count:
+          type: integer
+    LinkTestParameterRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - testId
+        - parameterId
+      properties:
+        testId:
+          type: string
+          format: uuid
+        parameterId:
+          type: string
+          format: uuid
+        displayOrder:
+          type: integer
+          minimum: 0
+    UnlinkTestParameterRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - testId
+        - parameterId
+      properties:
+        testId:
+          type: string
+          format: uuid
+        parameterId:
+          type: string
+          format: uuid
+    CatalogJobStatus:
+      type: string
+      enum: [PENDING, RUNNING, COMPLETED, FAILED]
+    CatalogImportJobError:
+      type: object
+      required:
+        - row
+        - code
+        - message
+      properties:
+        row:
+          type: integer
+        code:
+          type: string
+        field:
+          type: string
+          nullable: true
+        message:
+          type: string
+    CatalogImportJob:
+      type: object
+      required:
+        - id
+        - status
+        - fileName
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/CatalogJobStatus'
+        fileName:
+          type: string
+        mode:
+          type: string
+          enum: [MERGE, REPLACE]
+        processedRows:
+          type: integer
+        successRows:
+          type: integer
+        failedRows:
+          type: integer
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/CatalogImportJobError'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    ListCatalogImportJobsResponse:
+      type: object
+      required:
+        - data
+        - total
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/CatalogImportJob'
+        total:
+          type: integer
+    CreateCatalogExportRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - entity
+      properties:
+        entity:
+          type: string
+          enum: [TESTS, PARAMETERS, PANELS]
+    CatalogExportJob:
+      type: object
+      required:
+        - id
+        - status
+        - entity
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/CatalogJobStatus'
+        entity:
+          type: string
+          enum: [TESTS, PARAMETERS, PANELS]
+        fileName:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    ListCatalogExportJobsResponse:
+      type: object
+      required:
+        - data
+        - total
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/CatalogExportJob'
+        total:
+          type: integer
+    BusinessBrandingConfig:
+      type: object
+      required:
+        - businessName
+        - address
+        - phone
+        - headerLine1
+        - headerLine2
+        - updatedAt
+      properties:
+        businessName:
+          type: string
+        address:
+          type: string
+        phone:
+          type: string
+        headerLine1:
+          type: string
+        headerLine2:
+          type: string
+        logoAssetName:
+          type: string
+          nullable: true
+        headerAssetName:
+          type: string
+          nullable: true
+        footerAssetName:
+          type: string
+          nullable: true
+        updatedAt:
+          type: string
+          format: date-time
+        updatedBy:
+          type: string
+          nullable: true
+    UpdateBusinessBrandingConfigRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - businessName
+        - address
+        - phone
+        - headerLine1
+        - headerLine2
+      properties:
+        businessName:
+          type: string
+        address:
+          type: string
+        phone:
+          type: string
+        headerLine1:
+          type: string
+        headerLine2:
+          type: string
+        logoAssetName:
+          type: string
+        headerAssetName:
+          type: string
+        footerAssetName:
+          type: string
+    ReportDesignConfig:
+      type: object
+      required:
+        - showLogo
+        - logoPosition
+        - headerText1
+        - headerText2
+        - headerDividerStyle
+        - patientLayoutStyle
+        - showRefNumber
+        - showConsultant
+        - showSampleTime
+        - resultsFontSize
+        - showUnitsColumn
+        - showReferenceRange
+        - abnormalHighlightStyle
+        - footerText
+        - showSignatories
+        - signatoryBlockStyle
+        - updatedAt
+      properties:
+        showLogo:
+          type: boolean
+        logoPosition:
+          type: string
+          enum: [left, center, right]
+        headerText1:
+          type: string
+        headerText2:
+          type: string
+        headerDividerStyle:
+          type: string
+          enum: [thin, none, accent]
+        patientLayoutStyle:
+          type: string
+          enum: [compact, spacious]
+        showRefNumber:
+          type: boolean
+        showConsultant:
+          type: boolean
+        showSampleTime:
+          type: boolean
+        resultsFontSize:
+          type: string
+          enum: [small, normal, large]
+        showUnitsColumn:
+          type: boolean
+        showReferenceRange:
+          type: boolean
+        abnormalHighlightStyle:
+          type: string
+          enum: [bold, color, border]
+        footerText:
+          type: string
+        showSignatories:
+          type: boolean
+        signatoryBlockStyle:
+          type: string
+          enum: [single, dual]
+        updatedAt:
+          type: string
+          format: date-time
+        updatedBy:
+          type: string
+          nullable: true
+    UpdateReportDesignConfigRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - showLogo
+        - logoPosition
+        - headerText1
+        - headerText2
+        - headerDividerStyle
+        - patientLayoutStyle
+        - showRefNumber
+        - showConsultant
+        - showSampleTime
+        - resultsFontSize
+        - showUnitsColumn
+        - showReferenceRange
+        - abnormalHighlightStyle
+        - footerText
+        - showSignatories
+        - signatoryBlockStyle
+      properties:
+        showLogo:
+          type: boolean
+        logoPosition:
+          type: string
+          enum: [left, center, right]
+        headerText1:
+          type: string
+        headerText2:
+          type: string
+        headerDividerStyle:
+          type: string
+          enum: [thin, none, accent]
+        patientLayoutStyle:
+          type: string
+          enum: [compact, spacious]
+        showRefNumber:
+          type: boolean
+        showConsultant:
+          type: boolean
+        showSampleTime:
+          type: boolean
+        resultsFontSize:
+          type: string
+          enum: [small, normal, large]
+        showUnitsColumn:
+          type: boolean
+        showReferenceRange:
+          type: boolean
+        abnormalHighlightStyle:
+          type: string
+          enum: [bold, color, border]
+        footerText:
+          type: string
+        showSignatories:
+          type: boolean
+        signatoryBlockStyle:
+          type: string
+          enum: [single, dual]
+    ReceiptDesignConfig:
+      type: object
+      required:
+        - showLogo
+        - businessNameOverride
+        - showAddress
+        - showContact
+        - showQuantityColumn
+        - showUnitPrice
+        - showDiscountColumn
+        - showTaxColumn
+        - showSubtotal
+        - showDiscount
+        - showTax
+        - grandTotalStyle
+        - thankYouMessage
+        - termsAndConditions
+        - showQrCodePlaceholder
+        - receiptWidthMode
+        - updatedAt
+      properties:
+        showLogo:
+          type: boolean
+        businessNameOverride:
+          type: string
+        showAddress:
+          type: boolean
+        showContact:
+          type: boolean
+        showQuantityColumn:
+          type: boolean
+        showUnitPrice:
+          type: boolean
+        showDiscountColumn:
+          type: boolean
+        showTaxColumn:
+          type: boolean
+        showSubtotal:
+          type: boolean
+        showDiscount:
+          type: boolean
+        showTax:
+          type: boolean
+        grandTotalStyle:
+          type: string
+          enum: [bold, accent]
+        thankYouMessage:
+          type: string
+        termsAndConditions:
+          type: string
+        showQrCodePlaceholder:
+          type: boolean
+        receiptWidthMode:
+          type: string
+          enum: [a4, thermal80, thermal58]
+        updatedAt:
+          type: string
+          format: date-time
+        updatedBy:
+          type: string
+          nullable: true
+    UpdateReceiptDesignConfigRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - showLogo
+        - businessNameOverride
+        - showAddress
+        - showContact
+        - showQuantityColumn
+        - showUnitPrice
+        - showDiscountColumn
+        - showTaxColumn
+        - showSubtotal
+        - showDiscount
+        - showTax
+        - grandTotalStyle
+        - thankYouMessage
+        - termsAndConditions
+        - showQrCodePlaceholder
+        - receiptWidthMode
+      properties:
+        showLogo:
+          type: boolean
+        businessNameOverride:
+          type: string
+        showAddress:
+          type: boolean
+        showContact:
+          type: boolean
+        showQuantityColumn:
+          type: boolean
+        showUnitPrice:
+          type: boolean
+        showDiscountColumn:
+          type: boolean
+        showTaxColumn:
+          type: boolean
+        showSubtotal:
+          type: boolean
+        showDiscount:
+          type: boolean
+        showTax:
+          type: boolean
+        grandTotalStyle:
+          type: string
+          enum: [bold, accent]
+        thankYouMessage:
+          type: string
+        termsAndConditions:
+          type: string
+        showQrCodePlaceholder:
+          type: boolean
+        receiptWidthMode:
+          type: string
+          enum: [a4, thermal80, thermal58]
     LabTestDefinition:
       type: object
       required:
@@ -1916,7 +4365,7 @@ components:
             type:
               type: string
               enum: [validation_error]
-            fields:
+            field_errors:
               type: object
               additionalProperties:
                 type: array
@@ -1924,7 +4373,7 @@ components:
                   type: string
           required:
             - type
-            - fields
+            - field_errors
       required:
         - error
     DomainErrorEnvelope:
@@ -1999,3 +4448,828 @@ components:
             - message
       required:
         - error
+    # --- Catalog schemas ---
+    CatalogVersionStatus:
+      type: string
+      enum: [draft, published, archived]
+    CatalogVersion:
+      type: object
+      required:
+        - id
+        - tenantId
+        - versionTag
+        - status
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenantId:
+          type: string
+          format: uuid
+        versionTag:
+          type: string
+        status:
+          $ref: '#/components/schemas/CatalogVersionStatus'
+        sha256Manifest:
+          type: string
+          nullable: true
+        createdBy:
+          type: string
+          format: uuid
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        notes:
+          type: string
+          nullable: true
+    ListCatalogVersionsResponse:
+      type: object
+      required:
+        - data
+        - total
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/CatalogVersion'
+        total:
+          type: integer
+    CreateCatalogVersionRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        versionTag:
+          type: string
+        notes:
+          type: string
+    CatalogTestDefinition:
+      type: object
+      required:
+        - id
+        - tenantId
+        - testCode
+        - testName
+        - status
+        - layoutKey
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenantId:
+          type: string
+          format: uuid
+        testCode:
+          type: string
+        testName:
+          type: string
+        section:
+          type: string
+          nullable: true
+        specimenTypeId:
+          type: string
+          format: uuid
+          nullable: true
+        tatMinutes:
+          type: integer
+          nullable: true
+        status:
+          type: string
+          enum: [active, inactive]
+        layoutKey:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    ListCatalogTestsResponse:
+      type: object
+      required:
+        - data
+        - total
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/CatalogTestDefinition'
+        total:
+          type: integer
+    CreateCatalogTestRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - testCode
+        - testName
+        - layoutKey
+      properties:
+        testCode:
+          type: string
+        testName:
+          type: string
+        section:
+          type: string
+          nullable: true
+        specimenTypeId:
+          type: string
+          format: uuid
+          nullable: true
+        tatMinutes:
+          type: integer
+          nullable: true
+        status:
+          type: string
+          enum: [active, inactive]
+        layoutKey:
+          type: string
+    UpdateCatalogTestRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        testName:
+          type: string
+        section:
+          type: string
+          nullable: true
+        specimenTypeId:
+          type: string
+          format: uuid
+          nullable: true
+        tatMinutes:
+          type: integer
+          nullable: true
+        status:
+          type: string
+          enum: [active, inactive]
+        layoutKey:
+          type: string
+    ParameterResultType:
+      type: string
+      enum: [number, integer, decimal, text, enum, boolean, formula, lis_imported]
+    CatalogParameterDefinition:
+      type: object
+      required:
+        - id
+        - tenantId
+        - parameterCode
+        - parameterName
+        - resultType
+        - status
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenantId:
+          type: string
+          format: uuid
+        parameterCode:
+          type: string
+        parameterName:
+          type: string
+        resultType:
+          $ref: '#/components/schemas/ParameterResultType'
+        unitId:
+          type: string
+          format: uuid
+          nullable: true
+        precision:
+          type: integer
+          nullable: true
+        defaultValue:
+          type: string
+          nullable: true
+        enumOptions:
+          type: array
+          items:
+            type: string
+          nullable: true
+        formulaSpec:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [active, inactive]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    ListCatalogParametersResponse:
+      type: object
+      required:
+        - data
+        - total
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/CatalogParameterDefinition'
+        total:
+          type: integer
+    CreateCatalogParameterRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - parameterCode
+        - parameterName
+        - resultType
+      properties:
+        parameterCode:
+          type: string
+        parameterName:
+          type: string
+        resultType:
+          $ref: '#/components/schemas/ParameterResultType'
+        unitId:
+          type: string
+          format: uuid
+          nullable: true
+        precision:
+          type: integer
+          nullable: true
+        defaultValue:
+          type: string
+          nullable: true
+        enumOptions:
+          type: array
+          items:
+            type: string
+          nullable: true
+        formulaSpec:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [active, inactive]
+    UpdateCatalogParameterRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        parameterName:
+          type: string
+        resultType:
+          $ref: '#/components/schemas/ParameterResultType'
+        unitId:
+          type: string
+          format: uuid
+          nullable: true
+        precision:
+          type: integer
+          nullable: true
+        defaultValue:
+          type: string
+          nullable: true
+        enumOptions:
+          type: array
+          items:
+            type: string
+          nullable: true
+        formulaSpec:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [active, inactive]
+    CatalogTestParameterMap:
+      type: object
+      required:
+        - id
+        - tenantId
+        - testId
+        - parameterId
+        - displayOrder
+        - required
+        - visibility
+        - readOnly
+        - printFlag
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenantId:
+          type: string
+          format: uuid
+        testId:
+          type: string
+          format: uuid
+        parameterId:
+          type: string
+          format: uuid
+        displayOrder:
+          type: integer
+        required:
+          type: boolean
+        visibility:
+          type: string
+          enum: [normal, optional, hidden]
+        readOnly:
+          type: boolean
+        printFlag:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        parameter:
+          $ref: '#/components/schemas/CatalogParameterDefinition'
+          description: Optional; present when expanding
+    ListCatalogTestMappingResponse:
+      type: object
+      required:
+        - data
+        - total
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/CatalogTestParameterMap'
+        total:
+          type: integer
+    AddCatalogTestMappingRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - parameterId
+      properties:
+        parameterId:
+          type: string
+          format: uuid
+        displayOrder:
+          type: integer
+        required:
+          type: boolean
+        visibility:
+          type: string
+          enum: [normal, optional, hidden]
+        readOnly:
+          type: boolean
+        printFlag:
+          type: boolean
+    UpdateCatalogTestMappingRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        displayOrder:
+          type: integer
+        required:
+          type: boolean
+        visibility:
+          type: string
+          enum: [normal, optional, hidden]
+        readOnly:
+          type: boolean
+        printFlag:
+          type: boolean
+    ReorderCatalogTestMappingRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - parameterIds
+      properties:
+        parameterIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+    CatalogParameterReferenceRange:
+      type: object
+      required:
+        - id
+        - tenantId
+        - parameterId
+        - sex
+        - priority
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenantId:
+          type: string
+          format: uuid
+        parameterId:
+          type: string
+          format: uuid
+        sex:
+          type: string
+          enum: [M, F, Any]
+        ageMinDays:
+          type: integer
+          nullable: true
+        ageMaxDays:
+          type: integer
+          nullable: true
+        refLow:
+          type: number
+          nullable: true
+        refHigh:
+          type: number
+          nullable: true
+        refText:
+          type: string
+          nullable: true
+        priority:
+          type: integer
+        effectiveFrom:
+          type: string
+          format: date-time
+          nullable: true
+        effectiveTo:
+          type: string
+          format: date-time
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+    ListCatalogReferenceRangesResponse:
+      type: object
+      required:
+        - data
+        - total
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/CatalogParameterReferenceRange'
+        total:
+          type: integer
+    CreateCatalogReferenceRangeRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - sex
+      properties:
+        sex:
+          type: string
+          enum: [M, F, Any]
+        ageMinDays:
+          type: integer
+          nullable: true
+        ageMaxDays:
+          type: integer
+          nullable: true
+        refLow:
+          type: number
+          nullable: true
+        refHigh:
+          type: number
+          nullable: true
+        refText:
+          type: string
+          nullable: true
+        priority:
+          type: integer
+        effectiveFrom:
+          type: string
+          format: date-time
+          nullable: true
+        effectiveTo:
+          type: string
+          format: date-time
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+    UpdateCatalogReferenceRangeRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        sex:
+          type: string
+          enum: [M, F, Any]
+        ageMinDays:
+          type: integer
+          nullable: true
+        ageMaxDays:
+          type: integer
+          nullable: true
+        refLow:
+          type: number
+          nullable: true
+        refHigh:
+          type: number
+          nullable: true
+        refText:
+          type: string
+          nullable: true
+        priority:
+          type: integer
+        effectiveFrom:
+          type: string
+          format: date-time
+          nullable: true
+        effectiveTo:
+          type: string
+          format: date-time
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+    LayoutGroupingStrategy:
+      type: string
+      enum: [by_layout_key]
+    LayoutPageBreakPolicy:
+      type: string
+      enum: [always, never, threshold]
+    LayoutRenderStyle:
+      type: string
+      enum: [table]
+    CatalogReportLayoutRule:
+      type: object
+      required:
+        - id
+        - tenantId
+        - layoutKey
+        - groupingStrategy
+        - pageBreakPolicy
+        - renderStyle
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenantId:
+          type: string
+          format: uuid
+        layoutKey:
+          type: string
+        groupingStrategy:
+          $ref: '#/components/schemas/LayoutGroupingStrategy'
+        pageBreakPolicy:
+          $ref: '#/components/schemas/LayoutPageBreakPolicy'
+        maxTestsPerPage:
+          type: integer
+          nullable: true
+        allowedCombineWith:
+          type: array
+          items:
+            type: string
+          nullable: true
+        renderStyle:
+          $ref: '#/components/schemas/LayoutRenderStyle'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    ListCatalogLayoutsResponse:
+      type: object
+      required:
+        - data
+        - total
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/CatalogReportLayoutRule'
+        total:
+          type: integer
+    CreateCatalogLayoutRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - layoutKey
+      properties:
+        layoutKey:
+          type: string
+        groupingStrategy:
+          $ref: '#/components/schemas/LayoutGroupingStrategy'
+        pageBreakPolicy:
+          $ref: '#/components/schemas/LayoutPageBreakPolicy'
+        maxTestsPerPage:
+          type: integer
+          nullable: true
+        allowedCombineWith:
+          type: array
+          items:
+            type: string
+          nullable: true
+        renderStyle:
+          $ref: '#/components/schemas/LayoutRenderStyle'
+    UpdateCatalogLayoutRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        groupingStrategy:
+          $ref: '#/components/schemas/LayoutGroupingStrategy'
+        pageBreakPolicy:
+          $ref: '#/components/schemas/LayoutPageBreakPolicy'
+        maxTestsPerPage:
+          type: integer
+          nullable: true
+        allowedCombineWith:
+          type: array
+          items:
+            type: string
+          nullable: true
+        renderStyle:
+          $ref: '#/components/schemas/LayoutRenderStyle'
+    AnnotationType:
+      type: string
+      enum: [limitation, interpretation, clinical_significance, method, comment]
+    AnnotationPlacement:
+      type: string
+      enum: [before_results, after_results, footer, impression_area]
+    AnnotationVisibilityRule:
+      type: string
+      enum: [always, conditional]
+    CatalogTestAnnotation:
+      type: object
+      required:
+        - id
+        - tenantId
+        - annotationType
+        - placement
+        - text
+        - visibilityRule
+        - displayOrder
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenantId:
+          type: string
+          format: uuid
+        testId:
+          type: string
+          format: uuid
+          nullable: true
+        parameterId:
+          type: string
+          format: uuid
+          nullable: true
+        annotationType:
+          $ref: '#/components/schemas/AnnotationType'
+        placement:
+          $ref: '#/components/schemas/AnnotationPlacement'
+        text:
+          type: string
+        visibilityRule:
+          $ref: '#/components/schemas/AnnotationVisibilityRule'
+        conditionSpec:
+          type: string
+          nullable: true
+        displayOrder:
+          type: integer
+    ListCatalogAnnotationsResponse:
+      type: object
+      required:
+        - data
+        - total
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/CatalogTestAnnotation'
+        total:
+          type: integer
+    CreateCatalogAnnotationRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - annotationType
+        - placement
+        - text
+      properties:
+        testId:
+          type: string
+          format: uuid
+          nullable: true
+        parameterId:
+          type: string
+          format: uuid
+          nullable: true
+        annotationType:
+          $ref: '#/components/schemas/AnnotationType'
+        placement:
+          $ref: '#/components/schemas/AnnotationPlacement'
+        text:
+          type: string
+        visibilityRule:
+          $ref: '#/components/schemas/AnnotationVisibilityRule'
+        conditionSpec:
+          type: string
+          nullable: true
+        displayOrder:
+          type: integer
+    UpdateCatalogAnnotationRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        annotationType:
+          $ref: '#/components/schemas/AnnotationType'
+        placement:
+          $ref: '#/components/schemas/AnnotationPlacement'
+        text:
+          type: string
+        visibilityRule:
+          $ref: '#/components/schemas/AnnotationVisibilityRule'
+        conditionSpec:
+          type: string
+          nullable: true
+        displayOrder:
+          type: integer
+    CatalogImportResponse:
+      type: object
+      required:
+        - dryRun
+      properties:
+        dryRun:
+          type: boolean
+        diffReport:
+          type: object
+          nullable: true
+        appliedVersionId:
+          type: string
+          format: uuid
+          nullable: true
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              sheet:
+                type: string
+              row:
+                type: integer
+              message:
+                type: string
+          nullable: true
+    ExportCatalogRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        versionId:
+          type: string
+          format: uuid
+          description: Use published version; if omitted, export current draft
+        versionTag:
+          type: string
+    RunCatalogAuditRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        version:
+          type: string
+          enum: [published, draft]
+        section:
+          type: string
+          nullable: true
+    CatalogAuditRun:
+      type: object
+      required:
+        - id
+        - tenantId
+        - createdBy
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenantId:
+          type: string
+          format: uuid
+        catalogVersionId:
+          type: string
+          format: uuid
+          nullable: true
+        createdBy:
+          type: string
+          format: uuid
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        summaryJson:
+          type: object
+          nullable: true
+        findingsJson:
+          type: object
+          nullable: true
+        sha256:
+          type: string
+          nullable: true
+    ListCatalogAuditsResponse:
+      type: object
+      required:
+        - data
+        - total
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/CatalogAuditRun'
+        total:
+          type: integer

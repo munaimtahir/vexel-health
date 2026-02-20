@@ -44,6 +44,12 @@ This is the canonical checklist.
 - [ ] Admin monitoring (jobs, pdf failures)
 - [x] Web admin scaffold: Business & Users + Catalog Settings routes/navigation/theme placeholders (2026-02-19)
 - [x] Admin business design scaffold: Branding -> Report Design and Receipt Design metadata pages (2026-02-19)
+- [x] Backend gap closure: admin users endpoints (`GET/POST/PATCH /admin/users*`) with tenant isolation and invite model (2026-02-20)
+- [x] Backend gap closure: LAB panels endpoints (`/lab/panels*`) with deterministic test ordering (2026-02-20)
+- [x] Backend gap closure: linking/reference-range endpoints (`/lab/linking*`, `/lab/parameters/{id}`, `/lab/tests/{id}/reference-ranges`) (2026-02-20)
+- [x] Backend gap closure: catalog import/export jobs with deterministic history (`/lab/catalog-imports*`, `/lab/catalog-exports*`) (2026-02-20)
+- [x] Backend gap closure: tenant business config endpoints (`/admin/business/*`) with typed versioned records (2026-02-20)
+- [x] Admin overview expansion for dashboard counts (users, panels, pending imports) (2026-02-20)
 
 ## Phase 4C — LAB hardening
 - [x] Centralized LAB RBAC permissions and guarded LAB write endpoints

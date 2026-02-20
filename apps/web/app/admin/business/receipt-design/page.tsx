@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AdminCard } from '@/components/admin/AdminCard';
 import { FieldRow } from '@/components/admin/FieldRow';
 import { NoticeBanner } from '@/components/admin/NoticeBanner';
@@ -11,6 +12,10 @@ import { SelectField } from '@/components/admin/design/SelectField';
 import { TextAreaField } from '@/components/admin/design/TextAreaField';
 import { TextField } from '@/components/admin/design/TextField';
 import { ToggleField } from '@/components/admin/design/ToggleField';
+import { parseApiError, type FieldErrors } from '@/lib/api-errors';
+import { client } from '@/lib/sdk/client';
+import { adminKeys } from '@/lib/sdk/hooks';
+import type { paths } from '@vexel/contracts';
 
 const WIDTH_MODES = [
   { value: 'a4', label: 'A4' },
@@ -23,28 +28,12 @@ const GRAND_TOTAL_STYLES = [
   { value: 'accent', label: 'Accent Color' },
 ] as const;
 
-const HAS_RECEIPT_DESIGN_ENDPOINT = false;
+type ReceiptDesignResponse =
+  paths['/admin/business/receipt-design']['get']['responses'][200]['content']['application/json'];
+type UpdateReceiptDesignRequest =
+  paths['/admin/business/receipt-design']['put']['requestBody']['content']['application/json'];
 
-type ReceiptDesignDraft = {
-  showLogo: boolean;
-  businessNameOverride: string;
-  showAddress: boolean;
-  showContact: boolean;
-  showQuantityColumn: boolean;
-  showUnitPrice: boolean;
-  showDiscountColumn: boolean;
-  showTaxColumn: boolean;
-  showSubtotal: boolean;
-  showDiscount: boolean;
-  showTax: boolean;
-  grandTotalStyle: string;
-  thankYouMessage: string;
-  termsAndConditions: string;
-  showQrCodePlaceholder: boolean;
-  receiptWidthMode: string;
-};
-
-const initialDraft: ReceiptDesignDraft = {
+const initialDraft: UpdateReceiptDesignRequest = {
   showLogo: true,
   businessNameOverride: '',
   showAddress: true,
@@ -68,32 +57,114 @@ function labelFor(options: readonly { value: string; label: string }[], value: s
 }
 
 export default function ReceiptDesignPage() {
-  const [draft, setDraft] = useState<ReceiptDesignDraft>(initialDraft);
+  const queryClient = useQueryClient();
+  const [draft, setDraft] = useState<UpdateReceiptDesignRequest>(initialDraft);
   const [savedAt, setSavedAt] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+
+  const { data, error, isLoading } = useQuery({
+    queryKey: adminKeys.receiptDesign(),
+    queryFn: async () => {
+      const { data, error } = await client.GET('/admin/business/receipt-design');
+      if (error) throw new Error(parseApiError(error, 'Failed to load receipt design config').message);
+      return data as ReceiptDesignResponse;
+    },
+  });
+
+  useEffect(() => {
+    if (!data) return;
+    setDraft({
+      showLogo: data.showLogo,
+      businessNameOverride: data.businessNameOverride,
+      showAddress: data.showAddress,
+      showContact: data.showContact,
+      showQuantityColumn: data.showQuantityColumn,
+      showUnitPrice: data.showUnitPrice,
+      showDiscountColumn: data.showDiscountColumn,
+      showTaxColumn: data.showTaxColumn,
+      showSubtotal: data.showSubtotal,
+      showDiscount: data.showDiscount,
+      showTax: data.showTax,
+      grandTotalStyle: data.grandTotalStyle,
+      thankYouMessage: data.thankYouMessage,
+      termsAndConditions: data.termsAndConditions,
+      showQrCodePlaceholder: data.showQrCodePlaceholder,
+      receiptWidthMode: data.receiptWidthMode,
+    });
+  }, [data]);
+
+  const validationMessages = useMemo(
+    () =>
+      Object.entries(fieldErrors).flatMap(([field, messages]) =>
+        messages.map((message) => `${field}: ${message}`),
+      ),
+    [fieldErrors],
+  );
+
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await client.PUT('/admin/business/receipt-design', {
+        body: {
+          ...draft,
+          businessNameOverride: draft.businessNameOverride.trim(),
+          thankYouMessage: draft.thankYouMessage.trim(),
+          termsAndConditions: draft.termsAndConditions.trim(),
+        },
+      });
+
+      if (error) {
+        const parsed = parseApiError(error, 'Failed to save receipt design config');
+        setFieldErrors(parsed.fieldErrors);
+        throw new Error(parsed.message);
+      }
+
+      return data as ReceiptDesignResponse;
+    },
+    onSuccess: async (updated) => {
+      setFieldErrors({});
+      setSavedAt(updated.updatedAt);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: adminKeys.receiptDesign() }),
+        queryClient.invalidateQueries({ queryKey: adminKeys.overview() }),
+      ]);
+    },
+  });
 
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-
-    if (!HAS_RECEIPT_DESIGN_ENDPOINT) {
-      setSavedAt(new Date().toLocaleString());
-      return;
-    }
-
-    // TODO(contract): Replace local save with @vexel/contracts SDK methods:
-    // getTenantReceiptDesign() / updateTenantReceiptDesign()
-    setSavedAt(new Date().toLocaleString());
+    setSavedAt(null);
+    setFieldErrors({});
+    saveMutation.mutate();
   };
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Receipt Design"
-        subtitle="Configure receipt layout metadata for deterministic PDF rendering by backend service."
+        subtitle="Configure tenant-scoped receipt layout metadata for deterministic backend PDF rendering."
       />
 
-      {!HAS_RECEIPT_DESIGN_ENDPOINT ? (
-        <NoticeBanner title="Backend contract endpoint required" tone="warning">
-          Backend contract endpoint required.
+      {error ? (
+        <NoticeBanner title="Unable to load receipt design config" tone="warning">
+          {error instanceof Error ? error.message : 'Unknown error'}
+        </NoticeBanner>
+      ) : null}
+
+      {saveMutation.error ? (
+        <NoticeBanner title="Unable to save receipt design config" tone="warning">
+          {saveMutation.error instanceof Error ? saveMutation.error.message : 'Unknown error'}
+        </NoticeBanner>
+      ) : null}
+
+      {validationMessages.length > 0 ? (
+        <NoticeBanner title="Validation issues" tone="warning">
+          {validationMessages.join(' | ')}
+        </NoticeBanner>
+      ) : null}
+
+      {savedAt ? (
+        <NoticeBanner title="Receipt design saved" tone="success">
+          Saved at {new Date(savedAt).toLocaleString()}.
         </NoticeBanner>
       ) : null}
 
@@ -174,7 +245,9 @@ export default function ReceiptDesignPage() {
                 label="Highlight Grand Total Style"
                 value={draft.grandTotalStyle}
                 options={[...GRAND_TOTAL_STYLES]}
-                onChange={(value) => setDraft((prev) => ({ ...prev, grandTotalStyle: value }))}
+                onChange={(value) =>
+                  setDraft((prev) => ({ ...prev, grandTotalStyle: value as UpdateReceiptDesignRequest['grandTotalStyle'] }))
+                }
               />
             </div>
           </AdminCard>
@@ -210,25 +283,28 @@ export default function ReceiptDesignPage() {
               label="Width Mode"
               value={draft.receiptWidthMode}
               options={[...WIDTH_MODES]}
-              onChange={(value) => setDraft((prev) => ({ ...prev, receiptWidthMode: value }))}
+              onChange={(value) =>
+                setDraft((prev) => ({ ...prev, receiptWidthMode: value as UpdateReceiptDesignRequest['receiptWidthMode'] }))
+              }
             />
           </AdminCard>
 
           <button
             type="submit"
-            className="rounded-xl bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)]"
+            disabled={saveMutation.isPending || isLoading}
+            className="rounded-xl bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)] disabled:opacity-60"
           >
-            Save Draft
+            {saveMutation.isPending ? 'Saving...' : 'Save Design'}
           </button>
         </div>
 
         <div className="space-y-6 xl:col-span-1">
-          <AdminCard title="Preview" subtitle="Backend integration required">
-            <PreviewPanel message="Receipt rendering handled by PDF service — preview requires backend integration" />
+          <AdminCard title="Preview" subtitle="PDF bytes are generated by backend service.">
+            <PreviewPanel message="Receipt rendering is handled by the backend PDF service." />
           </AdminCard>
 
           <AdminCard title="Current Design Snapshot">
-            <SectionTitle title="Tenant-scoped draft metadata" />
+            <SectionTitle title="Tenant-scoped metadata" />
             <dl>
               <FieldRow
                 label="Header"
@@ -247,7 +323,10 @@ export default function ReceiptDesignPage() {
                 value={`${draft.thankYouMessage || 'No thank-you message'} | QR placeholder ${draft.showQrCodePlaceholder ? 'On' : 'Off'}`}
               />
               <FieldRow label="Width Mode" value={labelFor(WIDTH_MODES, draft.receiptWidthMode)} />
-              <FieldRow label="Saved" value={savedAt ? `Saved locally at ${savedAt}` : 'Not saved yet'} />
+              <FieldRow
+                label="Updated"
+                value={`${data?.updatedAt ? new Date(data.updatedAt).toLocaleString() : '—'}${data?.updatedBy ? ` by ${data.updatedBy}` : ''}`}
+              />
             </dl>
           </AdminCard>
         </div>

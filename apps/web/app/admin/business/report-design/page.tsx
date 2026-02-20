@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AdminCard } from '@/components/admin/AdminCard';
 import { FieldRow } from '@/components/admin/FieldRow';
 import { NoticeBanner } from '@/components/admin/NoticeBanner';
@@ -11,6 +12,10 @@ import { SelectField } from '@/components/admin/design/SelectField';
 import { TextAreaField } from '@/components/admin/design/TextAreaField';
 import { TextField } from '@/components/admin/design/TextField';
 import { ToggleField } from '@/components/admin/design/ToggleField';
+import { parseApiError, type FieldErrors } from '@/lib/api-errors';
+import { client } from '@/lib/sdk/client';
+import { adminKeys } from '@/lib/sdk/hooks';
+import type { paths } from '@vexel/contracts';
 
 const LOGO_POSITIONS = [
   { value: 'left', label: 'Left' },
@@ -46,28 +51,12 @@ const SIGNATORY_STYLES = [
   { value: 'dual', label: 'Dual Column' },
 ] as const;
 
-const HAS_REPORT_DESIGN_ENDPOINT = false;
+type ReportDesignResponse =
+  paths['/admin/business/report-design']['get']['responses'][200]['content']['application/json'];
+type UpdateReportDesignRequest =
+  paths['/admin/business/report-design']['put']['requestBody']['content']['application/json'];
 
-type ReportDesignDraft = {
-  showLogo: boolean;
-  logoPosition: string;
-  headerText1: string;
-  headerText2: string;
-  headerDividerStyle: string;
-  patientLayoutStyle: string;
-  showRefNumber: boolean;
-  showConsultant: boolean;
-  showSampleTime: boolean;
-  resultsFontSize: string;
-  showUnitsColumn: boolean;
-  showReferenceRange: boolean;
-  abnormalHighlightStyle: string;
-  footerText: string;
-  showSignatories: boolean;
-  signatoryBlockStyle: string;
-};
-
-const initialDraft: ReportDesignDraft = {
+const initialDraft: UpdateReportDesignRequest = {
   showLogo: true,
   logoPosition: 'left',
   headerText1: '',
@@ -91,32 +80,114 @@ function labelFor(options: readonly { value: string; label: string }[], value: s
 }
 
 export default function ReportDesignPage() {
-  const [draft, setDraft] = useState<ReportDesignDraft>(initialDraft);
+  const queryClient = useQueryClient();
+  const [draft, setDraft] = useState<UpdateReportDesignRequest>(initialDraft);
   const [savedAt, setSavedAt] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+
+  const { data, error, isLoading } = useQuery({
+    queryKey: adminKeys.reportDesign(),
+    queryFn: async () => {
+      const { data, error } = await client.GET('/admin/business/report-design');
+      if (error) throw new Error(parseApiError(error, 'Failed to load report design config').message);
+      return data as ReportDesignResponse;
+    },
+  });
+
+  useEffect(() => {
+    if (!data) return;
+    setDraft({
+      showLogo: data.showLogo,
+      logoPosition: data.logoPosition,
+      headerText1: data.headerText1,
+      headerText2: data.headerText2,
+      headerDividerStyle: data.headerDividerStyle,
+      patientLayoutStyle: data.patientLayoutStyle,
+      showRefNumber: data.showRefNumber,
+      showConsultant: data.showConsultant,
+      showSampleTime: data.showSampleTime,
+      resultsFontSize: data.resultsFontSize,
+      showUnitsColumn: data.showUnitsColumn,
+      showReferenceRange: data.showReferenceRange,
+      abnormalHighlightStyle: data.abnormalHighlightStyle,
+      footerText: data.footerText,
+      showSignatories: data.showSignatories,
+      signatoryBlockStyle: data.signatoryBlockStyle,
+    });
+  }, [data]);
+
+  const validationMessages = useMemo(
+    () =>
+      Object.entries(fieldErrors).flatMap(([field, messages]) =>
+        messages.map((message) => `${field}: ${message}`),
+      ),
+    [fieldErrors],
+  );
+
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await client.PUT('/admin/business/report-design', {
+        body: {
+          ...draft,
+          headerText1: draft.headerText1.trim(),
+          headerText2: draft.headerText2.trim(),
+          footerText: draft.footerText.trim(),
+        },
+      });
+
+      if (error) {
+        const parsed = parseApiError(error, 'Failed to save report design config');
+        setFieldErrors(parsed.fieldErrors);
+        throw new Error(parsed.message);
+      }
+
+      return data as ReportDesignResponse;
+    },
+    onSuccess: async (updated) => {
+      setFieldErrors({});
+      setSavedAt(updated.updatedAt);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: adminKeys.reportDesign() }),
+        queryClient.invalidateQueries({ queryKey: adminKeys.overview() }),
+      ]);
+    },
+  });
 
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-
-    if (!HAS_REPORT_DESIGN_ENDPOINT) {
-      setSavedAt(new Date().toLocaleString());
-      return;
-    }
-
-    // TODO(contract): Replace local save with @vexel/contracts SDK methods:
-    // getTenantReportDesign() / updateTenantReportDesign()
-    setSavedAt(new Date().toLocaleString());
+    setSavedAt(null);
+    setFieldErrors({});
+    saveMutation.mutate();
   };
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Report Design"
-        subtitle="Configure layout metadata for PDF report templates. Rendering remains backend-only via the deterministic PDF service."
+        subtitle="Configure tenant-scoped report design metadata for deterministic backend PDF rendering."
       />
 
-      {!HAS_REPORT_DESIGN_ENDPOINT ? (
-        <NoticeBanner title="Requires backend contract endpoint: GET/PUT tenant report design" tone="warning">
-          Backend contract endpoint required.
+      {error ? (
+        <NoticeBanner title="Unable to load report design config" tone="warning">
+          {error instanceof Error ? error.message : 'Unknown error'}
+        </NoticeBanner>
+      ) : null}
+
+      {saveMutation.error ? (
+        <NoticeBanner title="Unable to save report design config" tone="warning">
+          {saveMutation.error instanceof Error ? saveMutation.error.message : 'Unknown error'}
+        </NoticeBanner>
+      ) : null}
+
+      {validationMessages.length > 0 ? (
+        <NoticeBanner title="Validation issues" tone="warning">
+          {validationMessages.join(' | ')}
+        </NoticeBanner>
+      ) : null}
+
+      {savedAt ? (
+        <NoticeBanner title="Report design saved" tone="success">
+          Saved at {new Date(savedAt).toLocaleString()}.
         </NoticeBanner>
       ) : null}
 
@@ -134,7 +205,7 @@ export default function ReportDesignPage() {
                 label="Logo Position"
                 value={draft.logoPosition}
                 options={[...LOGO_POSITIONS]}
-                onChange={(value) => setDraft((prev) => ({ ...prev, logoPosition: value }))}
+                onChange={(value) => setDraft((prev) => ({ ...prev, logoPosition: value as UpdateReportDesignRequest['logoPosition'] }))}
               />
               <TextField
                 label="Header Text Line 1"
@@ -152,7 +223,12 @@ export default function ReportDesignPage() {
                 label="Header Divider Style"
                 value={draft.headerDividerStyle}
                 options={[...DIVIDER_STYLES]}
-                onChange={(value) => setDraft((prev) => ({ ...prev, headerDividerStyle: value }))}
+                onChange={(value) =>
+                  setDraft((prev) => ({
+                    ...prev,
+                    headerDividerStyle: value as UpdateReportDesignRequest['headerDividerStyle'],
+                  }))
+                }
               />
             </div>
           </AdminCard>
@@ -164,7 +240,9 @@ export default function ReportDesignPage() {
                 label="Layout Style"
                 value={draft.patientLayoutStyle}
                 options={[...LAYOUT_STYLES]}
-                onChange={(value) => setDraft((prev) => ({ ...prev, patientLayoutStyle: value }))}
+                onChange={(value) =>
+                  setDraft((prev) => ({ ...prev, patientLayoutStyle: value as UpdateReportDesignRequest['patientLayoutStyle'] }))
+                }
               />
               <ToggleField
                 label="Show Ref #"
@@ -191,7 +269,9 @@ export default function ReportDesignPage() {
                 label="Font Size"
                 value={draft.resultsFontSize}
                 options={[...FONT_SIZES]}
-                onChange={(value) => setDraft((prev) => ({ ...prev, resultsFontSize: value }))}
+                onChange={(value) =>
+                  setDraft((prev) => ({ ...prev, resultsFontSize: value as UpdateReportDesignRequest['resultsFontSize'] }))
+                }
               />
               <ToggleField
                 label="Show Units Column"
@@ -207,7 +287,12 @@ export default function ReportDesignPage() {
                 label="Abnormal Highlight Style"
                 value={draft.abnormalHighlightStyle}
                 options={[...ABNORMAL_STYLES]}
-                onChange={(value) => setDraft((prev) => ({ ...prev, abnormalHighlightStyle: value }))}
+                onChange={(value) =>
+                  setDraft((prev) => ({
+                    ...prev,
+                    abnormalHighlightStyle: value as UpdateReportDesignRequest['abnormalHighlightStyle'],
+                  }))
+                }
               />
             </div>
           </AdminCard>
@@ -231,26 +316,32 @@ export default function ReportDesignPage() {
                 label="Signatory Block Style"
                 value={draft.signatoryBlockStyle}
                 options={[...SIGNATORY_STYLES]}
-                onChange={(value) => setDraft((prev) => ({ ...prev, signatoryBlockStyle: value }))}
+                onChange={(value) =>
+                  setDraft((prev) => ({
+                    ...prev,
+                    signatoryBlockStyle: value as UpdateReportDesignRequest['signatoryBlockStyle'],
+                  }))
+                }
               />
             </div>
           </AdminCard>
 
           <button
             type="submit"
-            className="rounded-xl bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)]"
+            disabled={saveMutation.isPending || isLoading}
+            className="rounded-xl bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)] disabled:opacity-60"
           >
-            Save Draft
+            {saveMutation.isPending ? 'Saving...' : 'Save Design'}
           </button>
         </div>
 
         <div className="space-y-6 xl:col-span-1">
-          <AdminCard title="Preview" subtitle="Backend service integration required">
-            <PreviewPanel message="Deterministic PDF preview will render here (backend service integration required)" />
+          <AdminCard title="Preview" subtitle="PDF bytes are generated by backend service.">
+            <PreviewPanel message="Deterministic PDF preview is generated by backend PDF service." />
           </AdminCard>
 
           <AdminCard title="Current Design Snapshot">
-            <SectionTitle title="Tenant-scoped draft metadata" />
+            <SectionTitle title="Tenant-scoped metadata" />
             <dl>
               <FieldRow
                 label="Header"
@@ -268,7 +359,10 @@ export default function ReportDesignPage() {
                 label="Footer"
                 value={`${draft.footerText || 'No footer text'} | Signatories ${draft.showSignatories ? 'On' : 'Off'} | ${labelFor(SIGNATORY_STYLES, draft.signatoryBlockStyle)}`}
               />
-              <FieldRow label="Saved" value={savedAt ? `Saved locally at ${savedAt}` : 'Not saved yet'} />
+              <FieldRow
+                label="Updated"
+                value={`${data?.updatedAt ? new Date(data.updatedAt).toLocaleString() : '—'}${data?.updatedBy ? ` by ${data.updatedBy}` : ''}`}
+              />
             </dl>
           </AdminCard>
         </div>

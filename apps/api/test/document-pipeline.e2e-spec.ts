@@ -959,7 +959,7 @@ describe('Document pipeline (e2e)', () => {
           new BadRequestException({
             error: {
               type: 'validation_error',
-              fields: toValidationFieldMap(errors),
+              field_errors: toValidationFieldMap(errors),
             },
           }),
       }),

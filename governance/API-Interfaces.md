@@ -16,7 +16,7 @@ Date: 2026-02-18
 {
   "error": {
     "type": "validation_error",
-    "fields": {
+    "field_errors": {
       "fieldName": ["message1", "message2"]
     }
   }
@@ -40,6 +40,12 @@ Date: 2026-02-18
 ### Unexpected error (500)
 - User gets generic message
 - Logs include correlation id
+
+## Phase 5 contract decisions (2026-02-20)
+- Parameters are tenant-scoped.
+- Panels are tenant-scoped.
+- Catalog import execution is synchronous for MVP, but always persisted as deterministic jobs/history.
+- Invite model is email-based with statuses `PENDING | ACCEPTED | REVOKED | EXPIRED` and explicit expiry.
 
 ## API surface (MVP)
 ### Tenancy/Auth

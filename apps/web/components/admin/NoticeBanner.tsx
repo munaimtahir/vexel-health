@@ -3,12 +3,13 @@ import type { ReactNode } from 'react';
 type NoticeBannerProps = {
   title: string;
   children?: ReactNode;
-  tone?: 'info' | 'warning';
+  tone?: 'info' | 'warning' | 'success';
 };
 
 const toneMap: Record<NonNullable<NoticeBannerProps['tone']>, string> = {
   info: 'border-blue-200 bg-blue-50 text-blue-900',
   warning: 'border-amber-200 bg-amber-50 text-amber-900',
+  success: 'border-emerald-200 bg-emerald-50 text-emerald-900',
 };
 
 export function NoticeBanner({ title, children, tone = 'warning' }: NoticeBannerProps) {

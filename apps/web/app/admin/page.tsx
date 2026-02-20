@@ -61,7 +61,7 @@ export default function AdminDashboardPage() {
         </NoticeBanner>
       ) : null}
 
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-6">
         <AdminCard title="Verification Queue">
           <p className="text-3xl font-semibold">{isLoading ? '...' : counts?.verification_queue_count ?? 0}</p>
           <p className="mt-1 text-sm text-[var(--muted)]">Items awaiting verification</p>
@@ -74,7 +74,22 @@ export default function AdminDashboardPage() {
 
         <AdminCard title="Catalog Coverage">
           <p className="text-3xl font-semibold">{isLoading ? '...' : data?.catalog?.tests_count ?? 0}</p>
-          <p className="mt-1 text-sm text-[var(--muted)]">Configured tests</p>
+          <p className="mt-1 text-sm text-[var(--muted)]">
+            Configured tests · Panels: {isLoading ? '...' : data?.catalog?.panels_count ?? counts?.panels_count ?? 0}
+          </p>
+        </AdminCard>
+
+        <AdminCard title="Tenant Users">
+          <p className="text-3xl font-semibold">{isLoading ? '...' : counts?.users_count ?? 0}</p>
+          <p className="mt-1 text-sm text-[var(--muted)]">Active and inactive tenant users</p>
+          <Link href={adminRoutes.usersList} className="mt-3 inline-block text-sm font-medium text-[var(--accent)]">
+            Open users
+          </Link>
+        </AdminCard>
+
+        <AdminCard title="Pending Imports">
+          <p className="text-3xl font-semibold">{isLoading ? '...' : counts?.pending_imports_count ?? 0}</p>
+          <p className="mt-1 text-sm text-[var(--muted)]">Catalog import jobs not completed</p>
         </AdminCard>
 
         <AdminCard title="PDF Service Health">

@@ -36,6 +36,9 @@ export class AdminService {
       encounters_by_status: Record<LabEncounterStatus, number>;
       verification_queue_count: number;
       published_last_24h_count: number;
+      users_count: number;
+      panels_count: number;
+      pending_imports_count: number;
     };
     system: {
       pdf_service_health: CachedPdfHealth;
@@ -43,6 +46,7 @@ export class AdminService {
     catalog: {
       tests_count: number;
       parameters_count: number;
+      panels_count: number;
     };
     features: Record<string, boolean>;
   }> {
@@ -54,6 +58,9 @@ export class AdminService {
       publishedLast24hCount,
       testsCount,
       parametersCount,
+      panelsCount,
+      usersCount,
+      pendingImportsCount,
     ] = await Promise.all([
       this.prisma.encounter.findMany({
         where: { tenantId, type: 'LAB' },
@@ -71,6 +78,16 @@ export class AdminService {
       }),
       this.prisma.labTestDefinition.count({ where: { tenantId } }),
       this.prisma.labTestParameter.count({ where: { tenantId } }),
+      this.prisma.labPanel.count({ where: { tenantId } }),
+      this.prisma.user.count({ where: { tenantId } }),
+      this.prisma.catalogImportJob.count({
+        where: {
+          tenantId,
+          status: {
+            in: ['PENDING', 'RUNNING'],
+          },
+        },
+      }),
     ]);
 
     const encounterIds = labEncounters.map((e) => e.id);
@@ -121,9 +138,16 @@ export class AdminService {
         encounters_by_status: statusCounts,
         verification_queue_count: verificationQueueCount,
         published_last_24h_count: publishedLast24hCount,
+        users_count: usersCount,
+        panels_count: panelsCount,
+        pending_imports_count: pendingImportsCount,
       },
       system: { pdf_service_health },
-      catalog: { tests_count: testsCount, parameters_count: parametersCount },
+      catalog: {
+        tests_count: testsCount,
+        parameters_count: parametersCount,
+        panels_count: panelsCount,
+      },
       features: {
         lims: true,
         billing: false,

@@ -14,6 +14,8 @@ import type { paths } from '@vexel/contracts';
 type AdminOverviewResponse =
   paths['/admin/overview']['get']['responses'][200]['content']['application/json'];
 type LabTestsResponse = paths['/lab/tests']['get']['responses'][200]['content']['application/json'];
+type ListCatalogTestsResponse =
+  paths['/catalog/tests']['get']['responses'][200]['content']['application/json'];
 
 export default function CatalogOverviewPage() {
   const { data: overview, error: overviewError } = useQuery({
@@ -31,6 +33,15 @@ export default function CatalogOverviewPage() {
       const { data, error } = await client.GET('/lab/tests');
       if (error) throw new Error(parseApiError(error, 'Failed to load lab tests').message);
       return data as LabTestsResponse;
+    },
+  });
+
+  const { data: catalogTestsResponse } = useQuery({
+    queryKey: adminKeys.catalogTests(),
+    queryFn: async () => {
+      const { data, error } = await client.GET('/catalog/tests');
+      if (error) return null;
+      return data as ListCatalogTestsResponse;
     },
   });
 
@@ -56,7 +67,12 @@ export default function CatalogOverviewPage() {
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
         <AdminCard title="Tests">
           <p className="text-3xl font-semibold">{testsResponse?.total ?? 0}</p>
-          <p className="text-sm text-[var(--muted)]">From `GET /lab/tests`</p>
+          <p className="text-sm text-[var(--muted)]">Legacy: GET /lab/tests</p>
+          {catalogTestsResponse != null && (
+            <p className="mt-1 text-sm text-[var(--muted)]">
+              Catalog: {catalogTestsResponse.total ?? 0} (GET /catalog/tests)
+            </p>
+          )}
         </AdminCard>
         <AdminCard title="Parameters">
           <p className="text-3xl font-semibold">{overview?.catalog?.parameters_count ?? 0}</p>
@@ -81,6 +97,7 @@ export default function CatalogOverviewPage() {
               { href: adminRoutes.catalogPanels, label: 'Panels' },
               { href: adminRoutes.catalogLinking, label: 'Linking' },
               { href: adminRoutes.catalogImportExport, label: 'Import / Export' },
+              { href: adminRoutes.catalogVersions, label: 'Versions' },
             ].map((item) => (
               <Link
                 key={item.href}
@@ -93,8 +110,8 @@ export default function CatalogOverviewPage() {
           </div>
         </AdminCard>
 
-        <NoticeBanner title="Contract gaps in catalog scope" tone="warning">
-          Panels CRUD, global parameter list/detail, linking APIs, and import/export history endpoints are not currently in OpenAPI.
+        <NoticeBanner title="Catalog API" tone="success">
+          Catalog endpoints (GET/POST /catalog/tests, parameters, mapping, layouts, annotations, import, export, audit, versions) are in OpenAPI and implemented.
         </NoticeBanner>
       </div>
     </div>

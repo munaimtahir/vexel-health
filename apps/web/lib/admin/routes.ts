@@ -16,6 +16,7 @@ export const adminRoutes = {
   catalogPanelDetail: (panelId: string) => `/admin/catalog/panels/${panelId}`,
   catalogLinking: '/admin/catalog/linking',
   catalogImportExport: '/admin/catalog/import-export',
+  catalogVersions: '/admin/catalog/versions',
 } as const;
 
 export type AdminNavItem = {
@@ -60,6 +61,7 @@ export const adminNavSections: AdminNavSection[] = [
       { label: 'Panels', href: adminRoutes.catalogPanels },
       { label: 'Linking', href: adminRoutes.catalogLinking },
       { label: 'Import/Export', href: adminRoutes.catalogImportExport },
+      { label: 'Versions', href: adminRoutes.catalogVersions },
     ],
   },
 ];

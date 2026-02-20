@@ -1,103 +1,187 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useMemo, useState, type FormEvent } from 'react';
+import Link from 'next/link';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { AdminCard } from '@/components/admin/AdminCard';
 import { NoticeBanner } from '@/components/admin/NoticeBanner';
 import { PageHeader } from '@/components/admin/PageHeader';
+import { adminRoutes } from '@/lib/admin/routes';
+import { parseApiError } from '@/lib/api-errors';
+import { client } from '@/lib/sdk/client';
+import { adminKeys } from '@/lib/sdk/hooks';
+import type { paths } from '@vexel/contracts';
 
-const roleOptions = ['Admin', 'Operator', 'Verifier', 'Viewer'] as const;
+type UsersResponse = paths['/admin/users']['get']['responses'][200]['content']['application/json'];
+type InviteResponse = paths['/admin/users/invite']['post']['responses'][201]['content']['application/json'];
+
+const defaultRoleOptions = ['ADMIN', 'OPERATOR', 'VERIFIER', 'VIEWER'] as const;
 
 export default function InviteUserPage() {
-  const [submitted, setSubmitted] = useState(false);
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [expiresInHours, setExpiresInHours] = useState('168');
+  const [selectedRoles, setSelectedRoles] = useState<string[]>(['ADMIN']);
+  const [createdInvite, setCreatedInvite] = useState<InviteResponse | null>(null);
+
+  const { data: usersData } = useQuery({
+    queryKey: adminKeys.users(),
+    queryFn: async () => {
+      const { data, error } = await client.GET('/admin/users', {
+        params: {
+          query: {
+            limit: 100,
+            page: 1,
+          },
+        },
+      });
+      if (error) throw new Error(parseApiError(error, 'Failed to load roles').message);
+      return data as UsersResponse;
+    },
+  });
+
+  const availableRoles = useMemo(() => {
+    const roles = new Set<string>(defaultRoleOptions);
+    for (const user of usersData?.data ?? []) {
+      for (const role of user.roles ?? []) {
+        if (role.trim()) {
+          roles.add(role.trim());
+        }
+      }
+    }
+    return Array.from(roles).sort();
+  }, [usersData]);
+
+  const inviteMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await client.POST('/admin/users/invite', {
+        body: {
+          name: name.trim(),
+          email: email.trim(),
+          roleNames: selectedRoles,
+          expiresInHours: Number(expiresInHours),
+        },
+      });
+      if (error) {
+        throw new Error(parseApiError(error, 'Failed to create invite').message);
+      }
+      return data as InviteResponse;
+    },
+    onSuccess: (invite) => {
+      setCreatedInvite(invite);
+      setName('');
+      setEmail('');
+      setExpiresInHours('168');
+      setSelectedRoles(['ADMIN']);
+    },
+  });
 
   const onSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setSubmitted(true);
+    setCreatedInvite(null);
+    inviteMutation.mutate();
   };
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Invite User"
-        subtitle="Scaffold for tenant-bound user invitation and role assignment."
+        subtitle="Create tenant-scoped pending user invites with explicit role mapping and expiry."
+        actions={
+          <Link
+            href={adminRoutes.usersList}
+            className="rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm font-medium"
+          >
+            Back to Users
+          </Link>
+        }
       />
 
-      <NoticeBanner title="Requires backend contract endpoint" tone="warning">
-        User invitation and creation endpoints are not present in OpenAPI. Form submit is currently a no-op scaffold.
-      </NoticeBanner>
+      {inviteMutation.error ? (
+        <NoticeBanner title="Unable to create invite" tone="warning">
+          {inviteMutation.error instanceof Error ? inviteMutation.error.message : 'Unknown error'}
+        </NoticeBanner>
+      ) : null}
 
-      <AdminCard title="Invite / Create User" subtitle="Tenant-scoped RBAC assignment placeholder.">
+      {createdInvite ? (
+        <NoticeBanner title="Invite created" tone="info">
+          Invite ID: <code>{createdInvite.inviteId}</code> · Status: <strong>{createdInvite.status}</strong> · Expires:{' '}
+          {new Date(createdInvite.expiresAt).toLocaleString()}
+        </NoticeBanner>
+      ) : null}
+
+      <AdminCard title="Invite / Create User" subtitle="Backend endpoint: `POST /admin/users/invite`.">
         <form onSubmit={onSubmit} className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <label className="space-y-1">
             <span className="text-sm font-medium text-[var(--muted)]">Full Name</span>
-            <input className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm" />
+            <input
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              required
+              className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm"
+            />
           </label>
 
           <label className="space-y-1">
             <span className="text-sm font-medium text-[var(--muted)]">Email</span>
             <input
               type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              required
               className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm"
             />
           </label>
 
           <label className="space-y-1">
-            <span className="text-sm font-medium text-[var(--muted)]">Phone</span>
-            <input className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm" />
+            <span className="text-sm font-medium text-[var(--muted)]">Expires In (hours)</span>
+            <input
+              type="number"
+              min={1}
+              max={720}
+              value={expiresInHours}
+              onChange={(event) => setExpiresInHours(event.target.value)}
+              className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm"
+            />
           </label>
 
-          <label className="space-y-1">
-            <span className="text-sm font-medium text-[var(--muted)]">Role</span>
-            <select className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm">
-              {roleOptions.map((role) => (
-                <option key={role} value={role}>
-                  {role}
-                </option>
-              ))}
-            </select>
-          </label>
+          <div className="space-y-1">
+            <span className="text-sm font-medium text-[var(--muted)]">Roles</span>
+            <div className="grid grid-cols-2 gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3">
+              {availableRoles.map((role) => {
+                const checked = selectedRoles.includes(role);
+                return (
+                  <label key={role} className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={(event) => {
+                        setSelectedRoles((prev) => {
+                          if (event.target.checked) {
+                            return Array.from(new Set([...prev, role]));
+                          }
+                          const next = prev.filter((item) => item !== role);
+                          return next.length > 0 ? next : prev;
+                        });
+                      }}
+                    />
+                    {role}
+                  </label>
+                );
+              })}
+            </div>
+          </div>
 
           <div className="md:col-span-2">
             <button
               type="submit"
-              className="rounded-xl bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)]"
+              disabled={inviteMutation.isPending || selectedRoles.length === 0}
+              className="rounded-xl bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)] disabled:opacity-60"
             >
-              Send Invite (Scaffold)
+              {inviteMutation.isPending ? 'Sending...' : 'Send Invite'}
             </button>
-            {submitted ? (
-              <p className="mt-2 text-sm text-[var(--muted)]">Submission captured locally. Backend wiring TODO.</p>
-            ) : null}
           </div>
         </form>
-      </AdminCard>
-
-      <AdminCard title="Permissions Matrix Placeholder">
-        <div className="overflow-x-auto rounded-xl border border-[var(--border)]">
-          <table className="min-w-full text-sm">
-            <thead className="bg-[var(--bg)] text-left text-[var(--muted)]">
-              <tr>
-                <th className="px-4 py-3 font-medium">Permission</th>
-                {roleOptions.map((role) => (
-                  <th key={role} className="px-4 py-3 font-medium">
-                    {role}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {['View orders', 'Enter results', 'Verify results', 'Publish reports', 'Manage users'].map((permission) => (
-                <tr key={permission} className="border-t border-[var(--border)]">
-                  <td className="px-4 py-3">{permission}</td>
-                  {roleOptions.map((role) => (
-                    <td key={`${permission}-${role}`} className="px-4 py-3 text-[var(--muted)]">
-                      Placeholder
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
       </AdminCard>
     </div>
   );

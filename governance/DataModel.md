@@ -15,6 +15,11 @@ This is a conceptual data model; exact schemas live in Prisma migrations.
 - user_roles(user_id, role_id)
 - permissions(id, key, description)
 - role_permissions(role_id, permission_id)
+- admin_user_invites(
+    id, tenant_id, email, name, role_names_csv,
+    status[pending|accepted|revoked|expired], expires_at,
+    invited_by_user_id?, accepted_by_user_id?, accepted_at?, revoked_at?, created_at
+  )
 
 ### audit (append-only)
 - audit_events(
@@ -48,6 +53,24 @@ This is a conceptual data model; exact schemas live in Prisma migrations.
 - panel_tests(panel_id, test_id, sort_order)
 - parameters(id, tenant_id, test_id, name, unit, is_required, sort_order)
 - ref_ranges(id, tenant_id, parameter_id, sex?, age_min_days?, age_max_days?, low?, high?, text_range?)
+
+### catalog jobs
+- catalog_import_jobs(
+    id, tenant_id, file_name, mode, status,
+    processed_rows, success_rows, failed_rows, error_json, created_by?, created_at, updated_at
+  )
+- catalog_export_jobs(
+    id, tenant_id, entity, status, file_name?, file_bytes?,
+    created_by?, created_at, updated_at
+  )
+
+### tenant business config
+- tenant_branding_config(
+    tenant_id, business_name, address, phone, header_line_1, header_line_2,
+    logo_asset_name?, header_asset_name?, footer_asset_name?, updated_by?, updated_at
+  )
+- tenant_report_design_config(tenant_id, typed layout fields..., updated_by?, updated_at)
+- tenant_receipt_design_config(tenant_id, typed layout fields..., updated_by?, updated_at)
 
 ### workflow
 - orders(id, tenant_id, patient_id, encounter_id?, status, created_at)

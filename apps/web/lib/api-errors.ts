@@ -127,9 +127,17 @@ export function parseApiError(error: unknown, fallback = 'Request failed'): ApiE
         };
     }
 
-    const envelopeFields = isRecord(error.error) ? normalizeFieldErrors(error.error.fields) : {};
+    const envelopeFieldErrors = isRecord(error.error)
+        ? normalizeFieldErrors(error.error.field_errors)
+        : {};
+    const envelopeLegacyFields = isRecord(error.error) ? normalizeFieldErrors(error.error.fields) : {};
     const rootFields = normalizeFieldErrors(error.fields);
-    const fieldErrors = Object.keys(envelopeFields).length > 0 ? envelopeFields : rootFields;
+    const fieldErrors =
+        Object.keys(envelopeFieldErrors).length > 0
+            ? envelopeFieldErrors
+            : Object.keys(envelopeLegacyFields).length > 0
+                ? envelopeLegacyFields
+                : rootFields;
     const domainError = asDomainErrorEnvelope(error);
     const domainMessage = domainError ? formatDomainErrorMessage(domainError) : null;
 

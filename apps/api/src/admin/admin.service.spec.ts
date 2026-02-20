@@ -16,6 +16,9 @@ describe('AdminService', () => {
       document: { count: jest.fn() },
       labTestDefinition: { count: jest.fn() },
       labTestParameter: { count: jest.fn() },
+      labPanel: { count: jest.fn() },
+      user: { count: jest.fn() },
+      catalogImportJob: { count: jest.fn() },
     };
     const mockCls = {
       get: jest.fn().mockReturnValue(tenantId),
@@ -39,6 +42,7 @@ describe('AdminService', () => {
     (prisma.document.count as jest.Mock).mockResolvedValue(1);
     (prisma.labTestDefinition.count as jest.Mock).mockResolvedValue(5);
     (prisma.labTestParameter.count as jest.Mock).mockResolvedValue(12);
+    (prisma.labPanel.count as jest.Mock).mockResolvedValue(3);
 
     const result = await service.getOverview();
 
@@ -59,7 +63,11 @@ describe('AdminService', () => {
       status: expect.stringMatching(/^(ok|degraded)$/),
       last_checked_at: expect.any(String),
     });
-    expect(result.catalog).toEqual({ tests_count: 5, parameters_count: 12 });
+    expect(result.catalog).toEqual({
+      tests_count: 5,
+      parameters_count: 12,
+      panels_count: 3,
+    });
     expect(result.features).toEqual(
       expect.objectContaining({
         lims: true,

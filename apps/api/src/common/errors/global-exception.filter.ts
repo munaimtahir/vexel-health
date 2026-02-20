@@ -14,7 +14,7 @@ import { DomainException } from './domain.exception';
 type ValidationEnvelope = {
   error: {
     type: 'validation_error';
-    fields: Record<string, string[]>;
+    field_errors: Record<string, string[]>;
   };
 };
 
@@ -140,15 +140,38 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       payload.error !== null &&
       'type' in payload.error &&
       payload.error.type === 'validation_error' &&
-      'fields' in payload.error
+      'field_errors' in payload.error
     ) {
       return payload as ValidationEnvelope;
+    }
+
+    if (
+      typeof payload === 'object' &&
+      payload !== null &&
+      'error' in payload &&
+      typeof payload.error === 'object' &&
+      payload.error !== null &&
+      'type' in payload.error &&
+      payload.error.type === 'validation_error' &&
+      'fields' in payload.error
+    ) {
+      const legacy = payload as {
+        error: {
+          fields: Record<string, string[]>;
+        };
+      };
+      return {
+        error: {
+          type: 'validation_error',
+          field_errors: legacy.error.fields,
+        },
+      };
     }
 
     return {
       error: {
         type: 'validation_error',
-        fields: {
+        field_errors: {
           request: [this.extractMessage(payload)],
         },
       },

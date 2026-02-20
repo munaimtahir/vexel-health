@@ -544,6 +544,692 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/catalog/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List catalog versions */
+        get: operations["listCatalogVersions"];
+        put?: never;
+        /** Create draft catalog version */
+        post: operations["createCatalogVersion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/catalog/versions/{versionId}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Publish a draft catalog version */
+        post: operations["publishCatalogVersion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/catalog/tests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List catalog tests (TestDefinition) */
+        get: operations["listCatalogTests"];
+        put?: never;
+        /** Create catalog test */
+        post: operations["createCatalogTest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/catalog/tests/{testId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get catalog test by id */
+        get: operations["getCatalogTestById"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update catalog test */
+        patch: operations["updateCatalogTest"];
+        trace?: never;
+    };
+    "/catalog/parameters": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List catalog parameters (global dictionary) */
+        get: operations["listCatalogParameters"];
+        put?: never;
+        /** Create catalog parameter */
+        post: operations["createCatalogParameter"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/catalog/parameters/{parameterId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get catalog parameter by id */
+        get: operations["getCatalogParameterById"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update catalog parameter */
+        patch: operations["updateCatalogParameter"];
+        trace?: never;
+    };
+    "/catalog/tests/{testId}/mapping": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List test-parameter mapping for a test */
+        get: operations["listCatalogTestMapping"];
+        put?: never;
+        /** Add parameter to test (create mapping) */
+        post: operations["addCatalogTestMapping"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/catalog/tests/{testId}/mapping/reorder": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reorder parameters for a test */
+        post: operations["reorderCatalogTestMapping"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/catalog/tests/{testId}/mapping/{mappingId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove parameter from test (delete mapping) */
+        delete: operations["deleteCatalogTestMapping"];
+        options?: never;
+        head?: never;
+        /** Update test-parameter mapping */
+        patch: operations["updateCatalogTestMapping"];
+        trace?: never;
+    };
+    "/catalog/parameters/{parameterId}/reference-ranges": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List reference ranges for a parameter */
+        get: operations["listCatalogReferenceRanges"];
+        put?: never;
+        /** Create reference range */
+        post: operations["createCatalogReferenceRange"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/catalog/parameters/{parameterId}/reference-ranges/{rangeId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete reference range */
+        delete: operations["deleteCatalogReferenceRange"];
+        options?: never;
+        head?: never;
+        /** Update reference range */
+        patch: operations["updateCatalogReferenceRange"];
+        trace?: never;
+    };
+    "/catalog/layouts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List report layout rules */
+        get: operations["listCatalogLayouts"];
+        put?: never;
+        /** Create report layout rule */
+        post: operations["createCatalogLayout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/catalog/layouts/{layoutId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get layout rule by id */
+        get: operations["getCatalogLayoutById"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update layout rule */
+        patch: operations["updateCatalogLayout"];
+        trace?: never;
+    };
+    "/catalog/annotations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List test/parameter annotations */
+        get: operations["listCatalogAnnotations"];
+        put?: never;
+        /** Create annotation */
+        post: operations["createCatalogAnnotation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/catalog/annotations/{annotationId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get annotation by id */
+        get: operations["getCatalogAnnotationById"];
+        put?: never;
+        post?: never;
+        /** Delete annotation */
+        delete: operations["deleteCatalogAnnotation"];
+        options?: never;
+        head?: never;
+        /** Update annotation */
+        patch: operations["updateCatalogAnnotation"];
+        trace?: never;
+    };
+    "/catalog/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Import catalog from XLSX (dry run or apply) */
+        post: operations["importCatalog"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/catalog/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Export catalog to XLSX */
+        post: operations["exportCatalog"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/catalog/audit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List catalog audit runs */
+        get: operations["listCatalogAudits"];
+        put?: never;
+        /** Run catalog audit */
+        post: operations["runCatalogAudit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/catalog/audit/{auditId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get catalog audit run by id */
+        get: operations["getCatalogAuditById"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List tenant users */
+        get: operations["listAdminUsers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/users/invite": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Invite tenant user */
+        post: operations["inviteAdminUser"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/users/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get tenant user by id */
+        get: operations["getAdminUserById"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update tenant user status/roles */
+        patch: operations["updateAdminUser"];
+        trace?: never;
+    };
+    "/lab/panels": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List LAB panels */
+        get: operations["listLabPanels"];
+        put?: never;
+        /** Create LAB panel */
+        post: operations["createLabPanel"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/lab/panels/{panelId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get LAB panel by id */
+        get: operations["getLabPanelById"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update LAB panel */
+        patch: operations["updateLabPanel"];
+        trace?: never;
+    };
+    "/lab/panels/{panelId}:add-test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add test to panel */
+        post: operations["addTestToPanel"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/lab/panels/{panelId}:remove-test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Remove test from panel */
+        post: operations["removeTestFromPanel"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/lab/parameters/{parameterId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get LAB parameter detail by id */
+        get: operations["getLabParameterById"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/lab/linking/state": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get linking state metrics */
+        get: operations["getLabLinkingState"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/lab/linking:link-test-parameter": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Link parameter to test */
+        post: operations["linkTestParameter"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/lab/linking:unlink-test-parameter": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Unlink parameter from test */
+        post: operations["unlinkTestParameter"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/lab/tests/{testId}/reference-ranges": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List reference ranges for test */
+        get: operations["listLabReferenceRanges"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/lab/tests/{testId}:upsert-reference-range": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Upsert reference range for a test parameter */
+        post: operations["upsertLabReferenceRange"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/lab/catalog-imports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List catalog import jobs */
+        get: operations["listLabCatalogImportJobs"];
+        put?: never;
+        /** Upload XLSX catalog import */
+        post: operations["createLabCatalogImportJob"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/lab/catalog-imports/{jobId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get catalog import job detail */
+        get: operations["getLabCatalogImportJobById"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/lab/catalog-exports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List catalog export jobs */
+        get: operations["listLabCatalogExportJobs"];
+        put?: never;
+        /** Create catalog export job */
+        post: operations["createLabCatalogExportJob"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/lab/catalog-exports/{jobId}/file": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Download exported catalog XLSX file */
+        get: operations["getLabCatalogExportFile"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/business/branding": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get tenant branding config */
+        get: operations["getTenantBrandingConfig"];
+        /** Update tenant branding config */
+        put: operations["updateTenantBrandingConfig"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/business/report-design": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get tenant report design config */
+        get: operations["getTenantReportDesignConfig"];
+        /** Update tenant report design config */
+        put: operations["updateTenantReportDesignConfig"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/business/receipt-design": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get tenant receipt design config */
+        get: operations["getTenantReceiptDesignConfig"];
+        /** Update tenant receipt design config */
+        put: operations["updateTenantReceiptDesignConfig"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -680,6 +1366,9 @@ export interface components {
             };
             verification_queue_count?: number;
             published_last_24h_count?: number;
+            users_count?: number;
+            panels_count?: number;
+            pending_imports_count?: number;
         };
         AdminOverviewSystem: {
             pdf_service_health?: {
@@ -692,6 +1381,7 @@ export interface components {
         AdminOverviewCatalog: {
             tests_count?: number;
             parameters_count?: number;
+            panels_count?: number;
         };
         AdminOverviewResponse: {
             counts: components["schemas"]["AdminOverviewCounts"];
@@ -701,6 +1391,326 @@ export interface components {
             features: {
                 [key: string]: boolean;
             };
+        };
+        UserAdmin: {
+            /** Format: uuid */
+            id: string;
+            /** Format: email */
+            email: string;
+            name?: string | null;
+            /** @enum {string} */
+            status: "active" | "inactive";
+            roles: string[];
+            /** Format: date-time */
+            createdAt: string;
+        };
+        ListAdminUsersResponse: {
+            data: components["schemas"]["UserAdmin"][];
+            total: number;
+        };
+        InviteRequest: {
+            /** Format: email */
+            email: string;
+            name: string;
+            roleNames: string[];
+            /** @default 168 */
+            expiresInHours: number;
+        };
+        InviteResponse: {
+            /** Format: uuid */
+            inviteId: string;
+            /** Format: email */
+            email: string;
+            name?: string | null;
+            /** @enum {string} */
+            status: "PENDING" | "ACCEPTED" | "REVOKED" | "EXPIRED";
+            /** Format: date-time */
+            expiresAt: string;
+            roleNames: string[];
+            /** Format: date-time */
+            createdAt?: string;
+        };
+        UpdateAdminUserRequest: {
+            /** @enum {string} */
+            status?: "active" | "inactive";
+            roleNames?: string[];
+        };
+        PanelTest: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            panelId: string;
+            /** Format: uuid */
+            testId: string;
+            sortOrder: number;
+            testCode?: string;
+            testName?: string;
+        };
+        Panel: {
+            /** Format: uuid */
+            id: string;
+            code: string;
+            name: string;
+            active: boolean;
+            description?: string | null;
+            tests: components["schemas"]["PanelTest"][];
+            /** Format: date-time */
+            createdAt?: string;
+            /** Format: date-time */
+            updatedAt?: string;
+        };
+        ListPanelsResponse: {
+            data: components["schemas"]["Panel"][];
+            total: number;
+        };
+        PanelCreateRequest: {
+            code: string;
+            name: string;
+            active?: boolean;
+            description?: string;
+        };
+        PanelUpdateRequest: {
+            name?: string;
+            active?: boolean;
+            description?: string;
+        };
+        PanelAddTestRequest: {
+            /** Format: uuid */
+            testId: string;
+            sortOrder?: number;
+        };
+        PanelRemoveTestRequest: {
+            /** Format: uuid */
+            testId: string;
+        };
+        ParameterDetail: components["schemas"]["LabTestParameter"] & {
+            testCode?: string;
+            testName?: string;
+            /** @enum {string} */
+            dataType?: "NUMERIC" | "TEXT";
+            referenceDefaults?: {
+                low?: number | null;
+                high?: number | null;
+                text?: string | null;
+            };
+        };
+        ReferenceRange: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            testId: string;
+            /** Format: uuid */
+            parameterId: string;
+            /** @enum {string|null} */
+            sex?: "MALE" | "FEMALE" | "OTHER" | null;
+            ageMinDays?: number | null;
+            ageMaxDays?: number | null;
+            low?: number | null;
+            high?: number | null;
+            textRange?: string | null;
+            /** Format: date-time */
+            createdAt?: string;
+            /** Format: date-time */
+            updatedAt?: string;
+        };
+        ListReferenceRangesResponse: {
+            data: components["schemas"]["ReferenceRange"][];
+            total: number;
+        };
+        UpsertReferenceRangeRequest: {
+            /** Format: uuid */
+            parameterId: string;
+            /** @enum {string} */
+            sex?: "MALE" | "FEMALE" | "OTHER";
+            ageMinDays?: number;
+            ageMaxDays?: number;
+            low?: number;
+            high?: number;
+            textRange?: string;
+        };
+        LinkingState: {
+            tests_count: number;
+            parameters_count: number;
+            linked_parameters_count: number;
+            ranges_count: number;
+        };
+        LinkTestParameterRequest: {
+            /** Format: uuid */
+            testId: string;
+            /** Format: uuid */
+            parameterId: string;
+            displayOrder?: number;
+        };
+        UnlinkTestParameterRequest: {
+            /** Format: uuid */
+            testId: string;
+            /** Format: uuid */
+            parameterId: string;
+        };
+        /** @enum {string} */
+        CatalogJobStatus: "PENDING" | "RUNNING" | "COMPLETED" | "FAILED";
+        CatalogImportJobError: {
+            row: number;
+            code: string;
+            field?: string | null;
+            message: string;
+        };
+        CatalogImportJob: {
+            /** Format: uuid */
+            id: string;
+            status: components["schemas"]["CatalogJobStatus"];
+            fileName: string;
+            /** @enum {string} */
+            mode?: "MERGE" | "REPLACE";
+            processedRows?: number;
+            successRows?: number;
+            failedRows?: number;
+            errors?: components["schemas"]["CatalogImportJobError"][];
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt?: string;
+        };
+        ListCatalogImportJobsResponse: {
+            data: components["schemas"]["CatalogImportJob"][];
+            total: number;
+        };
+        CreateCatalogExportRequest: {
+            /** @enum {string} */
+            entity: "TESTS" | "PARAMETERS" | "PANELS";
+        };
+        CatalogExportJob: {
+            /** Format: uuid */
+            id: string;
+            status: components["schemas"]["CatalogJobStatus"];
+            /** @enum {string} */
+            entity: "TESTS" | "PARAMETERS" | "PANELS";
+            fileName?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt?: string;
+        };
+        ListCatalogExportJobsResponse: {
+            data: components["schemas"]["CatalogExportJob"][];
+            total: number;
+        };
+        BusinessBrandingConfig: {
+            businessName: string;
+            address: string;
+            phone: string;
+            headerLine1: string;
+            headerLine2: string;
+            logoAssetName?: string | null;
+            headerAssetName?: string | null;
+            footerAssetName?: string | null;
+            /** Format: date-time */
+            updatedAt: string;
+            updatedBy?: string | null;
+        };
+        UpdateBusinessBrandingConfigRequest: {
+            businessName: string;
+            address: string;
+            phone: string;
+            headerLine1: string;
+            headerLine2: string;
+            logoAssetName?: string;
+            headerAssetName?: string;
+            footerAssetName?: string;
+        };
+        ReportDesignConfig: {
+            showLogo: boolean;
+            /** @enum {string} */
+            logoPosition: "left" | "center" | "right";
+            headerText1: string;
+            headerText2: string;
+            /** @enum {string} */
+            headerDividerStyle: "thin" | "none" | "accent";
+            /** @enum {string} */
+            patientLayoutStyle: "compact" | "spacious";
+            showRefNumber: boolean;
+            showConsultant: boolean;
+            showSampleTime: boolean;
+            /** @enum {string} */
+            resultsFontSize: "small" | "normal" | "large";
+            showUnitsColumn: boolean;
+            showReferenceRange: boolean;
+            /** @enum {string} */
+            abnormalHighlightStyle: "bold" | "color" | "border";
+            footerText: string;
+            showSignatories: boolean;
+            /** @enum {string} */
+            signatoryBlockStyle: "single" | "dual";
+            /** Format: date-time */
+            updatedAt: string;
+            updatedBy?: string | null;
+        };
+        UpdateReportDesignConfigRequest: {
+            showLogo: boolean;
+            /** @enum {string} */
+            logoPosition: "left" | "center" | "right";
+            headerText1: string;
+            headerText2: string;
+            /** @enum {string} */
+            headerDividerStyle: "thin" | "none" | "accent";
+            /** @enum {string} */
+            patientLayoutStyle: "compact" | "spacious";
+            showRefNumber: boolean;
+            showConsultant: boolean;
+            showSampleTime: boolean;
+            /** @enum {string} */
+            resultsFontSize: "small" | "normal" | "large";
+            showUnitsColumn: boolean;
+            showReferenceRange: boolean;
+            /** @enum {string} */
+            abnormalHighlightStyle: "bold" | "color" | "border";
+            footerText: string;
+            showSignatories: boolean;
+            /** @enum {string} */
+            signatoryBlockStyle: "single" | "dual";
+        };
+        ReceiptDesignConfig: {
+            showLogo: boolean;
+            businessNameOverride: string;
+            showAddress: boolean;
+            showContact: boolean;
+            showQuantityColumn: boolean;
+            showUnitPrice: boolean;
+            showDiscountColumn: boolean;
+            showTaxColumn: boolean;
+            showSubtotal: boolean;
+            showDiscount: boolean;
+            showTax: boolean;
+            /** @enum {string} */
+            grandTotalStyle: "bold" | "accent";
+            thankYouMessage: string;
+            termsAndConditions: string;
+            showQrCodePlaceholder: boolean;
+            /** @enum {string} */
+            receiptWidthMode: "a4" | "thermal80" | "thermal58";
+            /** Format: date-time */
+            updatedAt: string;
+            updatedBy?: string | null;
+        };
+        UpdateReceiptDesignConfigRequest: {
+            showLogo: boolean;
+            businessNameOverride: string;
+            showAddress: boolean;
+            showContact: boolean;
+            showQuantityColumn: boolean;
+            showUnitPrice: boolean;
+            showDiscountColumn: boolean;
+            showTaxColumn: boolean;
+            showSubtotal: boolean;
+            showDiscount: boolean;
+            showTax: boolean;
+            /** @enum {string} */
+            grandTotalStyle: "bold" | "accent";
+            thankYouMessage: string;
+            termsAndConditions: string;
+            showQrCodePlaceholder: boolean;
+            /** @enum {string} */
+            receiptWidthMode: "a4" | "thermal80" | "thermal58";
         };
         LabTestDefinition: {
             /** Format: uuid */
@@ -959,7 +1969,7 @@ export interface components {
             error: {
                 /** @enum {string} */
                 type: "validation_error";
-                fields: {
+                field_errors: {
                     [key: string]: string[];
                 };
             };
@@ -996,6 +2006,358 @@ export interface components {
                 message: string;
                 correlationId?: string;
             };
+        };
+        /** @enum {string} */
+        CatalogVersionStatus: "draft" | "published" | "archived";
+        CatalogVersion: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            tenantId: string;
+            versionTag: string;
+            status: components["schemas"]["CatalogVersionStatus"];
+            sha256Manifest?: string | null;
+            /** Format: uuid */
+            createdBy?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            notes?: string | null;
+        };
+        ListCatalogVersionsResponse: {
+            data: components["schemas"]["CatalogVersion"][];
+            total: number;
+        };
+        CreateCatalogVersionRequest: {
+            versionTag?: string;
+            notes?: string;
+        };
+        CatalogTestDefinition: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            tenantId: string;
+            testCode: string;
+            testName: string;
+            section?: string | null;
+            /** Format: uuid */
+            specimenTypeId?: string | null;
+            tatMinutes?: number | null;
+            /** @enum {string} */
+            status: "active" | "inactive";
+            layoutKey: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        ListCatalogTestsResponse: {
+            data: components["schemas"]["CatalogTestDefinition"][];
+            total: number;
+        };
+        CreateCatalogTestRequest: {
+            testCode: string;
+            testName: string;
+            section?: string | null;
+            /** Format: uuid */
+            specimenTypeId?: string | null;
+            tatMinutes?: number | null;
+            /** @enum {string} */
+            status?: "active" | "inactive";
+            layoutKey: string;
+        };
+        UpdateCatalogTestRequest: {
+            testName?: string;
+            section?: string | null;
+            /** Format: uuid */
+            specimenTypeId?: string | null;
+            tatMinutes?: number | null;
+            /** @enum {string} */
+            status?: "active" | "inactive";
+            layoutKey?: string;
+        };
+        /** @enum {string} */
+        ParameterResultType: "number" | "integer" | "decimal" | "text" | "enum" | "boolean" | "formula" | "lis_imported";
+        CatalogParameterDefinition: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            tenantId: string;
+            parameterCode: string;
+            parameterName: string;
+            resultType: components["schemas"]["ParameterResultType"];
+            /** Format: uuid */
+            unitId?: string | null;
+            precision?: number | null;
+            defaultValue?: string | null;
+            enumOptions?: string[] | null;
+            formulaSpec?: string | null;
+            /** @enum {string} */
+            status: "active" | "inactive";
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        ListCatalogParametersResponse: {
+            data: components["schemas"]["CatalogParameterDefinition"][];
+            total: number;
+        };
+        CreateCatalogParameterRequest: {
+            parameterCode: string;
+            parameterName: string;
+            resultType: components["schemas"]["ParameterResultType"];
+            /** Format: uuid */
+            unitId?: string | null;
+            precision?: number | null;
+            defaultValue?: string | null;
+            enumOptions?: string[] | null;
+            formulaSpec?: string | null;
+            /** @enum {string} */
+            status?: "active" | "inactive";
+        };
+        UpdateCatalogParameterRequest: {
+            parameterName?: string;
+            resultType?: components["schemas"]["ParameterResultType"];
+            /** Format: uuid */
+            unitId?: string | null;
+            precision?: number | null;
+            defaultValue?: string | null;
+            enumOptions?: string[] | null;
+            formulaSpec?: string | null;
+            /** @enum {string} */
+            status?: "active" | "inactive";
+        };
+        CatalogTestParameterMap: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            tenantId: string;
+            /** Format: uuid */
+            testId: string;
+            /** Format: uuid */
+            parameterId: string;
+            displayOrder: number;
+            required: boolean;
+            /** @enum {string} */
+            visibility: "normal" | "optional" | "hidden";
+            readOnly: boolean;
+            printFlag: boolean;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            /** @description Optional; present when expanding */
+            parameter?: components["schemas"]["CatalogParameterDefinition"];
+        };
+        ListCatalogTestMappingResponse: {
+            data: components["schemas"]["CatalogTestParameterMap"][];
+            total: number;
+        };
+        AddCatalogTestMappingRequest: {
+            /** Format: uuid */
+            parameterId: string;
+            displayOrder?: number;
+            required?: boolean;
+            /** @enum {string} */
+            visibility?: "normal" | "optional" | "hidden";
+            readOnly?: boolean;
+            printFlag?: boolean;
+        };
+        UpdateCatalogTestMappingRequest: {
+            displayOrder?: number;
+            required?: boolean;
+            /** @enum {string} */
+            visibility?: "normal" | "optional" | "hidden";
+            readOnly?: boolean;
+            printFlag?: boolean;
+        };
+        ReorderCatalogTestMappingRequest: {
+            parameterIds: string[];
+        };
+        CatalogParameterReferenceRange: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            tenantId: string;
+            /** Format: uuid */
+            parameterId: string;
+            /** @enum {string} */
+            sex: "M" | "F" | "Any";
+            ageMinDays?: number | null;
+            ageMaxDays?: number | null;
+            refLow?: number | null;
+            refHigh?: number | null;
+            refText?: string | null;
+            priority: number;
+            /** Format: date-time */
+            effectiveFrom?: string | null;
+            /** Format: date-time */
+            effectiveTo?: string | null;
+            notes?: string | null;
+        };
+        ListCatalogReferenceRangesResponse: {
+            data: components["schemas"]["CatalogParameterReferenceRange"][];
+            total: number;
+        };
+        CreateCatalogReferenceRangeRequest: {
+            /** @enum {string} */
+            sex: "M" | "F" | "Any";
+            ageMinDays?: number | null;
+            ageMaxDays?: number | null;
+            refLow?: number | null;
+            refHigh?: number | null;
+            refText?: string | null;
+            priority?: number;
+            /** Format: date-time */
+            effectiveFrom?: string | null;
+            /** Format: date-time */
+            effectiveTo?: string | null;
+            notes?: string | null;
+        };
+        UpdateCatalogReferenceRangeRequest: {
+            /** @enum {string} */
+            sex?: "M" | "F" | "Any";
+            ageMinDays?: number | null;
+            ageMaxDays?: number | null;
+            refLow?: number | null;
+            refHigh?: number | null;
+            refText?: string | null;
+            priority?: number;
+            /** Format: date-time */
+            effectiveFrom?: string | null;
+            /** Format: date-time */
+            effectiveTo?: string | null;
+            notes?: string | null;
+        };
+        /** @enum {string} */
+        LayoutGroupingStrategy: "by_layout_key";
+        /** @enum {string} */
+        LayoutPageBreakPolicy: "always" | "never" | "threshold";
+        /** @enum {string} */
+        LayoutRenderStyle: "table";
+        CatalogReportLayoutRule: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            tenantId: string;
+            layoutKey: string;
+            groupingStrategy: components["schemas"]["LayoutGroupingStrategy"];
+            pageBreakPolicy: components["schemas"]["LayoutPageBreakPolicy"];
+            maxTestsPerPage?: number | null;
+            allowedCombineWith?: string[] | null;
+            renderStyle: components["schemas"]["LayoutRenderStyle"];
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        ListCatalogLayoutsResponse: {
+            data: components["schemas"]["CatalogReportLayoutRule"][];
+            total: number;
+        };
+        CreateCatalogLayoutRequest: {
+            layoutKey: string;
+            groupingStrategy?: components["schemas"]["LayoutGroupingStrategy"];
+            pageBreakPolicy?: components["schemas"]["LayoutPageBreakPolicy"];
+            maxTestsPerPage?: number | null;
+            allowedCombineWith?: string[] | null;
+            renderStyle?: components["schemas"]["LayoutRenderStyle"];
+        };
+        UpdateCatalogLayoutRequest: {
+            groupingStrategy?: components["schemas"]["LayoutGroupingStrategy"];
+            pageBreakPolicy?: components["schemas"]["LayoutPageBreakPolicy"];
+            maxTestsPerPage?: number | null;
+            allowedCombineWith?: string[] | null;
+            renderStyle?: components["schemas"]["LayoutRenderStyle"];
+        };
+        /** @enum {string} */
+        AnnotationType: "limitation" | "interpretation" | "clinical_significance" | "method" | "comment";
+        /** @enum {string} */
+        AnnotationPlacement: "before_results" | "after_results" | "footer" | "impression_area";
+        /** @enum {string} */
+        AnnotationVisibilityRule: "always" | "conditional";
+        CatalogTestAnnotation: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            tenantId: string;
+            /** Format: uuid */
+            testId?: string | null;
+            /** Format: uuid */
+            parameterId?: string | null;
+            annotationType: components["schemas"]["AnnotationType"];
+            placement: components["schemas"]["AnnotationPlacement"];
+            text: string;
+            visibilityRule: components["schemas"]["AnnotationVisibilityRule"];
+            conditionSpec?: string | null;
+            displayOrder: number;
+        };
+        ListCatalogAnnotationsResponse: {
+            data: components["schemas"]["CatalogTestAnnotation"][];
+            total: number;
+        };
+        CreateCatalogAnnotationRequest: {
+            /** Format: uuid */
+            testId?: string | null;
+            /** Format: uuid */
+            parameterId?: string | null;
+            annotationType: components["schemas"]["AnnotationType"];
+            placement: components["schemas"]["AnnotationPlacement"];
+            text: string;
+            visibilityRule?: components["schemas"]["AnnotationVisibilityRule"];
+            conditionSpec?: string | null;
+            displayOrder?: number;
+        };
+        UpdateCatalogAnnotationRequest: {
+            annotationType?: components["schemas"]["AnnotationType"];
+            placement?: components["schemas"]["AnnotationPlacement"];
+            text?: string;
+            visibilityRule?: components["schemas"]["AnnotationVisibilityRule"];
+            conditionSpec?: string | null;
+            displayOrder?: number;
+        };
+        CatalogImportResponse: {
+            dryRun: boolean;
+            diffReport?: Record<string, never> | null;
+            /** Format: uuid */
+            appliedVersionId?: string | null;
+            errors?: {
+                sheet?: string;
+                row?: number;
+                message?: string;
+            }[] | null;
+        };
+        ExportCatalogRequest: {
+            /**
+             * Format: uuid
+             * @description Use published version; if omitted, export current draft
+             */
+            versionId?: string;
+            versionTag?: string;
+        };
+        RunCatalogAuditRequest: {
+            /** @enum {string} */
+            version?: "published" | "draft";
+            section?: string | null;
+        };
+        CatalogAuditRun: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            tenantId: string;
+            /** Format: uuid */
+            catalogVersionId?: string | null;
+            /** Format: uuid */
+            createdBy: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            summaryJson?: Record<string, never> | null;
+            findingsJson?: Record<string, never> | null;
+            sha256?: string | null;
+        };
+        ListCatalogAuditsResponse: {
+            data: components["schemas"]["CatalogAuditRun"][];
+            total: number;
         };
     };
     responses: {
@@ -1051,6 +2413,10 @@ export interface components {
         IdPathParam: string;
         DocumentIdPathParam: string;
         LabTestIdPathParam: string;
+        UserIdPathParam: string;
+        PanelIdPathParam: string;
+        ParameterIdPathParam: string;
+        JobIdPathParam: string;
     };
     requestBodies: never;
     headers: never;
@@ -2067,6 +3433,1771 @@ export interface operations {
                     "application/json": components["schemas"]["AdminOverviewResponse"];
                 };
             };
+            500: components["responses"]["UnexpectedError"];
+        };
+    };
+    listCatalogVersions: {
+        parameters: {
+            query?: {
+                status?: "draft" | "published" | "archived";
+                page?: number;
+            };
+            header?: {
+                /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
+                "x-tenant-id"?: components["parameters"]["TenantIdHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListCatalogVersionsResponse"];
+                };
+            };
+            500: components["responses"]["UnexpectedError"];
+        };
+    };
+    createCatalogVersion: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
+                "x-tenant-id"?: components["parameters"]["TenantIdHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CreateCatalogVersionRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogVersion"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            409: components["responses"]["DomainError"];
+            500: components["responses"]["UnexpectedError"];
+        };
+    };
+    publishCatalogVersion: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
+                "x-tenant-id"?: components["parameters"]["TenantIdHeader"];
+            };
+            path: {
+                versionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogVersion"];
+                };
+            };
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["DomainError"];
+            500: components["responses"]["UnexpectedError"];
+        };
+    };
+    listCatalogTests: {
+        parameters: {
+            query?: {
+                status?: "active" | "inactive";
+                section?: string;
+                page?: number;
+            };
+            header?: {
+                /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
+                "x-tenant-id"?: components["parameters"]["TenantIdHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListCatalogTestsResponse"];
+                };
+            };
+            500: components["responses"]["UnexpectedError"];
+        };
+    };
+    createCatalogTest: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
+                "x-tenant-id"?: components["parameters"]["TenantIdHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateCatalogTestRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogTestDefinition"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            409: components["responses"]["DomainError"];
+            500: components["responses"]["UnexpectedError"];
+        };
+    };
+    getCatalogTestById: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
+                "x-tenant-id"?: components["parameters"]["TenantIdHeader"];
+            };
+            path: {
+                testId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogTestDefinition"];
+                };
+            };
+            404: components["responses"]["NotFoundError"];
+            500: components["responses"]["UnexpectedError"];
+        };
+    };
+    updateCatalogTest: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
+                "x-tenant-id"?: components["parameters"]["TenantIdHeader"];
+            };
+            path: {
+                testId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["UpdateCatalogTestRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogTestDefinition"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["DomainError"];
+            500: components["responses"]["UnexpectedError"];
+        };
+    };
+    listCatalogParameters: {
+        parameters: {
+            query?: {
+                status?: "active" | "inactive";
+                page?: number;
+            };
+            header?: {
+                /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
+                "x-tenant-id"?: components["parameters"]["TenantIdHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListCatalogParametersResponse"];
+                };
+            };
+            500: components["responses"]["UnexpectedError"];
+        };
+    };
+    createCatalogParameter: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
+                "x-tenant-id"?: components["parameters"]["TenantIdHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateCatalogParameterRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogParameterDefinition"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            409: components["responses"]["DomainError"];
+            500: components["responses"]["UnexpectedError"];
+        };
+    };
+    getCatalogParameterById: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
+                "x-tenant-id"?: components["parameters"]["TenantIdHeader"];
+            };
+            path: {
+                parameterId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogParameterDefinition"];
+                };
+            };
+            404: components["responses"]["NotFoundError"];
+            500: components["responses"]["UnexpectedError"];
+        };
+    };
+    updateCatalogParameter: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
+                "x-tenant-id"?: components["parameters"]["TenantIdHeader"];
+            };
+            path: {
+                parameterId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["UpdateCatalogParameterRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogParameterDefinition"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["DomainError"];
+            500: components["responses"]["UnexpectedError"];
+        };
+    };
+    listCatalogTestMapping: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
+                "x-tenant-id"?: components["parameters"]["TenantIdHeader"];
+            };
+            path: {
+                testId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListCatalogTestMappingResponse"];
+                };
+            };
+            404: components["responses"]["NotFoundError"];
+            500: components["responses"]["UnexpectedError"];
+        };
+    };
+    addCatalogTestMapping: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
+                "x-tenant-id"?: components["parameters"]["TenantIdHeader"];
+            };
+            path: {
+                testId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddCatalogTestMappingRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogTestParameterMap"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["DomainError"];
+            500: components["responses"]["UnexpectedError"];
+        };
+    };
+    reorderCatalogTestMapping: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
+                "x-tenant-id"?: components["parameters"]["TenantIdHeader"];
+            };
+            path: {
+                testId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReorderCatalogTestMappingRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListCatalogTestMappingResponse"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["DomainError"];
+            500: components["responses"]["UnexpectedError"];
+        };
+    };
+    deleteCatalogTestMapping: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
+                "x-tenant-id"?: components["parameters"]["TenantIdHeader"];
+            };
+            path: {
+                testId: string;
+                mappingId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Mapping removed */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["DomainError"];
+            500: components["responses"]["UnexpectedError"];
+        };
+    };
+    updateCatalogTestMapping: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
+                "x-tenant-id"?: components["parameters"]["TenantIdHeader"];
+            };
+            path: {
+                testId: string;
+                mappingId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["UpdateCatalogTestMappingRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogTestParameterMap"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["DomainError"];
+            500: components["responses"]["UnexpectedError"];
+        };
+    };
+    listCatalogReferenceRanges: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
+                "x-tenant-id"?: components["parameters"]["TenantIdHeader"];
+            };
+            path: {
+                parameterId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListCatalogReferenceRangesResponse"];
+                };
+            };
+            404: components["responses"]["NotFoundError"];
+            500: components["responses"]["UnexpectedError"];
+        };
+    };
+    createCatalogReferenceRange: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
+                "x-tenant-id"?: components["parameters"]["TenantIdHeader"];
+            };
+            path: {
+                parameterId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateCatalogReferenceRangeRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogParameterReferenceRange"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["DomainError"];
+            500: components["responses"]["UnexpectedError"];
+        };
+    };
+    deleteCatalogReferenceRange: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
+                "x-tenant-id"?: components["parameters"]["TenantIdHeader"];
+            };
+            path: {
+                parameterId: string;
+                rangeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Reference range deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFoundError"];
+            500: components["responses"]["UnexpectedError"];
+        };
+    };
+    updateCatalogReferenceRange: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
+                "x-tenant-id"?: components["parameters"]["TenantIdHeader"];
+            };
+            path: {
+                parameterId: string;
+                rangeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["UpdateCatalogReferenceRangeRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogParameterReferenceRange"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["DomainError"];
+            500: components["responses"]["UnexpectedError"];
+        };
+    };
+    listCatalogLayouts: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
+                "x-tenant-id"?: components["parameters"]["TenantIdHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListCatalogLayoutsResponse"];
+                };
+            };
+            500: components["responses"]["UnexpectedError"];
+        };
+    };
+    createCatalogLayout: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
+                "x-tenant-id"?: components["parameters"]["TenantIdHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateCatalogLayoutRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogReportLayoutRule"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            409: components["responses"]["DomainError"];
+            500: components["responses"]["UnexpectedError"];
+        };
+    };
+    getCatalogLayoutById: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
+                "x-tenant-id"?: components["parameters"]["TenantIdHeader"];
+            };
+            path: {
+                layoutId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogReportLayoutRule"];
+                };
+            };
+            404: components["responses"]["NotFoundError"];
+            500: components["responses"]["UnexpectedError"];
+        };
+    };
+    updateCatalogLayout: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
+                "x-tenant-id"?: components["parameters"]["TenantIdHeader"];
+            };
+            path: {
+                layoutId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["UpdateCatalogLayoutRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogReportLayoutRule"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["DomainError"];
+            500: components["responses"]["UnexpectedError"];
+        };
+    };
+    listCatalogAnnotations: {
+        parameters: {
+            query?: {
+                testId?: string;
+                parameterId?: string;
+            };
+            header?: {
+                /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
+                "x-tenant-id"?: components["parameters"]["TenantIdHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListCatalogAnnotationsResponse"];
+                };
+            };
+            500: components["responses"]["UnexpectedError"];
+        };
+    };
+    createCatalogAnnotation: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
+                "x-tenant-id"?: components["parameters"]["TenantIdHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateCatalogAnnotationRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogTestAnnotation"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["DomainError"];
+            500: components["responses"]["UnexpectedError"];
+        };
+    };
+    getCatalogAnnotationById: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
+                "x-tenant-id"?: components["parameters"]["TenantIdHeader"];
+            };
+            path: {
+                annotationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogTestAnnotation"];
+                };
+            };
+            404: components["responses"]["NotFoundError"];
+            500: components["responses"]["UnexpectedError"];
+        };
+    };
+    deleteCatalogAnnotation: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
+                "x-tenant-id"?: components["parameters"]["TenantIdHeader"];
+            };
+            path: {
+                annotationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Annotation deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFoundError"];
+            500: components["responses"]["UnexpectedError"];
+        };
+    };
+    updateCatalogAnnotation: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
+                "x-tenant-id"?: components["parameters"]["TenantIdHeader"];
+            };
+            path: {
+                annotationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["UpdateCatalogAnnotationRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogTestAnnotation"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["DomainError"];
+            500: components["responses"]["UnexpectedError"];
+        };
+    };
+    importCatalog: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
+                "x-tenant-id"?: components["parameters"]["TenantIdHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file: string;
+                    /** @default true */
+                    dryRun?: boolean;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogImportResponse"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            409: components["responses"]["DomainError"];
+            500: components["responses"]["UnexpectedError"];
+        };
+    };
+    exportCatalog: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
+                "x-tenant-id"?: components["parameters"]["TenantIdHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ExportCatalogRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/octet-stream": string;
+                };
+            };
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["DomainError"];
+            500: components["responses"]["UnexpectedError"];
+        };
+    };
+    listCatalogAudits: {
+        parameters: {
+            query?: {
+                versionId?: string;
+                page?: number;
+            };
+            header?: {
+                /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
+                "x-tenant-id"?: components["parameters"]["TenantIdHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListCatalogAuditsResponse"];
+                };
+            };
+            500: components["responses"]["UnexpectedError"];
+        };
+    };
+    runCatalogAudit: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
+                "x-tenant-id"?: components["parameters"]["TenantIdHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["RunCatalogAuditRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogAuditRun"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            500: components["responses"]["UnexpectedError"];
+        };
+    };
+    getCatalogAuditById: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
+                "x-tenant-id"?: components["parameters"]["TenantIdHeader"];
+            };
+            path: {
+                auditId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogAuditRun"];
+                };
+            };
+            404: components["responses"]["NotFoundError"];
+            500: components["responses"]["UnexpectedError"];
+        };
+    };
+    listAdminUsers: {
+        parameters: {
+            query?: {
+                page?: number;
+                limit?: number;
+                query?: string;
+            };
+            header?: {
+                /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
+                "x-tenant-id"?: components["parameters"]["TenantIdHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Tenant users list */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListAdminUsersResponse"];
+                };
+            };
+            500: components["responses"]["UnexpectedError"];
+        };
+    };
+    inviteAdminUser: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
+                "x-tenant-id"?: components["parameters"]["TenantIdHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InviteRequest"];
+            };
+        };
+        responses: {
+            /** @description Invite created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InviteResponse"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            409: components["responses"]["DomainError"];
+            500: components["responses"]["UnexpectedError"];
+        };
+    };
+    getAdminUserById: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
+                "x-tenant-id"?: components["parameters"]["TenantIdHeader"];
+            };
+            path: {
+                userId: components["parameters"]["UserIdPathParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Tenant user detail */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserAdmin"];
+                };
+            };
+            404: components["responses"]["NotFoundError"];
+            500: components["responses"]["UnexpectedError"];
+        };
+    };
+    updateAdminUser: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
+                "x-tenant-id"?: components["parameters"]["TenantIdHeader"];
+            };
+            path: {
+                userId: components["parameters"]["UserIdPathParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateAdminUserRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated tenant user */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserAdmin"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["DomainError"];
+            500: components["responses"]["UnexpectedError"];
+        };
+    };
+    listLabPanels: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
+                "x-tenant-id"?: components["parameters"]["TenantIdHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description LAB panel list */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListPanelsResponse"];
+                };
+            };
+            500: components["responses"]["UnexpectedError"];
+        };
+    };
+    createLabPanel: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
+                "x-tenant-id"?: components["parameters"]["TenantIdHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PanelCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description LAB panel created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Panel"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            409: components["responses"]["DomainError"];
+            500: components["responses"]["UnexpectedError"];
+        };
+    };
+    getLabPanelById: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
+                "x-tenant-id"?: components["parameters"]["TenantIdHeader"];
+            };
+            path: {
+                panelId: components["parameters"]["PanelIdPathParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description LAB panel detail */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Panel"];
+                };
+            };
+            404: components["responses"]["NotFoundError"];
+            500: components["responses"]["UnexpectedError"];
+        };
+    };
+    updateLabPanel: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
+                "x-tenant-id"?: components["parameters"]["TenantIdHeader"];
+            };
+            path: {
+                panelId: components["parameters"]["PanelIdPathParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PanelUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated panel */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Panel"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["DomainError"];
+            500: components["responses"]["UnexpectedError"];
+        };
+    };
+    addTestToPanel: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
+                "x-tenant-id"?: components["parameters"]["TenantIdHeader"];
+            };
+            path: {
+                panelId: components["parameters"]["PanelIdPathParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PanelAddTestRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated panel */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Panel"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["DomainError"];
+            500: components["responses"]["UnexpectedError"];
+        };
+    };
+    removeTestFromPanel: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
+                "x-tenant-id"?: components["parameters"]["TenantIdHeader"];
+            };
+            path: {
+                panelId: components["parameters"]["PanelIdPathParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PanelRemoveTestRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated panel */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Panel"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["DomainError"];
+            500: components["responses"]["UnexpectedError"];
+        };
+    };
+    getLabParameterById: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
+                "x-tenant-id"?: components["parameters"]["TenantIdHeader"];
+            };
+            path: {
+                parameterId: components["parameters"]["ParameterIdPathParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Parameter detail */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ParameterDetail"];
+                };
+            };
+            404: components["responses"]["NotFoundError"];
+            500: components["responses"]["UnexpectedError"];
+        };
+    };
+    getLabLinkingState: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
+                "x-tenant-id"?: components["parameters"]["TenantIdHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Linking state and metrics */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LinkingState"];
+                };
+            };
+            500: components["responses"]["UnexpectedError"];
+        };
+    };
+    linkTestParameter: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
+                "x-tenant-id"?: components["parameters"]["TenantIdHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LinkTestParameterRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated parameter detail */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ParameterDetail"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["DomainError"];
+            500: components["responses"]["UnexpectedError"];
+        };
+    };
+    unlinkTestParameter: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
+                "x-tenant-id"?: components["parameters"]["TenantIdHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UnlinkTestParameterRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated parameter detail */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ParameterDetail"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["DomainError"];
+            500: components["responses"]["UnexpectedError"];
+        };
+    };
+    listLabReferenceRanges: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
+                "x-tenant-id"?: components["parameters"]["TenantIdHeader"];
+            };
+            path: {
+                testId: components["parameters"]["LabTestIdPathParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Reference ranges for test */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListReferenceRangesResponse"];
+                };
+            };
+            404: components["responses"]["NotFoundError"];
+            500: components["responses"]["UnexpectedError"];
+        };
+    };
+    upsertLabReferenceRange: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
+                "x-tenant-id"?: components["parameters"]["TenantIdHeader"];
+            };
+            path: {
+                testId: components["parameters"]["LabTestIdPathParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpsertReferenceRangeRequest"];
+            };
+        };
+        responses: {
+            /** @description Upserted reference range */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReferenceRange"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["DomainError"];
+            500: components["responses"]["UnexpectedError"];
+        };
+    };
+    listLabCatalogImportJobs: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
+                "x-tenant-id"?: components["parameters"]["TenantIdHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Catalog import jobs */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListCatalogImportJobsResponse"];
+                };
+            };
+            500: components["responses"]["UnexpectedError"];
+        };
+    };
+    createLabCatalogImportJob: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
+                "x-tenant-id"?: components["parameters"]["TenantIdHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file: string;
+                    /** @enum {string} */
+                    mode?: "MERGE" | "REPLACE";
+                };
+            };
+        };
+        responses: {
+            /** @description Import job created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogImportJob"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            409: components["responses"]["DomainError"];
+            500: components["responses"]["UnexpectedError"];
+        };
+    };
+    getLabCatalogImportJobById: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
+                "x-tenant-id"?: components["parameters"]["TenantIdHeader"];
+            };
+            path: {
+                jobId: components["parameters"]["JobIdPathParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Import job detail */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogImportJob"];
+                };
+            };
+            404: components["responses"]["NotFoundError"];
+            500: components["responses"]["UnexpectedError"];
+        };
+    };
+    listLabCatalogExportJobs: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
+                "x-tenant-id"?: components["parameters"]["TenantIdHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Catalog export jobs */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListCatalogExportJobsResponse"];
+                };
+            };
+            500: components["responses"]["UnexpectedError"];
+        };
+    };
+    createLabCatalogExportJob: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
+                "x-tenant-id"?: components["parameters"]["TenantIdHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateCatalogExportRequest"];
+            };
+        };
+        responses: {
+            /** @description Export job created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogExportJob"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            500: components["responses"]["UnexpectedError"];
+        };
+    };
+    getLabCatalogExportFile: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
+                "x-tenant-id"?: components["parameters"]["TenantIdHeader"];
+            };
+            path: {
+                jobId: components["parameters"]["JobIdPathParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Exported XLSX file */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
+                };
+            };
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["DomainError"];
+            500: components["responses"]["UnexpectedError"];
+        };
+    };
+    getTenantBrandingConfig: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
+                "x-tenant-id"?: components["parameters"]["TenantIdHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Branding config */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BusinessBrandingConfig"];
+                };
+            };
+            500: components["responses"]["UnexpectedError"];
+        };
+    };
+    updateTenantBrandingConfig: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
+                "x-tenant-id"?: components["parameters"]["TenantIdHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateBusinessBrandingConfigRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated branding config */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BusinessBrandingConfig"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            500: components["responses"]["UnexpectedError"];
+        };
+    };
+    getTenantReportDesignConfig: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
+                "x-tenant-id"?: components["parameters"]["TenantIdHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Report design config */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportDesignConfig"];
+                };
+            };
+            500: components["responses"]["UnexpectedError"];
+        };
+    };
+    updateTenantReportDesignConfig: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
+                "x-tenant-id"?: components["parameters"]["TenantIdHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateReportDesignConfigRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated report design config */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportDesignConfig"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            500: components["responses"]["UnexpectedError"];
+        };
+    };
+    getTenantReceiptDesignConfig: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
+                "x-tenant-id"?: components["parameters"]["TenantIdHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Receipt design config */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReceiptDesignConfig"];
+                };
+            };
+            500: components["responses"]["UnexpectedError"];
+        };
+    };
+    updateTenantReceiptDesignConfig: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description DEV ONLY. Ignored in production. For local testing when hostname is localhost. */
+                "x-tenant-id"?: components["parameters"]["TenantIdHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateReceiptDesignConfigRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated receipt design config */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReceiptDesignConfig"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
             500: components["responses"]["UnexpectedError"];
         };
     };
