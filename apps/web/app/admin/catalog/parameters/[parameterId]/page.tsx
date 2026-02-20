@@ -13,19 +13,22 @@ import { client } from '@/lib/sdk/client';
 import { adminKeys } from '@/lib/sdk/hooks';
 import type { paths } from '@vexel/contracts';
 
-type ParameterResponse = paths['/lab/parameters/{parameterId}']['get']['responses'][200]['content']['application/json'];
-type ReferenceRangesResponse =
-  paths['/lab/tests/{testId}/reference-ranges']['get']['responses'][200]['content']['application/json'];
+type CatalogParameterResponse =
+  paths['/catalog/parameters/{parameterId}']['get']['responses'][200]['content']['application/json'];
+type CatalogReferenceRangesResponse =
+  paths['/catalog/parameters/{parameterId}/reference-ranges']['get']['responses'][200]['content']['application/json'];
+type CatalogAnnotationsResponse =
+  paths['/catalog/annotations']['get']['responses'][200]['content']['application/json'];
 
 export default function ParameterDetailPage() {
   const params = useParams<{ parameterId: string }>();
   const parameterId = typeof params.parameterId === 'string' ? params.parameterId : '';
 
   const { data: parameterData, error } = useQuery({
-    queryKey: adminKeys.parameter(parameterId),
+    queryKey: adminKeys.catalogParameter(parameterId),
     enabled: parameterId.length > 0,
     queryFn: async () => {
-      const { data, error } = await client.GET('/lab/parameters/{parameterId}', {
+      const { data, error } = await client.GET('/catalog/parameters/{parameterId}', {
         params: {
           path: {
             parameterId,
@@ -33,42 +36,57 @@ export default function ParameterDetailPage() {
         },
       });
       if (error) throw new Error(parseApiError(error, 'Failed to load parameter detail').message);
-      return data as ParameterResponse;
+      return data as CatalogParameterResponse;
     },
   });
 
   const { data: rangesData, error: rangesError } = useQuery({
-    queryKey: adminKeys.referenceRanges(parameterData?.testId ?? ''),
-    enabled: Boolean(parameterData?.testId),
+    queryKey: [...adminKeys.catalogParameter(parameterId), 'reference-ranges'],
+    enabled: parameterId.length > 0,
     queryFn: async () => {
-      const { data, error } = await client.GET('/lab/tests/{testId}/reference-ranges', {
+      const { data, error } = await client.GET('/catalog/parameters/{parameterId}/reference-ranges', {
         params: {
           path: {
-            testId: parameterData?.testId ?? '',
+            parameterId,
           },
         },
       });
       if (error) throw new Error(parseApiError(error, 'Failed to load reference ranges').message);
-      return data as ReferenceRangesResponse;
+      return data as CatalogReferenceRangesResponse;
     },
   });
 
-  const filteredRanges = (rangesData?.data ?? []).filter((range) => range.parameterId === parameterData?.id);
+  const { data: annotationsData, error: annotationsError } = useQuery({
+    queryKey: adminKeys.catalogAnnotations(undefined, parameterId),
+    enabled: parameterId.length > 0,
+    queryFn: async () => {
+      const { data, error } = await client.GET('/catalog/annotations', {
+        params: {
+          query: {
+            parameterId,
+          },
+        },
+      });
+      if (error) throw new Error(parseApiError(error, 'Failed to load parameter annotations').message);
+      return data as CatalogAnnotationsResponse;
+    },
+  });
+
+  const ranges = rangesData?.data ?? [];
+  const annotations = annotationsData?.data ?? [];
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Parameter Detail"
-        subtitle="Tenant-scoped parameter definition, units, data type, and reference defaults."
+        subtitle="Global catalog parameter definition and reference configuration."
         actions={
-          parameterData?.testId ? (
-            <Link
-              href={adminRoutes.catalogTestDetail(parameterData.testId)}
-              className="rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm font-medium"
-            >
-              Open Test
-            </Link>
-          ) : null
+          <Link
+            href={adminRoutes.catalogParameters}
+            className="rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm font-medium"
+          >
+            Back to Parameters
+          </Link>
         }
       />
 
@@ -84,24 +102,30 @@ export default function ParameterDetailPage() {
         </NoticeBanner>
       ) : null}
 
+      {annotationsError ? (
+        <NoticeBanner title="Unable to load parameter annotations" tone="warning">
+          {annotationsError instanceof Error ? annotationsError.message : 'Unknown error'}
+        </NoticeBanner>
+      ) : null}
+
       <AdminCard title="Summary">
         <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
           <div className="rounded-xl border border-[var(--border)] bg-[var(--bg)] p-3">
             <p className="text-xs uppercase tracking-wide text-[var(--muted)]">ID</p>
-            <p className="mt-1 text-sm font-medium">{(parameterData?.id ?? parameterId) || '—'}</p>
+            <p className="mt-1 text-sm font-medium">{parameterData?.id ?? parameterId}</p>
+          </div>
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--bg)] p-3">
+            <p className="text-xs uppercase tracking-wide text-[var(--muted)]">Code</p>
+            <p className="mt-1 text-sm font-medium">{parameterData?.parameterCode ?? '—'}</p>
           </div>
           <div className="rounded-xl border border-[var(--border)] bg-[var(--bg)] p-3">
             <p className="text-xs uppercase tracking-wide text-[var(--muted)]">Name</p>
-            <p className="mt-1 text-sm font-medium">{parameterData?.name ?? '—'}</p>
-          </div>
-          <div className="rounded-xl border border-[var(--border)] bg-[var(--bg)] p-3">
-            <p className="text-xs uppercase tracking-wide text-[var(--muted)]">Unit</p>
-            <p className="mt-1 text-sm font-medium">{parameterData?.unit ?? '—'}</p>
+            <p className="mt-1 text-sm font-medium">{parameterData?.parameterName ?? '—'}</p>
           </div>
           <div className="rounded-xl border border-[var(--border)] bg-[var(--bg)] p-3">
             <p className="text-xs uppercase tracking-wide text-[var(--muted)]">Status</p>
             <div className="mt-1">
-              <StatusPill status={parameterData?.active ? 'active' : 'inactive'} />
+              <StatusPill status={parameterData?.status === 'active' ? 'active' : 'inactive'} />
             </div>
           </div>
         </div>
@@ -110,33 +134,30 @@ export default function ParameterDetailPage() {
       <AdminCard title="Definition">
         <dl className="space-y-2 text-sm">
           <div className="flex items-center justify-between gap-4 border-b border-[var(--border)] py-2">
-            <dt className="text-[var(--muted)]">Test</dt>
-            <dd className="font-medium">
-              {parameterData?.testCode ?? '—'} {parameterData?.testName ? `· ${parameterData.testName}` : ''}
-            </dd>
+            <dt className="text-[var(--muted)]">Result Type</dt>
+            <dd className="font-medium">{parameterData?.resultType ?? '—'}</dd>
           </div>
           <div className="flex items-center justify-between gap-4 border-b border-[var(--border)] py-2">
-            <dt className="text-[var(--muted)]">Data Type</dt>
-            <dd className="font-medium">{parameterData?.dataType ?? '—'}</dd>
+            <dt className="text-[var(--muted)]">Precision</dt>
+            <dd className="font-medium">{parameterData?.precision ?? '—'}</dd>
           </div>
           <div className="flex items-center justify-between gap-4 border-b border-[var(--border)] py-2">
-            <dt className="text-[var(--muted)]">Display Order</dt>
-            <dd className="font-medium">{parameterData?.displayOrder ?? '—'}</dd>
+            <dt className="text-[var(--muted)]">Default Value</dt>
+            <dd className="font-medium">{parameterData?.defaultValue ?? '—'}</dd>
+          </div>
+          <div className="flex items-center justify-between gap-4 border-b border-[var(--border)] py-2">
+            <dt className="text-[var(--muted)]">Enum Options</dt>
+            <dd className="font-medium">{parameterData?.enumOptions?.join(', ') ?? '—'}</dd>
           </div>
           <div className="flex items-center justify-between gap-4 py-2">
-            <dt className="text-[var(--muted)]">Reference Defaults</dt>
-            <dd className="font-medium">
-              {parameterData?.referenceDefaults?.text ??
-                (parameterData?.referenceDefaults?.low != null || parameterData?.referenceDefaults?.high != null
-                  ? `${parameterData.referenceDefaults.low ?? '—'} to ${parameterData.referenceDefaults.high ?? '—'}`
-                  : '—')}
-            </dd>
+            <dt className="text-[var(--muted)]">Formula Spec</dt>
+            <dd className="font-medium">{parameterData?.formulaSpec ?? '—'}</dd>
           </div>
         </dl>
       </AdminCard>
 
       <AdminCard title="Reference Ranges">
-        {(filteredRanges ?? []).length === 0 ? (
+        {ranges.length === 0 ? (
           <p className="text-sm text-[var(--muted)]">No explicit reference ranges found for this parameter.</p>
         ) : (
           <div className="overflow-x-auto rounded-xl border border-[var(--border)]">
@@ -146,27 +167,43 @@ export default function ParameterDetailPage() {
                   <th className="px-4 py-3 font-medium">Sex</th>
                   <th className="px-4 py-3 font-medium">Age (days)</th>
                   <th className="px-4 py-3 font-medium">Range</th>
-                  <th className="px-4 py-3 font-medium">Updated</th>
+                  <th className="px-4 py-3 font-medium">Ref text</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredRanges.map((range) => (
+                {ranges.map((range) => (
                   <tr key={range.id} className="border-t border-[var(--border)]">
-                    <td className="px-4 py-3">{range.sex ?? 'ALL'}</td>
+                    <td className="px-4 py-3">{range.sex}</td>
                     <td className="px-4 py-3">
-                      {range.ageMinDays != null || range.ageMaxDays != null
-                        ? `${range.ageMinDays ?? '0'} - ${range.ageMaxDays ?? '∞'}`
-                        : 'All ages'}
+                      {range.ageMinDays ?? '—'} - {range.ageMaxDays ?? '—'}
                     </td>
                     <td className="px-4 py-3">
-                      {range.textRange ??
-                        (range.low != null || range.high != null ? `${range.low ?? '—'} to ${range.high ?? '—'}` : '—')}
+                      {range.refLow != null || range.refHigh != null
+                        ? `${range.refLow ?? '—'} to ${range.refHigh ?? '—'}`
+                        : '—'}
                     </td>
-                    <td className="px-4 py-3">{range.updatedAt ? new Date(range.updatedAt).toLocaleDateString() : '—'}</td>
+                    <td className="px-4 py-3">{range.refText ?? '—'}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+      </AdminCard>
+
+      <AdminCard title="Annotations">
+        {annotations.length === 0 ? (
+          <p className="text-sm text-[var(--muted)]">No annotations linked to this parameter.</p>
+        ) : (
+          <div className="space-y-2">
+            {annotations.map((annotation) => (
+              <div key={annotation.id} className="rounded-lg border border-[var(--border)] p-3">
+                <p className="text-xs text-[var(--muted)]">
+                  {annotation.annotationType} · {annotation.placement}
+                </p>
+                <p className="mt-1 text-sm">{annotation.text}</p>
+              </div>
+            ))}
           </div>
         )}
       </AdminCard>

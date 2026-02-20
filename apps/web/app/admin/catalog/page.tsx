@@ -16,6 +16,7 @@ type AdminOverviewResponse =
 type LabTestsResponse = paths['/lab/tests']['get']['responses'][200]['content']['application/json'];
 type ListCatalogTestsResponse =
   paths['/catalog/tests']['get']['responses'][200]['content']['application/json'];
+type ListPanelsResponse = paths['/lab/panels']['get']['responses'][200]['content']['application/json'];
 
 export default function CatalogOverviewPage() {
   const { data: overview, error: overviewError } = useQuery({
@@ -45,11 +46,20 @@ export default function CatalogOverviewPage() {
     },
   });
 
+  const { data: panelsResponse } = useQuery({
+    queryKey: adminKeys.panels(),
+    queryFn: async () => {
+      const { data, error } = await client.GET('/lab/panels');
+      if (error) return null;
+      return data as ListPanelsResponse;
+    },
+  });
+
   return (
     <div className="space-y-6">
       <PageHeader
         title="Catalog Overview"
-        subtitle="Tests, parameters, panels, and linking workflow scaffolding."
+        subtitle="Tests, parameters, panels, linking, import/export, and versioning status."
       />
 
       {overviewError ? (
@@ -79,12 +89,16 @@ export default function CatalogOverviewPage() {
           <p className="text-sm text-[var(--muted)]">Reported by admin overview</p>
         </AdminCard>
         <AdminCard title="Panels">
-          <p className="text-3xl font-semibold">—</p>
-          <p className="text-sm text-[var(--muted)]">Endpoint missing in current contract</p>
+          <p className="text-3xl font-semibold">
+            {panelsResponse?.total ?? overview?.catalog?.panels_count ?? 0}
+          </p>
+          <p className="text-sm text-[var(--muted)]">GET /lab/panels</p>
         </AdminCard>
         <AdminCard title="Linking Workflow">
-          <p className="text-3xl font-semibold">Scaffold</p>
-          <p className="text-sm text-[var(--muted)]">No linking API exposed yet</p>
+          <p className="text-3xl font-semibold">Active</p>
+          <p className="text-sm text-[var(--muted)]">
+            Mapping, ranges, and annotations commands are available.
+          </p>
         </AdminCard>
       </div>
 

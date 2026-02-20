@@ -1,143 +1,97 @@
 'use client';
 
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { AdminCard } from '@/components/admin/AdminCard';
 import { DataTableShell } from '@/components/admin/DataTableShell';
 import { NoticeBanner } from '@/components/admin/NoticeBanner';
 import { PageHeader } from '@/components/admin/PageHeader';
+import { parseApiError } from '@/lib/api-errors';
 import { client } from '@/lib/sdk/client';
 import { adminKeys } from '@/lib/sdk/hooks';
-// Response types for catalog import/audit (match OpenAPI CatalogImportResponse, ListCatalogAuditsResponse)
-type CatalogImportResponse = {
-  dryRun: boolean;
-  diffReport?: object | null;
-  appliedVersionId?: string | null;
-  errors?: Array<{ sheet?: string; row?: number; message?: string }> | null;
-};
-type CatalogAuditRun = {
-  id: string;
-  tenantId: string;
-  catalogVersionId?: string | null;
-  createdBy?: string | null;
-  createdAt: string;
-  summaryJson?: object | null;
-  findingsJson?: object | null;
-  sha256?: string | null;
-};
-type ListCatalogAuditsResponse = { data: CatalogAuditRun[]; total: number };
+import type { paths } from '@vexel/contracts';
+
+type CatalogImportResponse =
+  paths['/catalog/import']['post']['responses'][200]['content']['application/json'];
+type ListCatalogAuditsResponse =
+  paths['/catalog/audit']['get']['responses'][200]['content']['application/json'];
+type ListCatalogVersionsResponse =
+  paths['/catalog/versions']['get']['responses'][200]['content']['application/json'];
+type ExportCatalogRequest = NonNullable<
+  paths['/catalog/export']['post']['requestBody']
+>['content']['application/json'];
 
 export default function CatalogImportExportPage() {
   const [file, setFile] = useState<File | null>(null);
   const [dryRun, setDryRun] = useState(true);
   const [importResult, setImportResult] = useState<CatalogImportResponse | null>(null);
-  const [importError, setImportError] = useState<string | null>(null);
-  const [importing, setImporting] = useState(false);
-  const [exporting, setExporting] = useState(false);
   const [exportVersionId, setExportVersionId] = useState('');
 
-  const { data: versionsData } = useQuery({
+  const { data: versionsData, error: versionsError } = useQuery({
     queryKey: adminKeys.catalogVersions('published'),
     queryFn: async () => {
       const { data, error } = await client.GET('/catalog/versions', {
         params: { query: { status: 'published' } },
       });
-      if (error) throw new Error('Failed to load versions');
-      return data;
+      if (error) throw new Error(parseApiError(error, 'Failed to load published versions').message);
+      return data as ListCatalogVersionsResponse;
     },
   });
 
-  const { data: auditsData } = useQuery({
+  const { data: auditsData, error: auditsError } = useQuery({
     queryKey: adminKeys.catalogAudits(),
     queryFn: async () => {
       const { data, error } = await client.GET('/catalog/audit');
-      if (error) throw new Error('Failed to load audit runs');
+      if (error) throw new Error(parseApiError(error, 'Failed to load audit runs').message);
       return data as ListCatalogAuditsResponse;
     },
   });
 
-  const handleImport = async () => {
-    if (!file) {
-      setImportError('Select a file first');
-      return;
-    }
-    setImporting(true);
-    setImportError(null);
-    setImportResult(null);
-    try {
+  const importMutation = useMutation({
+    mutationFn: async () => {
+      if (!file) {
+        throw new Error('Select a file first');
+      }
+
       const formData = new FormData();
       formData.append('file', file);
       formData.append('dryRun', String(dryRun));
-      const token = typeof window !== 'undefined' ? localStorage.getItem('vexel_token') : null;
-      const tenant =
-        typeof window !== 'undefined' ? localStorage.getItem('vexel_tenant_id') : null;
-      const baseUrl =
-        process.env.NEXT_PUBLIC_API_URL?.startsWith('/')
-          ? typeof window !== 'undefined'
-            ? ''
-            : process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000'
-          : process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
-      const url = baseUrl ? `${baseUrl}/catalog/import` : '/api/catalog/import';
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: {
-          ...(token && { Authorization: `Bearer ${token}` }),
-          ...(process.env.NEXT_PUBLIC_TENANCY_DEV_HEADER_ENABLED === '1' &&
-            tenant && { 'x-tenant-id': tenant }),
-        },
-        body: formData,
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err?.error?.message ?? res.statusText ?? 'Import failed');
-      }
-      const data = (await res.json()) as CatalogImportResponse;
-      setImportResult(data);
-    } catch (e) {
-      setImportError(e instanceof Error ? e.message : 'Import failed');
-    } finally {
-      setImporting(false);
-    }
-  };
 
-  const handleExport = async () => {
-    setExporting(true);
-    setImportError(null);
-    try {
-      const token = typeof window !== 'undefined' ? localStorage.getItem('vexel_token') : null;
-      const tenant =
-        typeof window !== 'undefined' ? localStorage.getItem('vexel_tenant_id') : null;
-      const baseUrl =
-        process.env.NEXT_PUBLIC_API_URL?.startsWith('/')
-          ? typeof window !== 'undefined'
-            ? ''
-            : process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000'
-          : process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
-      const url = baseUrl ? `${baseUrl}/catalog/export` : '/api/catalog/export';
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token && { Authorization: `Bearer ${token}` }),
-          ...(process.env.NEXT_PUBLIC_TENANCY_DEV_HEADER_ENABLED === '1' &&
-            tenant && { 'x-tenant-id': tenant }),
-        },
-        body: exportVersionId ? JSON.stringify({ versionId: exportVersionId }) : '{}',
+      const { data, error } = await client.POST('/catalog/import', {
+        body: formData as never,
       });
-      if (!res.ok) throw new Error('Export failed');
-      const blob = await res.blob();
+      if (error) throw new Error(parseApiError(error, 'Import failed').message);
+      return data as CatalogImportResponse;
+    },
+    onSuccess: (data) => {
+      setImportResult(data);
+    },
+  });
+
+  const exportMutation = useMutation({
+    mutationFn: async () => {
+      const body: ExportCatalogRequest = exportVersionId ? { versionId: exportVersionId } : {};
+
+      const { data, error } = await client.POST('/catalog/export', {
+        body,
+        parseAs: 'arrayBuffer',
+      });
+      if (error) throw new Error(parseApiError(error, 'Export failed').message);
+      return data;
+    },
+    onSuccess: (data) => {
+      if (!data) return;
+      const blob = new Blob([data], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      });
       const objectUrl = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = objectUrl;
-      a.download = `catalog-export-${new Date().toISOString().slice(0, 10)}.xlsx`;
-      a.click();
+      const anchor = document.createElement('a');
+      anchor.href = objectUrl;
+      anchor.download = `catalog-export-${new Date().toISOString().slice(0, 10)}.xlsx`;
+      anchor.click();
       URL.revokeObjectURL(objectUrl);
-    } catch {
-      setImportError('Export failed');
-    } finally {
-      setExporting(false);
-    }
-  };
+    },
+  });
 
   const auditRuns = auditsData?.data ?? [];
   const versions = versionsData?.data ?? [];
@@ -146,26 +100,40 @@ export default function CatalogImportExportPage() {
     <div className="space-y-6">
       <PageHeader
         title="Import / Export"
-        subtitle="XLSX catalog import (dry run or apply) and export. Contract: POST /catalog/import, POST /catalog/export."
+        subtitle="XLSX catalog import and export using contract endpoints."
       />
 
-      {importError ? (
-        <NoticeBanner title="Error" tone="warning">
-          {importError}
+      {versionsError ? (
+        <NoticeBanner title="Unable to load versions" tone="warning">
+          {versionsError instanceof Error ? versionsError.message : 'Unknown error'}
         </NoticeBanner>
       ) : null}
 
-      {importResult && (
-        <NoticeBanner title="Import result" tone="success">
-          Dry run: {String(importResult.dryRun)}.{' '}
-          {importResult.appliedVersionId
-            ? `Applied version: ${importResult.appliedVersionId}`
-            : ''}
-          {importResult.errors?.length
-            ? ` Errors: ${importResult.errors.length}`
-            : ''}
+      {auditsError ? (
+        <NoticeBanner title="Unable to load audit runs" tone="warning">
+          {auditsError instanceof Error ? auditsError.message : 'Unknown error'}
         </NoticeBanner>
-      )}
+      ) : null}
+
+      {importMutation.error ? (
+        <NoticeBanner title="Import failed" tone="warning">
+          {importMutation.error instanceof Error ? importMutation.error.message : 'Unknown error'}
+        </NoticeBanner>
+      ) : null}
+
+      {exportMutation.error ? (
+        <NoticeBanner title="Export failed" tone="warning">
+          {exportMutation.error instanceof Error ? exportMutation.error.message : 'Unknown error'}
+        </NoticeBanner>
+      ) : null}
+
+      {importResult ? (
+        <NoticeBanner title="Import completed" tone="success">
+          Dry run: {String(importResult.dryRun)}
+          {importResult.appliedVersionId ? ` · Applied version: ${importResult.appliedVersionId}` : ''}
+          {importResult.errors?.length ? ` · Errors: ${importResult.errors.length}` : ''}
+        </NoticeBanner>
+      ) : null}
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
         <AdminCard title="Import XLSX">
@@ -174,23 +142,19 @@ export default function CatalogImportExportPage() {
               type="file"
               accept=".xlsx,.xls"
               className="block w-full text-sm text-[var(--muted)]"
-              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+              onChange={(event) => setFile(event.target.files?.[0] ?? null)}
             />
             <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={dryRun}
-                onChange={(e) => setDryRun(e.target.checked)}
-              />
-              Dry run (validate only, do not apply)
+              <input type="checkbox" checked={dryRun} onChange={(event) => setDryRun(event.target.checked)} />
+              Dry run (validate only)
             </label>
             <button
               type="button"
-              onClick={handleImport}
-              disabled={importing || !file}
+              onClick={() => importMutation.mutate()}
+              disabled={importMutation.isPending || !file}
               className="rounded-xl bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)] disabled:opacity-50"
             >
-              {importing ? 'Importing…' : 'Start import'}
+              {importMutation.isPending ? 'Importing...' : 'Start import'}
             </button>
           </div>
         </AdminCard>
@@ -199,23 +163,23 @@ export default function CatalogImportExportPage() {
           <div className="space-y-3">
             <select
               value={exportVersionId}
-              onChange={(e) => setExportVersionId(e.target.value)}
+              onChange={(event) => setExportVersionId(event.target.value)}
               className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm"
             >
               <option value="">Current draft</option>
-              {versions.map((v) => (
-                <option key={v.id} value={v.id}>
-                  {v.versionTag} ({v.status})
+              {versions.map((version) => (
+                <option key={version.id} value={version.id}>
+                  {version.versionTag} ({version.status})
                 </option>
               ))}
             </select>
             <button
               type="button"
-              onClick={handleExport}
-              disabled={exporting}
+              onClick={() => exportMutation.mutate()}
+              disabled={exportMutation.isPending}
               className="rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-sm font-medium text-[var(--text)] disabled:opacity-50"
             >
-              {exporting ? 'Exporting…' : 'Download export'}
+              {exportMutation.isPending ? 'Exporting...' : 'Download export'}
             </button>
           </div>
         </AdminCard>
@@ -226,20 +190,22 @@ export default function CatalogImportExportPage() {
         subtitle="GET /catalog/audit"
         isEmpty={auditRuns.length === 0}
         emptyTitle="No audit runs"
-        emptyDescription="Run an audit from Tests page or Test detail."
+        emptyDescription="Run catalog audits from Tests pages."
       >
         <table className="min-w-full text-sm">
           <thead className="bg-[var(--bg)] text-left text-[var(--muted)]">
             <tr>
               <th className="px-4 py-3 font-medium">ID</th>
+              <th className="px-4 py-3 font-medium">Version ID</th>
               <th className="px-4 py-3 font-medium">Created</th>
             </tr>
           </thead>
           <tbody>
-            {auditRuns.slice(0, 10).map((r) => (
-              <tr key={r.id} className="border-t border-[var(--border)]">
-                <td className="px-4 py-3 font-mono text-xs">{r.id}</td>
-                <td className="px-4 py-3">{new Date(r.createdAt).toLocaleString()}</td>
+            {auditRuns.slice(0, 10).map((run) => (
+              <tr key={run.id} className="border-t border-[var(--border)]">
+                <td className="px-4 py-3 font-mono text-xs">{run.id}</td>
+                <td className="px-4 py-3 font-mono text-xs">{run.catalogVersionId ?? '—'}</td>
+                <td className="px-4 py-3">{new Date(run.createdAt).toLocaleString()}</td>
               </tr>
             ))}
           </tbody>
